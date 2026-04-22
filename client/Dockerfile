@@ -23,7 +23,8 @@ COPY --from=builder /app/package.json ./package.json
 # If you use modules that are not bundled, you might need to install prod deps here
 # However, for SvelteKit with adapter-node, the build folder usually contains everything needed 
 # or you might need to copy node_modules. Let's install prod deps just in case.
-RUN npm install --omit=dev
+#RUN npm install --omit=dev
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 

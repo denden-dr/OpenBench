@@ -29,6 +29,7 @@ Initial scaffold for OpenBench completed. Monorepo structure with Go Fiber v3 ba
     - Health status dashboard with Svelte runes
     - API client with Vitest coverage
     - **Dockerized**: Multi-stage `Dockerfile` (Node 22 + Alpine)
+        - Optimized to reuse `node_modules` from build stage for consistency.
 
 ### Infrastructure
 - **Orchestration**: Docker Compose
