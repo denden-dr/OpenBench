@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: openbench-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: pg-openbench
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pg-openbench"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: openbench-server
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://user:pass@db:5432/pg-openbench?sslmode=disable
+      - CORS_ORIGINS=http://localhost:5173
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: openbench-client
+    environment:
+      - NODE_ENV=production
+      - ORIGIN=http://localhost:5173
+      - BACKEND_URL=http://server:3000
+    ports:
+      - "5173:3000"
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:
