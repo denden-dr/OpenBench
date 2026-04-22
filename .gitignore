@@ -1,0 +1,34 @@
+# Binaries
+bin/
+*.exe
+*.test
+*.prof
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+go.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Build
+dist/
+build/
+.svelte-kit/
+.vercel/
+package/
+
+#Etc
+_*.md
