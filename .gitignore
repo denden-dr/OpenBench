@@ -32,3 +32,4 @@ package/
 
 #Etc
 _*.md
+.design-prototype/

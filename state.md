@@ -18,18 +18,19 @@ Initial scaffold for OpenBench completed. Monorepo structure with Go Fiber v3 ba
     - **Dockerized**: Multi-stage `Dockerfile` (Go 1.25 + Alpine)
 
 ### Frontend (`client/`)
-- **Status**: Ready / Containerized
+- **Status**: Ready / Redesigned Home Page
 - **Framework**: SvelteKit (Svelte 5)
 - **Adapter**: Switched to `@sveltejs/adapter-node` for container support
-- **Styling**: TailwindCSS v4
+- **Styling**: TailwindCSS v4 with custom brand theme
 - **Testing**: Vitest
 - **Port**: 5173 (Mapped from 3000 in container)
 - **Features**:
-    - Connectivity to backend via Vite proxy
-    - Health status dashboard with Svelte runes
-    - API client with Vitest coverage
-    - **Dockerized**: Multi-stage `Dockerfile` (Node 22 + Alpine)
-        - Optimized to reuse `node_modules` from build stage for consistency.
+	- **High-Fidelity Home Page**: Industrial Minimalism design for mobile repair service.
+	- **Connectivity Monitoring**: Real-time backend status integrated into diagnostic feed.
+	- **Transparency Engine**: Detailed feature grid and documentation mockups.
+	- **Tech Data Layout**: custom fonts (Inter, Space Grotesk) and Material Symbols integration.
+	- **Dockerized**: Multi-stage `Dockerfile` (Node 22 + Alpine)
+		- Optimized to reuse `node_modules` from build stage for consistency.
 
 ### Infrastructure
 - **Orchestration**: Docker Compose
