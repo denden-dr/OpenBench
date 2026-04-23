@@ -18,7 +18,7 @@ Initial scaffold for OpenBench completed. Monorepo structure with Go Fiber v3 ba
     - **Dockerized**: Multi-stage `Dockerfile` (Go 1.25 + Alpine)
 
 ### Frontend (`client/`)
-- **Status**: Ready / Redesigned Home Page
+- **Status**: Ready / Home & Authentication UI
 - **Framework**: SvelteKit (Svelte 5)
 - **Adapter**: Switched to `@sveltejs/adapter-node` for container support
 - **Styling**: TailwindCSS v4 with custom brand theme
@@ -26,6 +26,7 @@ Initial scaffold for OpenBench completed. Monorepo structure with Go Fiber v3 ba
 - **Port**: 5173 (Mapped from 3000 in container)
 - **Features**:
 	- **High-Fidelity Home Page**: Industrial Minimalism design for mobile repair service.
+	- **Authentication Portal**: Polished Login and Registration interfaces following brand aesthetics.
 	- **Connectivity Monitoring**: Real-time backend status integrated into diagnostic feed.
 	- **Transparency Engine**: Detailed feature grid and documentation mockups.
 	- **Tech Data Layout**: custom fonts (Inter, Space Grotesk) and Material Symbols integration.
