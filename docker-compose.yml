@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: openbench_pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: openbench
+    ports:
+      # Binds to localhost only to prevent accidental external exposure.
+      # Allows overriding host port via DB_PORT environment variable.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - openbench_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      # Ensures the database is accepting connections
+      test: ["CMD-SHELL", "pg_isready -U postgres -d openbench"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  openbench_pg_data:
