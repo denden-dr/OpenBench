@@ -38,35 +38,42 @@ volumes:
 Add the database setup targets and update the migration targets. Here are the additions and changes to make to the `Makefile`:
 
 ```makefile
-# --- Add these new targets for Database Setup ---
+# --- Database Setup ---
+
+# Detection for podman vs docker
+DOCKER_CMD := $(shell which docker 2>/dev/null || which podman 2>/dev/null)
+COMPOSE_CMD := $(shell if $$(DOCKER_CMD) compose version >/dev/null 2>&1; then echo "$$(DOCKER_CMD) compose"; else which docker-compose 2>/dev/null || which podman-compose 2>/dev/null; fi)
+
 .PHONY: db-up db-down db-reset db-logs db-shell db-check
 
 db-up:
-	@echo "Starting PostgreSQL container..."
-	@docker compose up -d
+	@echo "Starting PostgreSQL container using $$(COMPOSE_CMD)..."
+	@$$(COMPOSE_CMD) up -d
 	@echo "Waiting for database to be healthy..."
-	@until docker compose ps | grep -q "healthy"; do \
+	@timeout=60; while ! $$(COMPOSE_CMD) ps | grep -q "healthy"; do \
+		timeout=$$((timeout - 1)); \
+		if [ $$timeout -le 0 ]; then echo "Error: Timeout waiting for database to become healthy"; exit 1; fi; \
 		sleep 1; \
 	done
 	@echo "Database is ready!"
 
 db-down:
 	@echo "Stopping PostgreSQL container..."
-	@docker compose down
+	@$$(COMPOSE_CMD) down
 
 db-reset:
 	@echo "Resetting PostgreSQL container and volume..."
-	@docker compose down -v
+	@$$(COMPOSE_CMD) down -v
 	@$(MAKE) db-up
 
 db-logs:
-	@docker compose logs -f postgres
+	@$$(COMPOSE_CMD) logs -f postgres
 
 db-shell:
-	@docker compose exec postgres psql -U postgres -d openbench
+	@$$(COMPOSE_CMD) exec postgres psql -U postgres -d openbench
 
 db-check:
-	@if ! docker compose ps | grep -q "healthy"; then \
+	@if ! $$(COMPOSE_CMD) ps | grep -q "healthy"; then \
 		echo "Error: Database container is not running or not healthy. Run 'make db-up' first."; \
 		exit 1; \
 	fi
@@ -91,7 +98,17 @@ migrate-create:
 	migrate create -ext sql -dir migrations -seq $$name
 ```
 
-## 3. `.env.example`
+## 3. `migrations/.gitkeep`
+
+Ensure the migrations directory exists for `golang-migrate` to work properly on fresh checkouts.
+
+Run this command in the project root:
+
+```bash
+mkdir -p migrations && touch migrations/.gitkeep
+```
+
+## 4. `.env.example`
 
 Update the comment above `DATABASE_URL` to clarify its relationship with Docker:
 
@@ -103,7 +120,7 @@ Update the comment above `DATABASE_URL` to clarify its relationship with Docker:
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/openbench?sslmode=disable
 ```
 
-## 4. `.gitignore`
+## 5. `.gitignore`
 
 Append the Docker override file to the `.gitignore`:
 
@@ -112,7 +129,7 @@ Append the Docker override file to the `.gitignore`:
 docker-compose.override.yml
 ```
 
-## 5. `README.md`
+## 6. `README.md`
 
 Add a Local Development section to clearly instruct developers:
 

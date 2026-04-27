@@ -61,7 +61,7 @@ Add engine auto-detection and the following targets (descriptions are logic, not
 - Define a `COMPOSE_CMD` variable that resolves to `$(DOCKER_CMD) compose` if the subcommand is supported, otherwise falls back to `docker-compose` or `podman-compose` (whichever is found).
 - All targets below must use `$(COMPOSE_CMD)` instead of hard-coding `docker compose`.
 
-1. **`db-up`** — Runs `$(COMPOSE_CMD) up -d` to start the PostgreSQL container in detached mode. After the command, print a message confirming the container is running.
+1. **`db-up`** — Runs `$(COMPOSE_CMD) up -d` to start the PostgreSQL container in detached mode. After launching, poll `$(COMPOSE_CMD) ps` for a `healthy` status **with a maximum timeout of 60 seconds**. If the database does not become healthy within the timeout, print an error message and exit non-zero to prevent the developer from waiting indefinitely. On success, print a confirmation message.
 2. **`db-down`** — Runs `$(COMPOSE_CMD) down` to stop and remove the container (but keep the volume).
 3. **`db-reset`** — Runs `$(COMPOSE_CMD) down -v` to stop and remove the container **and** the volume, then re-runs `db-up`. This gives a completely clean slate.
 4. **`db-logs`** — Runs `$(COMPOSE_CMD) logs -f postgres` to tail the database container logs. Useful for debugging startup failures.
@@ -69,6 +69,7 @@ Add engine auto-detection and the following targets (descriptions are logic, not
 6. **Update `migrate-up`** — Switch from raw `psql` to `golang-migrate` (`migrate -path migrations -database ... up`). Add a prerequisite check that the container is healthy before executing.
 7. **Update `migrate-down`** — Use `golang-migrate` (`migrate ... down -all`) with the same prerequisite check.
 8. **Add `migrate-create`** — Add a target to scaffold new migration files (`*.up.sql` and `*.down.sql`) using `golang-migrate` to prevent manual file creation errors.
+9. **Create `migrations/` directory** — Commit a `migrations/.gitkeep` file so the directory exists on fresh checkouts. Without this, `make migrate-up` fails with a "directory not found" error.
 
 ### Step 3 — Update `.env.example`
 

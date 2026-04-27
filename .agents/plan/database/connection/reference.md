@@ -35,6 +35,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Validate Database Connection Pool settings
+	if cfg.DBMaxOpenConns < 1 {
+		return nil, fmt.Errorf("invalid config: DB_MAX_OPEN_CONNS must be at least 1")
+	}
 	if cfg.DBMaxIdleConns > cfg.DBMaxOpenConns {
 		return nil, fmt.Errorf("invalid config: DB_MAX_IDLE_CONNS (%d) cannot exceed DB_MAX_OPEN_CONNS (%d)", cfg.DBMaxIdleConns, cfg.DBMaxOpenConns)
 	}
@@ -72,10 +75,6 @@ func NewPostgresDB(dsn string, maxOpenConns, maxIdleConns, connMaxLifetimeSecs, 
 	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	// Configure connection pool settings dynamically
@@ -126,7 +125,12 @@ func (h *HealthHandler) HealthCheck(c fiber.Ctx) error {
 		dbMessage = err.Error()
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+	httpStatus := fiber.StatusOK
+	if status == "degraded" {
+		httpStatus = fiber.StatusServiceUnavailable
+	}
+
+	return c.Status(httpStatus).JSON(fiber.Map{
 		"status": status,
 		"checks": fiber.Map{
 			"database": fiber.Map{

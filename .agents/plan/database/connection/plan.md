@@ -80,6 +80,7 @@ The project has a local PostgreSQL container (via `docker-compose.yml`) and a `D
    - Loads `.env` using `godotenv.Load()` (best-effort, no error if file is missing — supports container deployments without `.env`).
    - Calls `envconfig.Process("", &cfg)` to populate the struct from environment variables.
    - Validates pool parameters after loading:
+     - Verify `DBMaxOpenConns >= 1`. If not, return an error — a value of 0 means "unlimited" in Go's `sql.DB`, which is unsafe for production.
      - Verify `DBMaxOpenConns >= DBMaxIdleConns`. If not, return an error with a descriptive message.
      - Verify `DBMaxIdleConns >= 1`. If not, return an error.
      - Verify both lifetime values are > 0. If not, return an error.
@@ -90,8 +91,7 @@ The project has a local PostgreSQL container (via `docker-compose.yml`) and a `D
 1. Create the directory `pkg/database/` and the file `pkg/database/postgres.go`.
 2. Implement `NewPostgresDB` with the signature: `func NewPostgresDB(dsn string, maxOpenConns, maxIdleConns, connMaxLifetimeSecs, connMaxIdleTimeSecs int) (*sqlx.DB, error)`.
 3. Inside the function:
-   - Call `sqlx.Connect("pgx", dsn)` to open the connection using the `pgx` driver.
-   - Call `db.Ping()` to verify connectivity at startup — return an error if unreachable.
+   - Call `sqlx.Connect("pgx", dsn)` to open the connection using the `pgx` driver. Note: `sqlx.Connect` internally calls `Open` + `Ping`, so an explicit `db.Ping()` call is **not** needed — it would be a redundant second ping that adds unnecessary startup latency.
    - Configure the connection pool with the passed-in values:
      - `SetMaxOpenConns` ← `maxOpenConns` parameter
      - `SetMaxIdleConns` ← `maxIdleConns` parameter
@@ -109,9 +109,9 @@ The project has a local PostgreSQL container (via `docker-compose.yml`) and a `D
    - Create a child context with a 2-second timeout from the request context.
    - Call `db.PingContext(ctx)` using the timeout context.
    - Build the response object:
-     - If the ping succeeds: top-level `status` is `"healthy"`, `checks.database.status` is `"up"`.
-     - If the ping fails: top-level `status` is `"degraded"`, `checks.database.status` is `"down"`, `checks.database.message` contains the error string.
-   - Return an HTTP 200 in both cases. A degraded health response is still a valid health response. Upstream actors (load balancers, Docker) inspect the body to decide routing; returning a 503 is only appropriate if the *entire* service is unusable.
+     - If the ping succeeds: top-level `status` is `"healthy"`, `checks.database.status` is `"up"`. Return **HTTP 200**.
+     - If the ping fails: top-level `status` is `"degraded"`, `checks.database.status` is `"down"`, `checks.database.message` contains the error string. Return **HTTP 503 Service Unavailable**.
+   - The database is a hard dependency. When it is down, the service cannot fulfil its core purpose, so a `503` is the correct signal to load balancers and orchestrators (Kubernetes liveness/readiness probes, ECS health checks) to stop routing traffic to this instance.
 
 ### Step 4 — Update `main.go` Wiring
 
@@ -169,7 +169,7 @@ The project has a local PostgreSQL container (via `docker-compose.yml`) and a `D
 | 1 | **Default pool config** | Start the application without setting any `DB_*` pool env vars. Check startup logs — they should report `MaxOpenConns=25`, `MaxIdleConns=5`, `ConnMaxLifetime=5m`, `ConnMaxIdleTime=1m`. |
 | 2 | **Custom pool config** | Set `DB_MAX_OPEN_CONNS=10` and `DB_MAX_IDLE_CONNS=3` in `.env`. Restart the app. Startup logs should reflect the overridden values. |
 | 3 | **Healthy health-check** | With the database running, `GET /health` returns HTTP 200 with `"status": "healthy"` and `"checks": { "database": { "status": "up" } }`. |
-| 4 | **Degraded health-check** | Stop the PostgreSQL container (`make db-down`). Hit `GET /health`. Response is HTTP 200 with `"status": "degraded"` and `"checks": { "database": { "status": "down", "message": "..." } }`. The app remains running and serving the endpoint. |
+| 4 | **Degraded health-check** | Stop the PostgreSQL container (`make db-down`). Hit `GET /health`. Response is **HTTP 503** with `"status": "degraded"` and `"checks": { "database": { "status": "down", "message": "..." } }`. The app remains running and serving the endpoint, but signals to upstream load balancers that it cannot process requests. |
 | 5 | **Recovery after degradation** | After scenario 4, restart the database (`make db-up`). Hit `GET /health` again. Response flips back to `"healthy"` with `database: "up"`. |
 
 #### Failure Scenarios
