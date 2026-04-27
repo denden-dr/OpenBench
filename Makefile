@@ -22,7 +22,9 @@ db-up:
 	@echo "Starting PostgreSQL container using $(COMPOSE_CMD)..."
 	@$(COMPOSE_CMD) up -d
 	@echo "Waiting for database to be healthy..."
-	@until $(COMPOSE_CMD) ps | grep -q "healthy"; do \
+	@timeout=60; while ! $(COMPOSE_CMD) ps | grep -q "healthy"; do \
+		timeout=$$((timeout - 1)); \
+		if [ $$timeout -le 0 ]; then echo "Error: Timeout waiting for database to become healthy"; exit 1; fi; \
 		sleep 1; \
 	done
 	@echo "Database is ready!"
@@ -50,14 +52,17 @@ db-check:
 
 # --- Migrations ---
 
-# Extract DATABASE_URL from .env file
-DB_URL=$(shell grep "^DATABASE_URL=" .env | cut -d '=' -f 2- | tr -d '"')
+env-check:
+	@if [ ! -f .env ]; then echo "Error: .env file is missing. Run 'cp .env.example .env' first."; exit 1; fi
 
-migrate-up: db-check
+# Extract DATABASE_URL from .env file
+DB_URL=$(shell grep "^DATABASE_URL=" .env 2>/dev/null | cut -d '=' -f 2- | tr -d '"')
+
+migrate-up: db-check env-check
 	@echo "Running migrations..."
 	@migrate -path migrations -database "$(DB_URL)" up
 
-migrate-down: db-check
+migrate-down: db-check env-check
 	@echo "Rolling back migrations..."
 	@migrate -path migrations -database "$(DB_URL)" down -all
 

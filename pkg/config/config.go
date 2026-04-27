@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	DatabaseURL           string `envconfig:"DATABASE_URL" required:"true"`
-	DBMaxOpenConns        int    `envconfig:"DB_MAX_OPEN_CONNS" default:"25"`
-	DBMaxIdleConns        int    `envconfig:"DB_MAX_IDLE_CONNS" default:"5"`
-	DBConnMaxLifetimeSecs int    `envconfig:"DB_CONN_MAX_LIFETIME_SECS" default:"300"`
-	DBConnMaxIdleTimeSecs int    `envconfig:"DB_CONN_MAX_IDLE_TIME_SECS" default:"60"`
+	DatabaseURL             string `envconfig:"DATABASE_URL" required:"true"`
+	DBMaxOpenConns          int    `envconfig:"DB_MAX_OPEN_CONNS" default:"25"`
+	DBMaxIdleConns          int    `envconfig:"DB_MAX_IDLE_CONNS" default:"5"`
+	DBConnMaxLifetimeSecs   int    `envconfig:"DB_CONN_MAX_LIFETIME_SECS" default:"300"`
+	DBConnMaxIdleTimeSecs   int    `envconfig:"DB_CONN_MAX_IDLE_TIME_SECS" default:"60"`
+	DBHealthPingTimeoutSecs int    `envconfig:"DB_HEALTH_PING_TIMEOUT_SECS" default:"2"`
 }
 
 // LoadConfig reads environment variables from .env (if present) and populates the Config struct.
@@ -26,6 +27,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Validate Database Connection Pool settings
+	if cfg.DBMaxOpenConns < 1 {
+		return nil, fmt.Errorf("invalid config: DB_MAX_OPEN_CONNS must be at least 1")
+	}
 	if cfg.DBMaxIdleConns > cfg.DBMaxOpenConns {
 		return nil, fmt.Errorf("invalid config: DB_MAX_IDLE_CONNS (%d) cannot exceed DB_MAX_OPEN_CONNS (%d)", cfg.DBMaxIdleConns, cfg.DBMaxOpenConns)
 	}
@@ -37,6 +41,9 @@ func LoadConfig() (*Config, error) {
 	}
 	if cfg.DBConnMaxIdleTimeSecs <= 0 {
 		return nil, fmt.Errorf("invalid config: DB_CONN_MAX_IDLE_TIME_SECS must be greater than 0")
+	}
+	if cfg.DBHealthPingTimeoutSecs <= 0 {
+		return nil, fmt.Errorf("invalid config: DB_HEALTH_PING_TIMEOUT_SECS must be greater than 0")
 	}
 
 	return &cfg, nil

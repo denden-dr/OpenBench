@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/denden-dr/OpenBench/internal/handlers"
 	"github.com/denden-dr/OpenBench/internal/middleware"
 	"github.com/denden-dr/OpenBench/pkg/config"
@@ -42,7 +44,7 @@ func main() {
 	)
 
 	// Dependency Injection for Health
-	healthHandler := handlers.NewHealthHandler(db)
+	healthHandler := handlers.NewHealthHandler(db, time.Duration(cfg.DBHealthPingTimeoutSecs)*time.Second)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
