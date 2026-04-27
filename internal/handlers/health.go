@@ -1,13 +1,43 @@
 package handlers
 
 import (
+	"context"
+	"time"
+
 	"github.com/gofiber/fiber/v3"
+	"github.com/jmoiron/sqlx"
 )
 
-// HealthCheck returns a 200 OK status to indicate the server is running
-func HealthCheck(c fiber.Ctx) error {
+type HealthHandler struct {
+	db *sqlx.DB
+}
+
+func NewHealthHandler(db *sqlx.DB) *HealthHandler {
+	return &HealthHandler{db: db}
+}
+
+func (h *HealthHandler) HealthCheck(c fiber.Ctx) error {
+	// 2-second timeout for the ping
+	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
+	defer cancel()
+
+	status := "healthy"
+	dbStatus := "up"
+	dbMessage := ""
+
+	if err := h.db.PingContext(ctx); err != nil {
+		status = "degraded"
+		dbStatus = "down"
+		dbMessage = err.Error()
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":  "ok",
-		"message": "OpenBench API is healthy",
+		"status": status,
+		"checks": fiber.Map{
+			"database": fiber.Map{
+				"status":  dbStatus,
+				"message": dbMessage,
+			},
+		},
 	})
 }

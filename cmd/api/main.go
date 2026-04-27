@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/denden-dr/OpenBench/internal/handlers"
 	"github.com/denden-dr/OpenBench/internal/middleware"
+	"github.com/denden-dr/OpenBench/pkg/config"
+	"github.com/denden-dr/OpenBench/pkg/database"
 	"github.com/denden-dr/OpenBench/pkg/logger"
 	"github.com/gofiber/fiber/v3"
 	"go.uber.org/zap"
@@ -11,6 +13,36 @@ import (
 func main() {
 	// Initialize logger
 	log := logger.NewLogger()
+
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Failed to load configuration", zap.Error(err))
+	}
+
+	// Initialize Database with configurable pool settings
+	db, err := database.NewPostgresDB(
+		cfg.DatabaseURL,
+		cfg.DBMaxOpenConns,
+		cfg.DBMaxIdleConns,
+		cfg.DBConnMaxLifetimeSecs,
+		cfg.DBConnMaxIdleTimeSecs,
+	)
+	if err != nil {
+		log.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer db.Close()
+
+	// Log applied settings for observability
+	log.Info("Database connection established",
+		zap.Int("max_open_conns", cfg.DBMaxOpenConns),
+		zap.Int("max_idle_conns", cfg.DBMaxIdleConns),
+		zap.Int("conn_max_lifetime_secs", cfg.DBConnMaxLifetimeSecs),
+		zap.Int("conn_max_idle_time_secs", cfg.DBConnMaxIdleTimeSecs),
+	)
+
+	// Dependency Injection for Health
+	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -21,7 +53,7 @@ func main() {
 	app.Use(middleware.ZapLogger(log))
 
 	// Define routes
-	app.Get("/health", handlers.HealthCheck)
+	app.Get("/health", healthHandler.HealthCheck)
 
 	// Log server start
 	log.Info("Starting OpenBench API server on port 3000")
