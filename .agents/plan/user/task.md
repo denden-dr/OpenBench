@@ -1,0 +1,28 @@
+# Task: User Local Database & Endpoint Execution
+
+- [x] Phase 1 — Database Schema Generation
+    - [x] Migration Creation: `make migrate-create` (Tool-generated)
+    - [x] Migration Population: `migrations/000001_create_users_table.up.sql` and `.down.sql`
+- [x] Phase 2 — Domain Modeling
+    - [x] Entity Definition: `internal/domain/user.go`
+- [x] Phase 3 — Repository Implementation
+    - [x] Interface Definition: `internal/repository/user_repo.go`
+    - [x] Private Struct & Constructor
+    - [x] Implement `FindByID`
+    - [x] Implement `UpsertFromAuth`
+- [x] Phase 4 — Service Implementation
+    - [x] Interface & Struct: `internal/service/user_service.go`
+    - [x] Constructor & `GetProfile`
+- [x] Phase 5 — Handler & Routing
+    - [x] Interface & Struct: `internal/handlers/user_handler.go`
+    - [x] Constructor & `GetMe`
+    - [x] Wiring: Registered route in `cmd/api/main.go`
+- [x] Phase 6 — Unit Testing (Service Layer)
+    - [x] Mock Generation: `MockUserRepository`
+    - [x] Table-Driven Tests: `internal/service/user_service_test.go`
+- [x] Phase 7 — Unit Testing (Repository Layer)
+    - [x] Mocking Database: `sqlmock`
+    - [x] Table-Driven Tests: `internal/repository/user_repo_test.go`
+- [x] Final Verification
+    - [x] Build check: `go build ./...`
+    - [x] Unit test check: `go test ./internal/...`
