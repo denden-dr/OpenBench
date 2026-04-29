@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/denden-dr/OpenBench/internal/domain"
+	"github.com/denden-dr/OpenBench/internal/dto"
 	"github.com/denden-dr/OpenBench/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -36,13 +37,14 @@ func (m *MockUserRepository) UpsertFromAuth(ctx context.Context, id uuid.UUID, e
 func TestUserService_GetProfile(t *testing.T) {
 	userID := uuid.New()
 	mockUser := &domain.User{ID: userID, Email: "test@example.com"}
+	expectedDTO := &dto.UserResponse{ID: userID, Email: "test@example.com"}
 	ctx := context.Background()
 
 	tests := []struct {
 		name          string
 		userID        uuid.UUID
 		mockSetup     func(m *MockUserRepository)
-		expectedUser  *domain.User
+		expectedUser  *dto.UserResponse
 		expectedError string
 	}{
 		{
@@ -51,7 +53,7 @@ func TestUserService_GetProfile(t *testing.T) {
 			mockSetup: func(m *MockUserRepository) {
 				m.On("FindByID", ctx, userID).Return(mockUser, nil)
 			},
-			expectedUser:  mockUser,
+			expectedUser:  expectedDTO,
 			expectedError: "",
 		},
 		{
