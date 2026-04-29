@@ -49,6 +49,16 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService)
+
+	techRepo := repository.NewTechnicianRepository(db)
+	bookingRepo := repository.NewBookingRepository(db)
+
+	techBookingService := service.NewTechBookingService(bookingRepo)
+	techHandler := handlers.NewTechHandler(techBookingService)
+
+	bookingService := service.NewBookingService(bookingRepo)
+	bookingHandler := handlers.NewBookingHandler(bookingService)
+
 	healthHandler := handlers.NewHealthHandler(db, time.Duration(cfg.DBHealthPingTimeoutSecs)*time.Second)
 
 	// Initialize Fiber app
@@ -67,6 +77,25 @@ func main() {
 	users := v1.Group("/users")
 	// TODO: Add AuthMiddleware here once implemented
 	users.Get("/me", userHandler.GetMe)
+
+	// Booking routes (Customer)
+	bookings := v1.Group("/bookings")
+	{
+		bookings.Post("/", bookingHandler.Create())
+		bookings.Get("/:id", bookingHandler.GetByID())
+		bookings.Post("/:id/approve", bookingHandler.Approve())
+		bookings.Post("/:id/cancel", bookingHandler.Cancel())
+	}
+
+	// Technician routes
+	tech := v1.Group("/tech", middleware.RequireTech(techRepo))
+	{
+		tech.Get("/bookings/available", techHandler.GetAvailableBookings())
+		tech.Get("/bookings/mine", techHandler.GetMyBookings())
+		tech.Post("/bookings/:id/assign", techHandler.AssignBooking())
+		tech.Post("/bookings/:id/diagnose", techHandler.DiagnoseBooking())
+		tech.Post("/bookings/:id/status", techHandler.UpdateBookingStatus())
+	}
 
 	// Log server start
 	log.Info("Starting OpenBench API server on port 3000")
