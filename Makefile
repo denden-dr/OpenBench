@@ -67,5 +67,7 @@ migrate-down: db-check env-check
 	@migrate -path migrations -database "$(DB_URL)" down -all
 
 migrate-create:
+	@if ! command -v migrate >/dev/null 2>&1; then echo "Error: 'migrate' command not found. Install it from https://github.com/golang-migrate/migrate"; exit 1; fi
+	@mkdir -p migrations
 	@read -p "Enter migration name: " name; \
 	migrate create -ext sql -dir migrations -seq $$name

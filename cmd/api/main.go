@@ -5,6 +5,8 @@ import (
 
 	"github.com/denden-dr/OpenBench/internal/handlers"
 	"github.com/denden-dr/OpenBench/internal/middleware"
+	"github.com/denden-dr/OpenBench/internal/repository"
+	"github.com/denden-dr/OpenBench/internal/service"
 	"github.com/denden-dr/OpenBench/pkg/config"
 	"github.com/denden-dr/OpenBench/pkg/database"
 	"github.com/denden-dr/OpenBench/pkg/logger"
@@ -43,7 +45,10 @@ func main() {
 		zap.Int("conn_max_idle_time_secs", cfg.DBConnMaxIdleTimeSecs),
 	)
 
-	// Dependency Injection for Health
+	// Dependency Injection
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
 	healthHandler := handlers.NewHealthHandler(db, time.Duration(cfg.DBHealthPingTimeoutSecs)*time.Second)
 
 	// Initialize Fiber app
@@ -56,6 +61,12 @@ func main() {
 
 	// Define routes
 	app.Get("/health", healthHandler.HealthCheck)
+
+	// User routes
+	v1 := app.Group("/api/v1")
+	users := v1.Group("/users")
+	// TODO: Add AuthMiddleware here once implemented
+	users.Get("/me", userHandler.GetMe)
 
 	// Log server start
 	log.Info("Starting OpenBench API server on port 3000")
