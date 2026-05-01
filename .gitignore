@@ -1,0 +1,61 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.nfs*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Node / Frontend
+node_modules/
+dist/
+/apps/frontend/.svelte-kit/
+/apps/frontend/build/
+/apps/frontend/.vercel/
+/apps/frontend/.netlify/
+/apps/frontend/.wrangler/
+apps/frontend/build_output.txt
+
+# Go / Backend
+/apps/backend/bin/
+/apps/backend/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+go.work
+go.work.sum
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Debugging / Temporary files
+.agents/scratch/
+.pnpm-store/
+.npm/
+tmp/
+temp/
+__pycache__/
+*.py[cod]
