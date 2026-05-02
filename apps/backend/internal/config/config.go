@@ -6,13 +6,15 @@ import (
 )
 
 type Config struct {
-    Port string
+    Port  string
+    DBURL string
 }
 
 func Load() *Config {
     _ = godotenv.Load()
     return &Config{
-        Port: getEnv("PORT", "8080"),
+        Port:  getEnv("PORT", "8080"),
+        DBURL: getEnv("DB_URL", "postgres://postgres:postgres@localhost:5432/openbench?sslmode=disable"),
     }
 }
 
