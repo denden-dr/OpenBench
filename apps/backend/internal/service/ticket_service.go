@@ -9,6 +9,7 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -51,7 +52,7 @@ func (s *ticketService) CreateTicket(ctx context.Context, req *dto.CreateTicketR
 		Brand:            req.Brand,
 		Model:            req.Model,
 		IssueDescription: req.IssueDescription,
-		DiagnosisFee:     req.DiagnosisFee,
+		DiagnosisFee:     decimal.NewFromInt(50), // Standard diagnosis fee
 	}
 
 	if err := s.repo.Create(ctx, ticket); err != nil {
