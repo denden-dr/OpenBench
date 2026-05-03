@@ -14,6 +14,7 @@ type Ticket struct {
 	IssueDescription string          `db:"issue_description"`
 	Status           string          `db:"status"`
 	DiagnosisFee     decimal.Decimal `db:"diagnosis_fee"`
+	TechnicianID     *string         `db:"technician_id"`
 	CreatedAt        time.Time       `db:"created_at"`
 	UpdatedAt        time.Time       `db:"updated_at"`
 }

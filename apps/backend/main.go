@@ -6,6 +6,7 @@ import (
 
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
+	"github.com/denden-dr/openbench/apps/backend/internal/handler/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -34,12 +35,28 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(middleware.RoleMiddleware)
 
 	// Routes
 	api := app.Group("/api/v1")
 
 	tickets := api.Group("/tickets")
+
+	// Public
+	tickets.Get("/board", ticketHandler.GetBoard)
 	tickets.Post("/", ticketHandler.Create)
+
+	// User actions
+	tickets.Post("/:id/approve", ticketHandler.ApproveRepair)
+	tickets.Post("/:id/cancel", ticketHandler.CancelRepair)
+
+	// Technician actions
+	tickets.Post("/:id/claim", middleware.RequireTechnician, ticketHandler.ClaimTicket)
+	tickets.Post("/:id/complete-diagnosis", middleware.RequireTechnician, ticketHandler.CompleteDiagnosis)
+	tickets.Post("/:id/complete-repair", middleware.RequireTechnician, ticketHandler.CompleteRepair)
+	tickets.Post("/:id/pickup", middleware.RequireTechnician, ticketHandler.MarkPickedUp)
+
+	// Detail (keep existing)
 	tickets.Get("/:id", ticketHandler.GetByID)
 
 	app.Get("/health", func(c *fiber.Ctx) error {

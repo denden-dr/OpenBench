@@ -7,11 +7,10 @@ import (
 )
 
 type CreateTicketRequest struct {
-	DeviceType       string          `json:"device_type" validate:"required"`
-	Brand            string          `json:"brand" validate:"required"`
-	Model            string          `json:"model" validate:"required"`
-	IssueDescription string          `json:"issue_description" validate:"required"`
-	DiagnosisFee     decimal.Decimal `json:"diagnosis_fee" validate:"required"`
+	DeviceType       string `json:"device_type" validate:"required"`
+	Brand            string `json:"brand" validate:"required"`
+	Model            string `json:"model" validate:"required"`
+	IssueDescription string `json:"issue_description" validate:"required"`
 }
 
 type TicketResponse struct {
@@ -24,4 +23,17 @@ type TicketResponse struct {
 	DiagnosisFee     decimal.Decimal `json:"diagnosis_fee"`
 	CreatedAt        time.Time       `json:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at"`
+}
+
+type UpdateTicketStatusRequest struct {
+	Status string `json:"status" validate:"required,oneof=repairing cancelled"`
+}
+
+type TicketBoardDTO struct {
+	ID         string `json:"id"`
+	DeviceType string `json:"device_type"`
+	Brand      string `json:"brand"`
+	Model      string `json:"model"`
+	Status     string `json:"status"`
+	CreatedAt  string `json:"created_at"`
 }
