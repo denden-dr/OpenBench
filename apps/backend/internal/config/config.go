@@ -1,24 +1,33 @@
 package config
 
 import (
-    "os"
-    "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
 )
 
 type Config struct {
-    Port string
+	Port  string
+	DBURL string
 }
 
 func Load() *Config {
-    _ = godotenv.Load()
-    return &Config{
-        Port: getEnv("PORT", "8080"),
-    }
+	_ = godotenv.Load()
+
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL environment variable is required")
+	}
+
+	return &Config{
+		Port:  getEnv("PORT", "3000"),
+		DBURL: dbURL,
+	}
 }
 
 func getEnv(key, fallback string) string {
-    if value, ok := os.LookupEnv(key); ok {
-        return value
-    }
-    return fallback
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
