@@ -25,3 +25,16 @@ type TicketResponse struct {
 	CreatedAt        time.Time       `json:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at"`
 }
+
+type UpdateTicketStatusRequest struct {
+	Status string `json:"status" validate:"required,oneof=repairing cancelled"`
+}
+
+type TicketBoardDTO struct {
+	ID         string `json:"id"`
+	DeviceType string `json:"device_type"`
+	Brand      string `json:"brand"`
+	Model      string `json:"model"`
+	Status     string `json:"status"`
+	CreatedAt  string `json:"created_at"`
+}
