@@ -1,8 +1,12 @@
 <!-- apps/frontend/src/routes/+layout.svelte -->
 <script lang="ts">
   import '../app.css';
-  import { Smartphone, Mail, Globe, Code, Share2, ArrowRight } from 'lucide-svelte';
+  import { page } from '$app/state';
+  import { Smartphone, Mail, Globe, Code, Share2, ArrowRight, User, LogOut } from 'lucide-svelte';
   let { children } = $props();
+
+  // Mock login state based on route for UI demo
+  let isLoggedIn = $derived(page.url.pathname.startsWith('/profile') || page.url.pathname.startsWith('/dashboard'));
 </script>
 
 <div class="relative flex min-h-screen flex-col bg-background selection:bg-blue-100 selection:text-blue-900">
@@ -18,16 +22,26 @@
         </a>
 
         <div class="hidden md:flex items-center gap-8 font-medium text-slate-600 dark:text-slate-400 text-sm">
-          <a href="#features" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Features</a>
-          <a href="#solutions" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Solutions</a>
-          <a href="#pricing" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Pricing</a>
+          <a href="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Services & Fees</a>
+          <a href="/track" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Track Status</a>
+          <a href="#warranty" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Our Guarantee</a>
         </div>
 
         <div class="flex items-center gap-4">
-          <button class="hidden sm:block px-4 py-2 font-semibold text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Log in</button>
-          <button class="px-5 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm">
-            Sign up
-          </button>
+          {#if isLoggedIn}
+            <a href="/profile" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">
+              <User size={16} class="text-blue-600" />
+              My Profile
+            </a>
+            <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all">
+              <LogOut size={18} />
+            </button>
+          {:else}
+            <a href="/login" class="hidden sm:block px-4 py-2 font-semibold text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Log in</a>
+            <a href="/register" class="px-5 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm inline-flex">
+              Sign up
+            </a>
+          {/if}
         </div>
       </nav>
     </div>
@@ -40,77 +54,72 @@
   <!-- Footer -->
   <footer class="bg-slate-950 text-slate-400 py-24 border-t border-slate-900">
     <div class="container mx-auto px-4">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
+      <div class="flex flex-col lg:flex-row justify-between gap-16 mb-20">
         <!-- Brand Section -->
-        <div class="md:col-span-4">
-          <a href="/" class="flex items-center gap-2.5 mb-6">
-            <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <Smartphone size={22} />
+        <div class="lg:max-w-sm">
+          <a href="/" class="flex items-center gap-2.5 mb-8">
+            <div class="w-11 h-11 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+              <Smartphone size={24} />
             </div>
-            <span class="text-2xl font-bold tracking-tight text-white">OpenBench</span>
+            <span class="text-2xl font-black tracking-tight text-white uppercase">OpenBench</span>
           </a>
-          <p class="text-slate-400 text-lg leading-relaxed mb-8 max-w-sm">
-            Modernizing the repair industry with professional tools and automated workflows. Built for shops that scale.
+          <p class="text-slate-400 text-lg leading-relaxed mb-10">
+            The clinical standard for device diagnostics. We combine high-grade parts with transparent, real-time tracking to redefine the repair experience.
           </p>
-          <div class="flex gap-4">
-            <a href="#" class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500">
+          <div class="flex gap-3">
+            <a href="#" class="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500 border border-slate-800">
               <Globe size={20} />
             </a>
-            <a href="#" class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500">
+            <a href="#" class="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500 border border-slate-800">
               <Code size={20} />
             </a>
-            <a href="#" class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500">
+            <a href="#" class="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500 border border-slate-800">
               <Share2 size={20} />
             </a>
           </div>
         </div>
 
-        <!-- Links Sections -->
-        <div class="md:col-span-2 md:col-start-6">
-          <h4 class="font-bold text-white uppercase tracking-widest text-xs mb-8">Product</h4>
-          <ul class="space-y-4 text-sm font-medium">
-            <li><a href="#" class="hover:text-white transition-colors">Platform</a></li>
-            <li><a href="/track" class="hover:text-white transition-colors">Public Tracker</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Inventory</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">API</a></li>
-          </ul>
-        </div>
+        <!-- Links Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-12 lg:gap-24">
+          <div>
+            <h4 class="font-black text-white uppercase tracking-widest text-[10px] mb-8 opacity-50">Operations</h4>
+            <ul class="space-y-4 text-sm font-bold">
+              <li><a href="/book" class="hover:text-blue-500 transition-colors">Book Repair</a></li>
+              <li><a href="/track" class="hover:text-blue-500 transition-colors">Track Status</a></li>
+              <li><a href="/pricing" class="hover:text-blue-500 transition-colors">Fee Schedule</a></li>
+              <li><a href="#warranty" class="hover:text-blue-500 transition-colors">Warranty</a></li>
+            </ul>
+          </div>
 
-        <div class="md:col-span-2">
-          <h4 class="font-bold text-white uppercase tracking-widest text-xs mb-8">Support</h4>
-          <ul class="space-y-4 text-sm font-medium">
-            <li><a href="#" class="hover:text-white transition-colors">Guides</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Security</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
-          </ul>
-        </div>
+          <div>
+            <h4 class="font-black text-white uppercase tracking-widest text-[10px] mb-8 opacity-50">Company</h4>
+            <ul class="space-y-4 text-sm font-bold">
+              <li><a href="#" class="hover:text-blue-500 transition-colors">Our Lab</a></li>
+              <li><a href="#" class="hover:text-blue-500 transition-colors">Contact</a></li>
+              <li><a href="#" class="hover:text-blue-500 transition-colors">Careers</a></li>
+            </ul>
+          </div>
 
-        <!-- Newsletter Section -->
-        <div class="md:col-span-3">
-          <h4 class="font-bold text-white uppercase tracking-widest text-xs mb-8">Stay Updated</h4>
-          <p class="text-sm text-slate-500 mb-6 leading-relaxed">
-            Get the latest updates on features and repair shop best practices.
-          </p>
-          <div class="relative group">
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
-              class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-blue-600 transition-colors"
-            />
-            <button class="absolute right-2 top-2 bottom-2 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors">
-              <ArrowRight size={16} />
-            </button>
+          <div class="col-span-2 sm:col-span-1">
+            <h4 class="font-black text-white uppercase tracking-widest text-[10px] mb-8 opacity-50">Support</h4>
+            <ul class="space-y-4 text-sm font-bold">
+              <li><a href="#" class="hover:text-blue-500 transition-colors">Privacy</a></li>
+              <li><a href="#" class="hover:text-blue-500 transition-colors">Terms</a></li>
+              <li><a href="#" class="hover:text-blue-500 transition-colors">FAQ</a></li>
+            </ul>
           </div>
         </div>
       </div>
 
       <!-- Bottom Bar -->
-      <div class="pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-xs font-medium text-slate-600 uppercase tracking-widest">
-        <p>© 2026 OpenBench Technologies Inc. All rights reserved.</p>
-        <div class="flex gap-8">
-          <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
-          <a href="#" class="hover:text-white transition-colors">Cookie Policy</a>
+      <div class="pt-12 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
+        <p>© 2026 OpenBench Technologies. Engineering Trust.</p>
+        <div class="flex gap-10">
+          <span class="flex items-center gap-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+            Systems Operational
+          </span>
+          <span class="opacity-50">v1.4.2-clinical</span>
         </div>
       </div>
     </div>

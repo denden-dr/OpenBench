@@ -12,9 +12,12 @@
     ChevronRight,
     History,
     ClipboardCheck,
+    Shield,
     Image as ImageIcon
   } from 'lucide-svelte';
   import { page } from '$app/state';
+  
+  let showPhotos = $state(false);
 
   // Mock data based on PRD schema
   const ticketId = page.params.id;
@@ -66,9 +69,9 @@
   <div class="container mx-auto px-4 max-w-4xl">
     <!-- Back Navigation -->
     <div class="mb-8">
-      <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors">
+      <a href="/track" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors">
         <ArrowLeft size={16} />
-        Back to Home
+        Back to Tracking
       </a>
     </div>
 
@@ -177,27 +180,52 @@
 
         <!-- Visual Evidence -->
         <div class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-soft border border-slate-200 dark:border-slate-800">
-          <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-            <Camera size={20} class="text-blue-600" />
-            Visual Evidence
-          </h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Camera size={20} class="text-blue-600" />
+              Visual Evidence
+            </h2>
+            {#if !showPhotos}
+              <button 
+                onclick={() => showPhotos = true}
+                class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
+              >
+                <Shield size={12} />
+                Reveal Evidence
+              </button>
+            {/if}
+          </div>
           
-          <div class="grid sm:grid-cols-2 gap-6">
-            {#each ticket.attachments as attachment}
-              <div class="group">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{attachment.label}</p>
-                <div class="aspect-video rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 overflow-hidden relative">
-                  {#if attachment.url}
-                    <img src={attachment.url} alt={attachment.label} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  {:else}
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
-                      <ImageIcon size={32} strokeWidth={1} />
-                      <span class="text-[10px] font-bold uppercase tracking-widest">Pending Upload</span>
-                    </div>
-                  {/if}
+          <div class="relative">
+            <div class="grid sm:grid-cols-2 gap-6 transition-all duration-500 {showPhotos ? 'filter-none' : 'blur-xl scale-[0.98] opacity-50 select-none pointer-events-none'}">
+              {#each ticket.attachments as attachment}
+                <div class="group">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{attachment.label}</p>
+                  <div class="aspect-video rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+                    {#if attachment.url}
+                      <img src={attachment.url} alt={attachment.label} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {:else}
+                      <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
+                        <ImageIcon size={32} strokeWidth={1} />
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Pending Upload</span>
+                      </div>
+                    {/if}
+                  </div>
                 </div>
+              {/each}
+            </div>
+
+            {#if !showPhotos}
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-20">
+                <div class="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-xl border border-slate-100 dark:border-slate-700">
+                  <Shield size={24} class="text-blue-600" />
+                </div>
+                <h4 class="font-bold text-slate-900 dark:text-white mb-2">Privacy Shield Active</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[240px] leading-relaxed">
+                  Visual evidence is blurred to protect your privacy. Reveal only if you need to verify device condition.
+                </p>
               </div>
-            {/each}
+            {/if}
           </div>
         </div>
       </div>

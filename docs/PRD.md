@@ -7,7 +7,7 @@ A web application designed to manage the end-to-end workflow of a phone repair b
 
 | Role | Access Level | Primary Responsibilities |
 | :--- | :--- | :--- |
-| **Guest/Public** | Unauthenticated | Track repair status via Ticket ID, view service prices. |
+| **Guest/Public** | Unauthenticated | Track repair status via Ticket ID, view service prices, and view the live Public Status Board. |
 | **Customer** | Authenticated | Manage profile, book new repairs, view full repair history. |
 | **Technician** | Authenticated | View assigned tickets, update repair status, log parts used, add technical notes. |
 | **Admin** | Authenticated | Full system access: manage inventory, users, financial reporting, and system settings. |
@@ -21,6 +21,7 @@ A web application designed to manage the end-to-end workflow of a phone repair b
     *   **Accessory Tracking:** Checklist for items left with the device (SIM, Case, SD Card, etc.).
     *   **Terms Agreement:** Required checkbox acknowledging the diagnosis fee and terms of service.
 *   **Public Tracker:** Search by Ticket ID + Phone Number to see real-time status.
+    *   **Public Status Board**: A live, Kanban-style dashboard accessible without authentication. Displays active repairs using sanitized data (Masked Ticket ID, Brand, Model, and Status) to protect customer privacy.
 *   **Intake Receipt:** Ability to download/print a PDF receipt with a **QR Code** for easy status tracking and proof of drop-off.
 *   **Profile Management:** View active and past repairs, download invoices.
 
@@ -49,6 +50,7 @@ A web application designed to manage the end-to-end workflow of a phone repair b
 ### 4.2 Backend (Go + Fiber)
 *   **API Framework:** Fiber (Express-like, high performance).
 *   **Database:** PostgreSQL (Relational data for tickets, parts, and users).
+*   **Data Sanitization Strategy:** Public-facing APIs (like the Status Board endpoint) must use strict struct mapping. This guarantees that only safe, non-identifying fields (e.g., masked IDs, status enums) are serialized and sent to unauthenticated clients, actively preventing accidental data leaks.
 *   **Auth:** Supabase Auth integration. Backend will verify Supabase JWTs.
 *   **File Storage:** Supabase Storage or S3-compatible storage.
 ### 4.3 System Flow
@@ -70,7 +72,7 @@ For a detailed sequence diagram of the Client -> Frontend -> Backend flow, see *
 *   `address`: Text
 
 ### 5.3 Tickets Table
-*   `id`: Primary Key (UUID/ShortID)
+*   `id`: Primary Key (UUID/ShortID) - Note: Must be masked (e.g., ...A9F2) when displayed on the Public Status Board.
 *   `customer_id`: Foreign Key (Customers.id)
 *   `device_type`: Enum (Android, Apple)
 *   `brand`: String

@@ -119,29 +119,34 @@
   const progressWidth = $derived((step / 4) * 100);
 </script>
 
+<svelte:head>
+  <title>Book Your Repair | OpenBench</title>
+  <meta name="description" content="Schedule your device diagnostic or repair with OpenBench's certified technicians. Transparent pricing and real-time tracking." />
+</svelte:head>
+
 <div class="min-h-screen bg-white dark:bg-slate-950 pt-32 pb-20 px-4 transition-colors duration-500">
   <div class="max-w-3xl mx-auto">
     
     {#if !showSuccess}
       <!-- Header -->
-      <div class="text-center mb-12">
-        <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
+      <div class="text-center mb-8 sm:mb-12">
+        <h1 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-2 sm:mb-4 tracking-tight">
           Book Your <span class="text-blue-600">Repair</span>
         </h1>
-        <p class="text-slate-500 dark:text-slate-400 text-lg">Precision diagnostics and expert repair for your professional gear.</p>
+        <p class="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-lg mx-auto">Precision diagnostics and expert repair for your professional gear.</p>
       </div>
 
       <!-- Progress Bar -->
       <div class="mb-12 relative">
         <div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div 
-            class="h-full bg-blue-600 transition-all duration-500 ease-out shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+            class="h-full bg-blue-600 motion-safe:transition-all motion-safe:duration-500 ease-out shadow-[0_0_15px_rgba(37,99,235,0.4)]"
             style="width: {progressWidth}%"
           ></div>
         </div>
         <div class="flex justify-between mt-4">
           {#each ['Device', 'Issue', 'Contact', 'Review'] as label, i}
-            <span class="text-[10px] font-bold uppercase tracking-widest {step > i ? 'text-blue-600' : 'text-slate-400'}">
+            <span class="text-[11px] font-extrabold uppercase tracking-widest transition-colors {step > i ? 'text-blue-600' : 'text-slate-400'} {step === i + 1 ? 'scale-110' : ''}" aria-current={step === i + 1 ? 'step' : undefined}>
               {label}
             </span>
           {/each}
@@ -161,7 +166,7 @@
                 {#each categories as cat}
                   <button 
                     onclick={() => category = cat.id}
-                    class="p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group
+                    class="p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none hover:-translate-y-1 hover:shadow-lg
                       {category === cat.id 
                         ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
                         : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30'}"
@@ -235,13 +240,13 @@
               <div class="space-y-10">
                 <!-- Issue Selection -->
                 <div class="space-y-3">
-                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Symptom(s)</label>
+                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Symptom(s)</p>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" role="group" aria-label="Symptom Selection">
                     {#each commonIssues as iss}
                       <button 
                         type="button"
                         onclick={() => toggleIssue(iss)}
-                        class="px-3 py-3 rounded-xl border text-[10px] font-bold uppercase tracking-tight transition-all
+                        class="px-3 py-3 rounded-xl border text-[10px] font-bold uppercase tracking-tight transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                           {issues.includes(iss) 
                             ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
                             : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300'}"
@@ -262,17 +267,17 @@
                     <div class="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                       <button 
                         onclick={() => { repairMode = false; securityType = 'pin'; }}
-                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all
+                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                           {!repairMode && securityType === 'pin' ? 'bg-slate-900 dark:bg-blue-600 text-white' : 'text-slate-400'}"
                       >PIN</button>
                       <button 
                         onclick={() => { repairMode = false; securityType = 'pattern'; }}
-                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all
+                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                           {!repairMode && securityType === 'pattern' ? 'bg-slate-900 dark:bg-blue-600 text-white' : 'text-slate-400'}"
                       >Pattern</button>
                       <button 
                         onclick={() => repairMode = true}
-                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all
+                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                           {repairMode ? 'bg-slate-900 dark:bg-blue-600 text-white' : 'text-slate-400'}"
                       >Repair Mode</button>
                     </div>
@@ -298,13 +303,13 @@
                     </div>
                   {:else if !repairMode && securityType === 'pattern'}
                     <div transition:slide class="flex flex-col items-center gap-6">
-                      <div class="grid grid-cols-3 gap-6 p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-inner" role="group" aria-label="Pattern Grid">
+                      <div class="grid grid-cols-3 gap-6 p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-inner w-full max-w-xs" role="group" aria-label="Pattern Grid">
                         {#each [1, 2, 3, 4, 5, 6, 7, 8, 9] as node}
                           <button 
                             type="button"
                             onclick={() => togglePatternNode(node)}
                             aria-label="Pattern Node {node}"
-                            class="w-12 h-12 rounded-full border-2 transition-all flex items-center justify-center relative
+                            class="w-12 h-12 rounded-full border-2 transition-all flex items-center justify-center relative cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                               {patternSequence.includes(node) 
                                 ? 'bg-blue-600 border-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' 
                                 : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300'}"
@@ -322,7 +327,7 @@
                         <button 
                           type="button"
                           onclick={() => patternSequence = []}
-                          class="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+                          class="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors cursor-pointer focus-visible:ring-1 focus-visible:ring-blue-600 outline-none rounded"
                         >Reset Pattern</button>
                         <div class="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
                         <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
@@ -335,7 +340,7 @@
 
                 <!-- Accessories Checklist (PRD Requirement) -->
                 <div class="space-y-3">
-                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Items left with device</label>
+                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Items left with device</p>
                   <div class="flex flex-wrap gap-2" role="group" aria-label="Accessories Checklist">
                     {#each accessoryOptions as acc}
                       <button 
@@ -344,7 +349,7 @@
                           if (accessories.includes(acc)) accessories = accessories.filter(a => a !== acc);
                           else accessories = [...accessories, acc];
                         }}
-                        class="px-4 py-2 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all
+                        class="px-4 py-2 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none
                           {accessories.includes(acc) 
                             ? 'bg-blue-600 border-blue-600 text-white' 
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-400'}"
@@ -382,7 +387,7 @@
                       id="name-input"
                       bind:value={name}
                       placeholder="John Doe"
-                      class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all"
+                      class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all focus-visible:ring-2 focus-visible:ring-blue-600/20"
                     />
                   </div>
                 </div>
@@ -397,7 +402,7 @@
                         type="email"
                         bind:value={email}
                         placeholder="john@example.com"
-                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all"
+                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all focus-visible:ring-2 focus-visible:ring-blue-600/20"
                       />
                     </div>
                   </div>
@@ -410,7 +415,7 @@
                         type="tel"
                         bind:value={phone}
                         placeholder="+1 (555) 000-0000"
-                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all"
+                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all focus-visible:ring-2 focus-visible:ring-blue-600/20"
                       />
                     </div>
                   </div>
@@ -425,19 +430,19 @@
               
               <div class="grid gap-4">
                 <div class="grid sm:grid-cols-2 gap-4">
-                  <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                  <div class="review-card">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Device</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">
                       {brand} {model === 'Other' ? customModel : model}
                     </h4>
                   </div>
-                  <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                  <div class="review-card">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Security</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">{repairMode ? 'Repair Mode Enabled' : 'Passcode Provided'}</h4>
                   </div>
                 </div>
 
-                <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div class="review-card">
                   <div class="flex justify-between items-start mb-4">
                     <div>
                       <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Repair Issue(s)</span>
@@ -447,7 +452,7 @@
                         {/each}
                       </div>
                     </div>
-                    <button onclick={() => step = 2} class="text-xs font-bold text-blue-600 uppercase">Edit</button>
+                    <button onclick={() => step = 2} class="text-xs font-bold text-blue-600 uppercase cursor-pointer hover:text-blue-700 focus-visible:ring-1 focus-visible:ring-blue-600 outline-none rounded">Edit</button>
                   </div>
                   <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed italic mb-4">"{description}"</p>
                   
@@ -460,22 +465,22 @@
                   {/if}
                 </div>
 
-                <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div class="review-card flex justify-between items-center">
                   <div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Contact</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">{name}</h4>
                     <span class="text-xs text-slate-500">{phone}</span>
                   </div>
-                  <button onclick={() => step = 3} class="text-xs font-bold text-blue-600 uppercase">Edit</button>
+                  <button onclick={() => step = 3} class="text-xs font-bold text-blue-600 uppercase cursor-pointer hover:text-blue-700 focus-visible:ring-1 focus-visible:ring-blue-600 outline-none rounded">Edit</button>
                 </div>
 
-                <div class="mt-4 p-6 rounded-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 flex gap-4">
+                <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 flex gap-4 transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20">
                   <div class="text-blue-600 flex-shrink-0">
                     <AlertCircle size={24} />
                   </div>
                   <div>
                     <h5 class="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">Diagnosis Fee Notice</h5>
-                    <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">A standard $29 diagnostic fee applies to all intake devices. This fee is **waived** if you proceed with the recommended repair.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">A standard Rp50.000 diagnostic fee applies to all intake devices. This fee is <strong>waived</strong> if you proceed with the recommended repair.</p>
                   </div>
                 </div>
 
@@ -488,7 +493,7 @@
                     class="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
                   />
                   <label for="terms" class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed cursor-pointer select-none">
-                    I acknowledge that a <span class="font-bold text-slate-900 dark:text-white">$29 mandatory diagnosis fee</span> applies. I agree to the <span class="text-blue-600 underline">Terms of Service</span> and authorize technical assessment of my device.
+                    I acknowledge that a <span class="font-bold text-slate-900 dark:text-white">Rp50.000 mandatory diagnosis fee</span> applies. I agree to the <span class="text-blue-600 underline">Terms of Service</span> and authorize technical assessment of my device.
                   </label>
                 </div>
               </div>
@@ -501,7 +506,7 @@
           <button 
             onclick={prevStep}
             disabled={step === 1 || isSubmitting}
-            class="px-6 py-3 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-0 transition-all flex items-center gap-2"
+            class="px-6 py-3 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-0 transition-all flex items-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-slate-400 outline-none"
           >
             <ChevronLeft size={18} />
             Back
@@ -511,7 +516,7 @@
             <button 
               onclick={nextStep}
               disabled={!canContinue}
-              class="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+              class="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none"
             >
               Continue
               <ChevronRight size={18} />
@@ -520,7 +525,7 @@
             <button 
               onclick={handleSubmit}
               disabled={isSubmitting || !canContinue}
-              class="px-10 py-4 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl shadow-blue-600/30 hover:bg-blue-700 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+              class="px-10 py-4 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl shadow-blue-600/30 hover:bg-blue-700 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none"
             >
               {#if isSubmitting}
                 <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -567,21 +572,22 @@
 
     {:else}
       <!-- Success State -->
-      <div in:fly={{ y: 20 }} class="max-w-xl mx-auto text-center py-12">
-        <div class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(34,197,94,0.2)]">
+      <div in:fly={{ y: 30, duration: 600 }} class="max-w-xl mx-auto text-center py-12">
+        <div class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(34,197,94,0.3)] motion-safe:animate-[successPop_0.5s_ease-out]"
+        >
           <CheckCircle2 size={48} />
         </div>
-        <h2 class="text-4xl font-black text-slate-900 dark:text-white mb-4">Ticket Created!</h2>
+        <h2 class="text-4xl font-black text-slate-900 dark:text-white mb-3">Ticket Created!</h2>
         <p class="text-slate-500 dark:text-slate-400 text-lg mb-10 leading-relaxed">
           Your repair ticket <span class="font-bold text-blue-600">#OB-8829</span> has been successfully logged. Please visit our service center with your device to proceed with the diagnostics.
         </p>
         
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-premium mb-10">
-          <div class="flex items-center justify-between mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
             <div class="text-left">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Queue Status</span>
-              <span class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-full text-xs font-bold uppercase tracking-wide">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Queue Status</span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-full text-xs font-bold uppercase tracking-wide">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 motion-safe:animate-pulse"></span>
                 Fast Lane Available
               </span>
             </div>
@@ -591,17 +597,17 @@
             </div>
           </div>
           
-          <div class="space-y-4">
+          <div class="space-y-3">
             <button 
               onclick={() => goto('/track/OB-8829')}
-              class="w-full py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+              class="w-full py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm hover:opacity-90 motion-safe:transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
             >
               Track Progress
               <ChevronRight size={18} />
             </button>
             <button 
               onclick={() => goto('/')}
-              class="w-full py-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+              class="w-full py-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 motion-safe:transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-slate-400 outline-none"
             >
               Return Home
             </button>
@@ -619,6 +625,25 @@
 
   .shadow-soft {
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Consolidated review card utility */
+  .review-card {
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    background-color: rgb(248 250 252 / 1);
+    border: 1px solid rgb(241 245 249 / 1);
+  }
+
+  :global(.dark) .review-card {
+    background-color: rgb(30 41 59 / 0.5);
+    border-color: rgb(30 41 59 / 1);
+  }
+
+  @keyframes successPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
   }
   
   select {
