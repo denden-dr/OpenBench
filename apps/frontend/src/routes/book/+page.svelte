@@ -100,12 +100,28 @@
     return false;
   })());
 
+  function scrollToForm() {
+    const el = document.getElementById('form-container');
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 40;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   function nextStep() {
-    if (step < 4 && canContinue) step++;
+    if (step < 4 && canContinue) {
+      step++;
+      scrollToForm();
+    }
   }
 
   function prevStep() {
-    if (step > 1) step--;
+    if (step > 1) {
+      step--;
+      scrollToForm();
+    }
   }
 
   async function handleSubmit() {
@@ -114,6 +130,10 @@
     await new Promise(resolve => setTimeout(resolve, 2000));
     isSubmitting = false;
     showSuccess = true;
+    
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   }
 
   const progressWidth = $derived((step / 4) * 100);
@@ -154,7 +174,7 @@
       </div>
 
       <!-- Form Container -->
-      <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-premium border border-slate-100 dark:border-slate-800 overflow-hidden min-h-[500px] flex flex-col">
+      <div id="form-container" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-premium border border-slate-100 dark:border-slate-800 overflow-hidden min-h-[500px] flex flex-col">
         
         <div class="flex-1 p-8 sm:p-12">
           {#if step === 1}
@@ -190,7 +210,7 @@
                         bind:value={brand}
                         class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 px-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all appearance-none"
                       >
-                        <option value="">Select Brand</option>
+                        <option value="" disabled selected>Select Brand</option>
                         {#if category === 'phone' || category === 'tablet'}
                           {#each (brands as any)[category] as b}
                             <option value={b}>{b}</option>
@@ -206,7 +226,7 @@
                         bind:value={model}
                         class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 px-6 text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all appearance-none"
                       >
-                        <option value="">Select Model</option>
+                        <option value="" disabled selected>Select Model</option>
                         {#if modelsByBrand[brand]}
                           {#each modelsByBrand[brand] as m}
                             <option value={m}>{m}</option>
@@ -430,19 +450,19 @@
               
               <div class="grid gap-4">
                 <div class="grid sm:grid-cols-2 gap-4">
-                  <div class="review-card">
+                  <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Device</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">
                       {brand} {model === 'Other' ? customModel : model}
                     </h4>
                   </div>
-                  <div class="review-card">
+                  <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Security</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">{repairMode ? 'Repair Mode Enabled' : 'Passcode Provided'}</h4>
                   </div>
                 </div>
 
-                <div class="review-card">
+                <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                   <div class="flex justify-between items-start mb-4">
                     <div>
                       <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Repair Issue(s)</span>
@@ -465,7 +485,7 @@
                   {/if}
                 </div>
 
-                <div class="review-card flex justify-between items-center">
+                <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
                   <div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Contact</span>
                     <h4 class="font-bold text-slate-900 dark:text-white">{name}</h4>
@@ -627,18 +647,7 @@
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
   }
 
-  /* Consolidated review card utility */
-  .review-card {
-    padding: 1.5rem;
-    border-radius: 1.5rem;
-    background-color: rgb(248 250 252 / 1);
-    border: 1px solid rgb(241 245 249 / 1);
-  }
 
-  :global(.dark) .review-card {
-    background-color: rgb(30 41 59 / 0.5);
-    border-color: rgb(30 41 59 / 1);
-  }
 
   @keyframes successPop {
     0% { transform: scale(0.5); opacity: 0; }

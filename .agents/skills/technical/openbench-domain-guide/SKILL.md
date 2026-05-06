@@ -15,7 +15,8 @@ OpenBench (PhoneFix) is a phone repair management system. This is the single sou
 |--------|:-----:|:--------:|:----------:|:-----:|
 | Track ticket (by ID + phone) | ✅ | ✅ | ✅ | ✅ |
 | View service prices | ✅ | ✅ | ✅ | ✅ |
-| Book repair / create ticket | ❌ | ✅ | ❌ | ✅ |
+| Fill booking form (view only) | ✅ | ✅ | ❌ | ✅ |
+| Submit booking / create ticket | ❌ | ✅ | ❌ | ✅ |
 | View own repair history | ❌ | ✅ | ❌ | ✅ |
 | Download invoice/receipt | ❌ | ✅ | ❌ | ✅ |
 | View unassigned ticket queue | ❌ | ❌ | ✅ | ✅ |
@@ -61,7 +62,8 @@ received → diagnosing → waiting_parts → repairing → ready → completed
 
 ### Diagnosis Fee
 - **Mandatory** — displayed before booking, customer must agree via checkbox
-- Charged regardless of whether repair proceeds
+- **Waived when unrepairable** — if the technician determines the device cannot be repaired, the customer pays nothing (zero-amount invoice issued for records)
+- **Charged on customer cancellation** — if the customer voluntarily declines after diagnosis, the diagnosis fee applies
 - Included in final invoice: `Total = diagnosis_fee + labor_fee + Σ(parts)`
 
 ### Warranty Calculation
