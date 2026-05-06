@@ -12,6 +12,20 @@
     Zap,
     QrCode
   } from 'lucide-svelte';
+  import { goto } from '$app/navigation';
+
+  let ticketId = $state('');
+  let phoneLast4 = $state('');
+
+  function handleTrack() {
+    if (ticketId && phoneLast4) {
+      goto(`/track?id=${ticketId}&phone=${phoneLast4}`);
+    } else if (ticketId) {
+      goto(`/track?id=${ticketId}`);
+    } else {
+      goto('/track');
+    }
+  }
 </script>
 
 <div class="flex flex-col">
@@ -105,6 +119,7 @@
             <div class="relative">
               <input 
                 type="text" 
+                bind:value={ticketId}
                 placeholder="e.g. FIX-98231" 
                 class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-colors"
               />
@@ -114,14 +129,19 @@
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Phone Number</label>
             <input 
               type="tel" 
+              bind:value={phoneLast4}
               placeholder="Last 4 digits" 
+              maxlength="4"
               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-colors"
             />
           </div>
-          <a href="/track" class="bg-slate-900 dark:bg-blue-600 text-white w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 dark:hover:bg-blue-700 transition-all active:scale-95">
+          <button 
+            onclick={handleTrack}
+            class="bg-slate-900 dark:bg-blue-600 text-white w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 dark:hover:bg-blue-700 transition-all active:scale-95"
+          >
             <Search size={18} />
             Track Status
-          </a>
+          </button>
         </div>
       </div>
     </div>

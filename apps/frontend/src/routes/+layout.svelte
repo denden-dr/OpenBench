@@ -11,9 +11,9 @@
 
 <div class="relative flex min-h-screen flex-col bg-background selection:bg-blue-100 selection:text-blue-900">
   <!-- Navbar -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-    <div class="container mx-auto px-4">
-      <nav class="h-16 flex items-center justify-between">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-slate-950/70 backdrop-blur-2xl border-b border-slate-200 dark:border-slate-800 shadow-sm shadow-blue-900/5">
+    <div class="container mx-auto px-6">
+      <nav class="h-20 flex items-center justify-between">
         <a href="/" class="flex items-center gap-2.5 group">
           <div class="w-9 h-9 bg-blue-600 text-white rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors shadow-sm">
             <Smartphone size={20} />
@@ -21,24 +21,24 @@
           <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">OpenBench</span>
         </a>
 
-        <div class="hidden md:flex items-center gap-8 font-medium text-slate-600 dark:text-slate-400 text-sm">
-          <a href="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Services & Fees</a>
-          <a href="/track" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Track Status</a>
-          <a href="#warranty" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Our Guarantee</a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="/pricing" class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Services & Fees</a>
+          <a href="/track" class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Track Status</a>
+          <a href="/queue" class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Live Queue</a>
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
           {#if isLoggedIn}
-            <a href="/profile" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">
-              <User size={16} class="text-blue-600" />
+            <a href="/profile" class="flex items-center gap-2.5 px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all shadow-sm">
+              <User size={14} class="text-blue-600" />
               My Profile
             </a>
-            <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all">
+            <button class="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all">
               <LogOut size={18} />
             </button>
           {:else}
-            <a href="/login" class="hidden sm:block px-4 py-2 font-semibold text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Log in</a>
-            <a href="/register" class="px-5 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm inline-flex">
+            <a href="/login" class="hidden sm:block px-6 py-2.5 font-black text-xs uppercase tracking-widest text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">Log in</a>
+            <a href="/signup" class="px-8 py-3 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-600/20 inline-flex">
               Sign up
             </a>
           {/if}
@@ -47,7 +47,7 @@
     </div>
   </header>
 
-  <main class="flex-1">
+  <main class="flex-1 pt-20">
     {@render children()}
   </main>
 
@@ -87,7 +87,7 @@
               <li><a href="/book" class="hover:text-blue-500 transition-colors">Book Repair</a></li>
               <li><a href="/track" class="hover:text-blue-500 transition-colors">Track Status</a></li>
               <li><a href="/pricing" class="hover:text-blue-500 transition-colors">Fee Schedule</a></li>
-              <li><a href="#warranty" class="hover:text-blue-500 transition-colors">Warranty</a></li>
+              <li><a href="/queue" class="hover:text-blue-500 transition-colors">Live Queue</a></li>
             </ul>
           </div>
 

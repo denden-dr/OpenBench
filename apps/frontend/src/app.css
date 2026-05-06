@@ -29,12 +29,14 @@
     --border: #e2e8f0;
   }
 
-  .dark {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --muted: #0f172a;
-    --muted-foreground: #94a3b8;
-    --border: #1e293b;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #020617;
+      --foreground: #f8fafc;
+      --muted: #0f172a;
+      --muted-foreground: #94a3b8;
+      --border: #1e293b;
+    }
   }
 }
 

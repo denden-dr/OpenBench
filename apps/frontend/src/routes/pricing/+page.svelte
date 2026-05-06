@@ -147,35 +147,42 @@
     } else {
       document.body.style.overflow = '';
     }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
   });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 pt-24 pb-12">
+<div class="flex flex-col min-h-screen bg-white dark:bg-slate-950 pt-32 pb-20">
   <!-- Header Section -->
-  <section class="container mx-auto px-4 mb-12 text-center">
-    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-sm font-bold text-blue-700 dark:text-blue-300 mb-6">
-      <AlertCircle size={16} />
+  <section class="container mx-auto px-6 mb-20 text-center relative">
+    <!-- Background Decor -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+    
+    <div class="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-xs font-black text-blue-600 dark:text-blue-400 mb-10 uppercase tracking-widest border border-blue-100 dark:border-blue-800 shadow-sm">
+      <AlertCircle size={14} />
       Flat Rp 50.000 Diagnosis Fee
     </div>
     
-    <h1 class="text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-4">
-      Transparent Pricing. <br class="hidden sm:block"/> Expert Repairs.
+    <h1 class="text-4xl lg:text-6xl font-black text-slate-900 dark:text-white mb-6 uppercase tracking-tight leading-[1.1]">
+      Transparent Pricing.<br/> <span class="text-blue-600">Clinical Precision.</span>
     </h1>
-    <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10">
-      Search for your device below to see estimated repair costs. No hidden fees. If you proceed with the repair, the parts and labor are exactly as quoted.
+    <p class="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-14 font-medium leading-relaxed">
+      Search for your device to see exact repair costs. No hidden fees. If you proceed with the repair, the diagnosis fee is waived.
     </p>
 
     <!-- Brand Tabs -->
-    <div class="flex flex-wrap justify-center gap-2 mb-8">
+    <div class="flex flex-wrap justify-center gap-3 mb-12">
       {#each brands as brand}
         <button 
           onclick={() => selectedBrand = brand}
-          class="px-6 py-2.5 rounded-full text-sm font-bold transition-all border-2 
+          class="px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border
             {selectedBrand === brand 
-              ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20 scale-105' 
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-600/30'}"
+              ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-600/30' 
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-blue-600/30'}"
         >
           {brand}
         </button>
