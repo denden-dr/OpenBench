@@ -285,7 +285,7 @@
 ### Notification System
 > Delivery mechanism TBD (email / SMS / in-app)
 
-Referenced in storyboards but not yet a standalone page. Notifications trigger on:
+Not yet a standalone page. Notifications trigger on:
 - Diagnosis complete → customer
 - Device ready for pickup → customer
 - Waiting for parts → customer
