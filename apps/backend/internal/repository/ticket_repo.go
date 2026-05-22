@@ -12,9 +12,9 @@ import (
 type TicketRepository interface {
 	Create(ctx context.Context, ticket *model.Ticket) error
 	GetByID(ctx context.Context, id string) (*model.Ticket, error)
-	Update(ctx context.Context, ticket *model.Ticket) error
-	List(ctx context.Context) ([]model.Ticket, error)
-	Delete(ctx context.Context, id string) error
+	UpdateStatus(ctx context.Context, id string, newStatus string) error
+	ClaimTicket(ctx context.Context, id string, technicianID string) error
+	ListForBoard(ctx context.Context) ([]model.Ticket, error)
 }
 
 type sqlTicketRepository struct {
@@ -27,34 +27,30 @@ func NewTicketRepository(db *sqlx.DB) TicketRepository {
 
 func (r *sqlTicketRepository) Create(ctx context.Context, ticket *model.Ticket) error {
 	query := `
-		INSERT INTO tickets (customer_name, customer_gender, brand, model, issue, additional_description, accessories, price, status, payment_status, warranty_days)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, entry_date, status, payment_status
-	`
-	return r.db.QueryRowxContext(ctx, query,
-		ticket.CustomerName,
-		ticket.CustomerGender,
+        INSERT INTO tickets (device_type, brand, model, issue_description, diagnosis_fee)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, status, created_at, updated_at
+    `
+
+	err := r.db.QueryRowxContext(ctx, query,
+		ticket.DeviceType,
 		ticket.Brand,
 		ticket.Model,
-		ticket.Issue,
-		ticket.AdditionalDescription,
-		ticket.Accessories,
-		ticket.Price,
-		"service_in", // Default initial status
-		"unpaid",     // Default initial payment status
-		ticket.WarrantyDays,
-	).Scan(&ticket.ID, &ticket.EntryDate, &ticket.Status, &ticket.PaymentStatus)
+		ticket.IssueDescription,
+		ticket.DiagnosisFee,
+	).Scan(&ticket.ID, &ticket.Status, &ticket.CreatedAt, &ticket.UpdatedAt)
+
+	return err
 }
 
 func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ticket, error) {
 	var ticket model.Ticket
 	query := `
-		SELECT id, customer_name, customer_gender, brand, model, issue,
-		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date, warranty_expiry_date
-		FROM tickets
-		WHERE id = $1
-	`
+        SELECT id, device_type, brand, model, issue_description, status, diagnosis_fee, technician_id, created_at, updated_at 
+        FROM tickets 
+        WHERE id = $1
+    `
+
 	err := r.db.GetContext(ctx, &ticket, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -62,32 +58,34 @@ func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ti
 		}
 		return nil, err
 	}
+
 	return &ticket, nil
 }
 
-func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) error {
+func (r *sqlTicketRepository) UpdateStatus(ctx context.Context, id string, newStatus string) error {
+	query := `UPDATE tickets SET status = $1 WHERE id = $2`
+	result, err := r.db.ExecContext(ctx, query, newStatus, id)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *sqlTicketRepository) ClaimTicket(ctx context.Context, id string, technicianID string) error {
 	query := `
 		UPDATE tickets
-		SET customer_name = $1, customer_gender = $2, brand = $3, model = $4, issue = $5,
-		    additional_description = $6, accessories = $7, price = $8, status = $9,
-		    payment_status = $10, warranty_days = $11, exit_date = $12, warranty_expiry_date = $13
-		WHERE id = $14
+		SET status = $1, technician_id = $2
+		WHERE id = $3 AND status = $4
 	`
 	result, err := r.db.ExecContext(ctx, query,
-		ticket.CustomerName,
-		ticket.CustomerGender,
-		ticket.Brand,
-		ticket.Model,
-		ticket.Issue,
-		ticket.AdditionalDescription,
-		ticket.Accessories,
-		ticket.Price,
-		ticket.Status,
-		ticket.PaymentStatus,
-		ticket.WarrantyDays,
-		ticket.ExitDate,
-		ticket.WarrantyExpiryDate,
-		ticket.ID,
+		model.StatusDiagnosing, technicianID, id, model.StatusReceived,
 	)
 	if err != nil {
 		return err
@@ -97,38 +95,20 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 		return err
 	}
 	if rows == 0 {
-		return ErrNotFound
+		return ErrClaimConflict
 	}
 	return nil
 }
 
-func (r *sqlTicketRepository) List(ctx context.Context) ([]model.Ticket, error) {
+func (r *sqlTicketRepository) ListForBoard(ctx context.Context) ([]model.Ticket, error) {
 	var tickets []model.Ticket
 	query := `
-		SELECT id, customer_name, customer_gender, brand, model, issue,
-		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date, warranty_expiry_date
+		SELECT id, device_type, brand, model, status, created_at
 		FROM tickets
-		ORDER BY entry_date DESC
+		ORDER BY created_at DESC
 	`
 	if err := r.db.SelectContext(ctx, &tickets, query); err != nil {
 		return nil, err
 	}
 	return tickets, nil
-}
-
-func (r *sqlTicketRepository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM tickets WHERE id = $1`
-	result, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return ErrNotFound
-	}
-	return nil
 }

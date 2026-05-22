@@ -3,24 +3,31 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 )
 
 var (
-	ErrTicketNotFound = errors.New("ticket not found")
+	ErrTicketNotFound    = errors.New("ticket not found")
+	ErrInvalidTransition = errors.New("invalid status transition")
+	ErrClaimConflict     = errors.New("ticket is already claimed or not in received status")
 )
 
 type TicketService interface {
 	CreateTicket(ctx context.Context, req *dto.CreateTicketRequest) (*dto.TicketResponse, error)
 	GetTicket(ctx context.Context, id string) (*dto.TicketResponse, error)
-	UpdateTicket(ctx context.Context, id string, req *dto.UpdateTicketRequest) (*dto.TicketResponse, error)
-	ListTickets(ctx context.Context) ([]dto.TicketResponse, error)
-	DeleteTicket(ctx context.Context, id string) error
+	ClaimTicket(ctx context.Context, ticketID string, technicianID string) error
+	CompleteDiagnosis(ctx context.Context, ticketID string) error
+	ApproveRepair(ctx context.Context, ticketID string) error
+	CancelRepair(ctx context.Context, ticketID string) error
+	CompleteRepair(ctx context.Context, ticketID string) error
+	MarkPickedUp(ctx context.Context, ticketID string) error
+	ListForBoard(ctx context.Context) ([]dto.TicketBoardDTO, error)
 }
 
 type ticketService struct {
@@ -41,22 +48,11 @@ func (s *ticketService) CreateTicket(ctx context.Context, req *dto.CreateTicketR
 	}
 
 	ticket := &model.Ticket{
-		CustomerName:   req.CustomerName,
-		CustomerGender: req.CustomerGender,
-		Brand:          req.Brand,
-		Model:          req.Model,
-		Issue:          req.Issue,
-		Price:          req.Price,
-		WarrantyDays:   req.WarrantyDays,
-	}
-	if req.AdditionalDescription != "" {
-		ticket.AdditionalDescription = &req.AdditionalDescription
-	}
-	if req.Accessories != "" {
-		ticket.Accessories = &req.Accessories
-	}
-	if ticket.WarrantyDays <= 0 {
-		ticket.WarrantyDays = 30 // Default to 30 days
+		DeviceType:       req.DeviceType,
+		Brand:            req.Brand,
+		Model:            req.Model,
+		IssueDescription: req.IssueDescription,
+		DiagnosisFee:     decimal.NewFromInt(50), // Standard diagnosis fee
 	}
 
 	if err := s.repo.Create(ctx, ticket); err != nil {
@@ -74,126 +70,95 @@ func (s *ticketService) GetTicket(ctx context.Context, id string) (*dto.TicketRe
 		}
 		return nil, err
 	}
-	return s.mapToResponse(ticket), nil
-}
-
-func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.UpdateTicketRequest) (*dto.TicketResponse, error) {
-	if err := s.validate.Struct(req); err != nil {
-		return nil, err
-	}
-
-	ticket, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, ErrTicketNotFound
-		}
-		return nil, err
-	}
-
-	// Apply updates
-	if req.CustomerName != nil {
-		ticket.CustomerName = *req.CustomerName
-	}
-	if req.CustomerGender != nil {
-		ticket.CustomerGender = *req.CustomerGender
-	}
-	if req.Brand != nil {
-		ticket.Brand = *req.Brand
-	}
-	if req.Model != nil {
-		ticket.Model = *req.Model
-	}
-	if req.Issue != nil {
-		ticket.Issue = *req.Issue
-	}
-	if req.AdditionalDescription != nil {
-		if *req.AdditionalDescription == "" {
-			ticket.AdditionalDescription = nil
-		} else {
-			ticket.AdditionalDescription = req.AdditionalDescription
-		}
-	}
-	if req.Accessories != nil {
-		if *req.Accessories == "" {
-			ticket.Accessories = nil
-		} else {
-			ticket.Accessories = req.Accessories
-		}
-	}
-	if req.Price != nil {
-		ticket.Price = *req.Price
-	}
-	if req.WarrantyDays != nil {
-		ticket.WarrantyDays = *req.WarrantyDays
-	}
-
-	// Status change logic
-	if req.Status != nil && *req.Status != ticket.Status {
-		ticket.Status = *req.Status
-		if *req.Status == "picked_up" {
-			// When picked up, it is the payment moment
-			ticket.PaymentStatus = "paid"
-			now := time.Now()
-			ticket.ExitDate = &now
-			expiry := now.AddDate(0, 0, ticket.WarrantyDays)
-			ticket.WarrantyExpiryDate = &expiry
-		} else {
-			// Transitioning to any other status clears exit and warranty dates
-			ticket.ExitDate = nil
-			ticket.WarrantyExpiryDate = nil
-		}
-	}
-	if req.PaymentStatus != nil {
-		ticket.PaymentStatus = *req.PaymentStatus
-	}
-
-	if err := s.repo.Update(ctx, ticket); err != nil {
-		return nil, err
-	}
 
 	return s.mapToResponse(ticket), nil
 }
 
-func (s *ticketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, error) {
-	tickets, err := s.repo.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	responses := make([]dto.TicketResponse, len(tickets))
-	for i, t := range tickets {
-		responses[i] = *s.mapToResponse(&t)
-	}
-	return responses, nil
-}
-
-func (s *ticketService) DeleteTicket(ctx context.Context, id string) error {
-	err := s.repo.Delete(ctx, id)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return ErrTicketNotFound
+func (s *ticketService) ClaimTicket(ctx context.Context, ticketID string, technicianID string) error {
+	if err := s.repo.ClaimTicket(ctx, ticketID, technicianID); err != nil {
+		if errors.Is(err, repository.ErrClaimConflict) {
+			return ErrClaimConflict
 		}
 		return err
 	}
 	return nil
 }
 
+// transitionStatus is a private helper that validates and executes a status transition.
+func (s *ticketService) transitionStatus(ctx context.Context, ticketID string, expectedCurrent string, newStatus string) error {
+	ticket, err := s.repo.GetByID(ctx, ticketID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return ErrTicketNotFound
+		}
+		return err
+	}
+	if ticket.Status != expectedCurrent {
+		return fmt.Errorf("%w: cannot move from '%s' to '%s'", ErrInvalidTransition, ticket.Status, newStatus)
+	}
+	return s.repo.UpdateStatus(ctx, ticketID, newStatus)
+}
+
+func (s *ticketService) CompleteDiagnosis(ctx context.Context, ticketID string) error {
+	return s.transitionStatus(ctx, ticketID, model.StatusDiagnosing, model.StatusPendingApproval)
+}
+
+func (s *ticketService) ApproveRepair(ctx context.Context, ticketID string) error {
+	return s.transitionStatus(ctx, ticketID, model.StatusPendingApproval, model.StatusRepairing)
+}
+
+func (s *ticketService) CancelRepair(ctx context.Context, ticketID string) error {
+	return s.transitionStatus(ctx, ticketID, model.StatusPendingApproval, model.StatusCancelled)
+}
+
+func (s *ticketService) CompleteRepair(ctx context.Context, ticketID string) error {
+	return s.transitionStatus(ctx, ticketID, model.StatusRepairing, model.StatusReady)
+}
+
+func (s *ticketService) MarkPickedUp(ctx context.Context, ticketID string) error {
+	ticket, err := s.repo.GetByID(ctx, ticketID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return ErrTicketNotFound
+		}
+		return err
+	}
+	if ticket.Status != model.StatusReady && ticket.Status != model.StatusCancelled {
+		return fmt.Errorf("%w: cannot pick up from '%s'", ErrInvalidTransition, ticket.Status)
+	}
+	return s.repo.UpdateStatus(ctx, ticketID, model.StatusPickedUp)
+}
+
+func (s *ticketService) ListForBoard(ctx context.Context) ([]dto.TicketBoardDTO, error) {
+	tickets, err := s.repo.ListForBoard(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	board := make([]dto.TicketBoardDTO, len(tickets))
+	for i, t := range tickets {
+		board[i] = dto.TicketBoardDTO{
+			ID:         t.ID,
+			DeviceType: t.DeviceType,
+			Brand:      t.Brand,
+			Model:      t.Model,
+			Status:     t.Status,
+			CreatedAt:  t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+	}
+	return board, nil
+}
+
 func (s *ticketService) mapToResponse(ticket *model.Ticket) *dto.TicketResponse {
 	return &dto.TicketResponse{
-		ID:                    ticket.ID,
-		CustomerName:          ticket.CustomerName,
-		CustomerGender:        ticket.CustomerGender,
-		Brand:                 ticket.Brand,
-		Model:                 ticket.Model,
-		Issue:                 ticket.Issue,
-		AdditionalDescription: ticket.AdditionalDescription,
-		Accessories:           ticket.Accessories,
-		Price:                 ticket.Price,
-		Status:                ticket.Status,
-		PaymentStatus:         ticket.PaymentStatus,
-		WarrantyDays:          ticket.WarrantyDays,
-		EntryDate:             ticket.EntryDate,
-		ExitDate:              ticket.ExitDate,
-		WarrantyExpiryDate:    ticket.WarrantyExpiryDate,
+		ID:               ticket.ID,
+		DeviceType:       ticket.DeviceType,
+		Brand:            ticket.Brand,
+		Model:            ticket.Model,
+		IssueDescription: ticket.IssueDescription,
+		Status:           ticket.Status,
+		DiagnosisFee:     ticket.DiagnosisFee,
+		CreatedAt:        ticket.CreatedAt,
+		UpdatedAt:        ticket.UpdatedAt,
 	}
 }
