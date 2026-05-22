@@ -1,5 +1,11 @@
 # Frontend UI Pages Spec
 
+> [!NOTE]
+> This document describes the **planned multi-role future version** of OpenBench (public booking,
+> customer portal, technician workspace, full admin). The **current implementation** is a
+> simplified single-user admin dashboard (`/`). The canonical ticket status enum for both the
+> current and future versions is: `service_in` → `on_process` → `fixed` → `picked_up`.
+
 ## Public
 
 ### Landing Page
@@ -39,7 +45,7 @@
 
 - **Search Form**: Ticket ID + Phone Number inputs
 - **Result Card** (sanitized):
-    - Current status badge (received / diagnosing / repairing / ready / completed / cancelled)
+    - Current status badge (`service_in` / `on_process` / `fixed` / `picked_up`)
     - Device brand & model
     - Estimated ready date
 - **Not Shown**: Internal notes, photos, payment details, customer identity
