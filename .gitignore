@@ -59,3 +59,7 @@ tmp/
 temp/
 __pycache__/
 *.py[cod]
+
+# Antigravity CLI
+.antigravitycli/
+
