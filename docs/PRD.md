@@ -44,6 +44,9 @@ A single-user admin dashboard designed for local phone repair business owners to
 *   **Dates Logic:**
     *   When moving to `picked_up`, `exit_date` is recorded, `payment_status` is set to `paid`, and `warranty_expiry_date` is automatically calculated from `warranty_days`.
     *   Moving from `picked_up` back to any other status clears `exit_date` and `warranty_expiry_date`.
+*   **Cancellation/Removal:**
+    *   `cancelled` is not a valid repair status. The current single-user dashboard removes cancelled jobs through ticket deletion.
+    *   Future retained cancellation records must store closure metadata and audit history separately from the four-status lifecycle.
 
 ## 4. Technical Architecture
 

@@ -5,6 +5,10 @@
 > customer portal, technician workspace, full admin). The **current implementation** is a
 > simplified single-user admin dashboard (`/`). The canonical ticket status enum for both the
 > current and future versions is: `service_in` → `on_process` → `fixed` → `picked_up`.
+> Cancellation, declined repairs, and unrepairable outcomes are not ticket statuses. They must be
+> represented as separate closure metadata (`cancelled_at`, `cancelled_by`,
+> `cancellation_reason`, `closure_type`) plus an audit entry, while the ticket keeps its last
+> canonical status for lifecycle reporting.
 
 ## Public
 
@@ -127,7 +131,7 @@
     - Technician findings
     - Fee breakdown: diagnosis fee + labor fee + parts list with prices
     - Estimated completion date
-    - **Action buttons**: Confirm to proceed / Decline (triggers admin cancellation)
+    - **Action buttons**: Confirm to proceed / Decline (triggers admin closure metadata, not a new status)
 - **Repair Updates** (visible during `on_process`):
     - Progress notes (if any public-facing ones exist)
     - Waiting for parts notice (if technician has flagged parts needed)
@@ -176,7 +180,7 @@
     - Diagnosis findings (visible to customer)
     - Fee breakdown: diagnosis fee, labor fee
     - Estimated completion time (date picker)
-    - Mark as unrepairable toggle (sends to admin for cancellation)
+    - Mark as unrepairable toggle (sends to admin for closure with `closure_type=unrepairable`)
     - Submit diagnosis → status moves to `on_process`
 - **Parts Logging (POS-style)** (active during `on_process`):
     - Search/select parts from inventory
@@ -240,7 +244,7 @@
 - **Ticket Detail View** (click to expand or navigate):
     - Full ticket info (same as technician view but read-only for technical fields)
     - **Admin Actions**:
-        - Cancel ticket (with mandatory reason field → logged to audit)
+        - Close/cancel ticket (mandatory reason field → stores closure metadata and audit log; does not set `status=cancelled`)
         - Reassign technician
         - Override status (emergency use, logged to audit)
         - Confirm cash payment received → moves ticket to `picked_up`
