@@ -81,7 +81,7 @@
 > Route: `/queue`  
 > Auth: Public
 
-- **Kanban-style board**: Columns by status (Received → Diagnosing → Repairing → Ready)
+- **Kanban-style board**: Columns by status (`service_in` → `on_process` → `fixed` → `picked_up`)
 - **Each card shows**: Masked Ticket ID, brand, model, current status
 - **Anonymized**: No names, phone numbers, or identifying info
 - **Real-time updates**: Auto-refresh or WebSocket
@@ -121,24 +121,24 @@
 > Auth: Customer (owner only)
 
 - **Header**: Ticket ID, status badge, device brand + model
-- **Timeline / Status Progress**: Visual step indicator (received → diagnosing → ... → completed)
+- **Timeline / Status Progress**: Visual step indicator (`service_in` → `on_process` → `fixed` → `picked_up`)
 - **Device Info**: Type, brand, model, issue description, accessories checklist
-- **Diagnosis Section** (visible after `diagnosing`):
+- **Diagnosis Section** (visible after `on_process` begins):
     - Technician findings
     - Fee breakdown: diagnosis fee + labor fee + parts list with prices
     - Estimated completion date
     - **Action buttons**: Confirm to proceed / Decline (triggers admin cancellation)
-- **Repair Updates** (visible during `repairing`):
+- **Repair Updates** (visible during `on_process`):
     - Progress notes (if any public-facing ones exist)
-    - Waiting for parts notice (if `waiting_parts`)
+    - Waiting for parts notice (if technician has flagged parts needed)
 - **Before & After Photos** (visible after uploaded):
     - Gallery with privacy controls (blur toggle, download option)
-- **Payment Section** (visible at `ready`):
+- **Payment Section** (visible when status is `fixed`):
     - Total amount breakdown
     - Payment method selection: Cash / Online (Midtrans)
     - Payment status badge (pending / completed / failed)
     - Retry button (if payment failed)
-- **Warranty Info** (visible after `completed`):
+- **Warranty Info** (visible after `picked_up`):
     - Warranty expiry date
     - Parts used with grades
 - **Invoice Download**: PDF button (available after payment)
@@ -169,34 +169,34 @@
 - **Header**: Ticket ID, status, customer name, device info
 - **Customer Info Panel**: Name, phone, issue description, accessories checklist, access info
 - **Photo Upload Section**:
-    - "Before" photos — upload during `diagnosing`
-    - "After" photos — upload during `repairing` / before `ready`
-- **Diagnosis Form** (active during `diagnosing`):
+    - "Before" photos — upload at `on_process` start
+    - "After" photos — upload during `on_process` / before `fixed`
+- **Diagnosis Form** (active during `on_process`):
     - Technical notes (internal, not visible to customer)
     - Diagnosis findings (visible to customer)
     - Fee breakdown: diagnosis fee, labor fee
     - Estimated completion time (date picker)
     - Mark as unrepairable toggle (sends to admin for cancellation)
-    - Submit diagnosis → status moves to `waiting_customer_confirm`
-- **Parts Logging (POS-style)** (active during `repairing`):
+    - Submit diagnosis → status moves to `on_process`
+- **Parts Logging (POS-style)** (active during `on_process`):
     - Search/select parts from inventory
     - Set quantity per part
     - Part grade + price auto-filled from inventory
     - Running total displayed
     - Stock validation (insufficient stock → error, blocks submission)
 - **Status Actions**:
-    - `diagnosing` → Submit diagnosis
-    - `waiting_parts` → Flag (with note about needed parts)
-    - `repairing` → Mark as ready (triggers accessory return reminder modal)
-- **Accessory Return Reminder**: Modal/checklist when marking `ready`
+    - `on_process` → Submit diagnosis / log parts
+    - Flag parts needed (with note)
+    - `on_process` → Mark as fixed (triggers accessory return reminder modal)
+- **Accessory Return Reminder**: Modal/checklist when marking `fixed`
     - SIM card returned? ☐
     - Case returned? ☐
     - SD card returned? ☐
     - Other items from booking? ☐
-- **Re-diagnosis Flow** (if critical problem found during `repairing`):
-    - "Flag Additional Problem" button → resets to `diagnosing`
+- **Re-diagnosis Flow** (if critical problem found during `on_process`):
+    - "Flag Additional Problem" button → resets to `on_process`
     - Updated diagnosis form with original + new findings
-    - Submit updated cost estimate → `waiting_customer_confirm`
+    - Submit updated cost estimate → `on_process`
 
 ---
 
@@ -214,7 +214,7 @@
 - **Alerts Panel**:
     - Low stock alerts (parts below threshold)
     - Pending payments requiring reconciliation
-    - Tickets in `waiting_parts` status
+    - Tickets in `on_process` status with parts flagged needed
 - **Quick Actions**: Links to Ticket Management, Inventory, Payments
 
 ### User Management Page
@@ -243,7 +243,7 @@
         - Cancel ticket (with mandatory reason field → logged to audit)
         - Reassign technician
         - Override status (emergency use, logged to audit)
-        - Confirm cash payment received → moves ticket to `completed`
+        - Confirm cash payment received → moves ticket to `picked_up`
 
 ### Inventory Management Page
 > Route: `/admin/inventory`  
@@ -266,7 +266,7 @@
     - Columns: Payment ID, Ticket ID, customer name, amount, method (cash / online), status, date
 - **Status Filter**: All / Pending / Completed / Failed
 - **Actions**:
-    - Confirm cash payment → moves ticket to `completed`
+    - Confirm cash payment → moves ticket to `picked_up`
     - View Midtrans transaction details (external ID, webhook status)
     - Issue refund (if applicable, logs to audit)
 - **Reconciliation View**: Unmatched payments, discrepancies
