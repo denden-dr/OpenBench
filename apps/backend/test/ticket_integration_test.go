@@ -88,6 +88,74 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 	s.Len(tickets, 1)
 }
 
+// TestDashboardStatusFlow is the contract test that exercises the exact status
+// sequence the dashboard uses: service_in → on_process → fixed → picked_up.
+// It verifies that each transition is accepted by the backend and that the
+// picked_up side effects (payment_status=paid, exit_date, warranty_expiry_date)
+// are correctly applied.
+func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
+	// 1. Create a ticket — initial status must be service_in
+	reqBody := map[string]interface{}{
+		"customer_name":   "Andi",
+		"customer_gender": "Male",
+		"brand":           "Samsung",
+		"model":           "Galaxy S23",
+		"issue":           "Layar Retak",
+		"price":           850000,
+		"warranty_days":   14,
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var createRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	data := createRes["data"].(map[string]interface{})
+	id := data["id"].(string)
+	s.Equal("service_in", data["status"])
+	s.Equal("unpaid", data["payment_status"])
+
+	patchStatus := func(newStatus string) map[string]interface{} {
+		body, _ := json.Marshal(map[string]interface{}{"status": newStatus})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Require().Equal(http.StatusOK, patchResp.StatusCode,
+			"PATCH to status=%q returned non-200", newStatus)
+		var res map[string]interface{}
+		_ = json.NewDecoder(patchResp.Body).Decode(&res)
+		s.True(res["success"].(bool), "success=false for status=%q", newStatus)
+		return res["data"].(map[string]interface{})
+	}
+
+	// 2. service_in → on_process (Quick Action: "Start Process")
+	onProcessData := patchStatus("on_process")
+	s.Equal("on_process", onProcessData["status"])
+	s.Equal("unpaid", onProcessData["payment_status"])
+	s.Nil(onProcessData["exit_date"])
+	s.Nil(onProcessData["warranty_expiry_date"])
+
+	// 3. on_process → fixed (Quick Action: "Mark Fixed")
+	fixedData := patchStatus("fixed")
+	s.Equal("fixed", fixedData["status"])
+	s.Equal("unpaid", fixedData["payment_status"])
+	s.Nil(fixedData["exit_date"])
+	s.Nil(fixedData["warranty_expiry_date"])
+
+	// 4. fixed → picked_up (Quick Action: "Pickup & Pay")
+	//    Side effects: payment_status=paid, exit_date set, warranty_expiry_date set
+	pickedUpData := patchStatus("picked_up")
+	s.Equal("picked_up", pickedUpData["status"])
+	s.Equal("paid", pickedUpData["payment_status"])
+	s.NotEmpty(pickedUpData["exit_date"], "exit_date must be set on picked_up")
+	s.NotEmpty(pickedUpData["warranty_expiry_date"], "warranty_expiry_date must be set on picked_up")
+}
+
 func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	// 1. Create a ticket first
 	reqBody := map[string]interface{}{
@@ -112,7 +180,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	data := createRes["data"].(map[string]interface{})
 	id := data["id"].(string)
 
-	// 2. Update status to picked_up
+	// 2. Update status to picked_up (final state — triggers side effects)
 	updateBody := map[string]interface{}{
 		"status": "picked_up",
 	}
@@ -132,9 +200,9 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	s.NotEmpty(dataUpdate["exit_date"])
 	s.NotEmpty(dataUpdate["warranty_expiry_date"])
 
-	// 3. Update status back to repaired (exit_date and warranty should clear)
+	// 3. Update status back to fixed (exit_date and warranty should clear)
 	updateBodyBack := map[string]interface{}{
-		"status": "repaired",
+		"status": "fixed",
 	}
 	updateBytesBack, _ := json.Marshal(updateBodyBack)
 	reqUpdateBack, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(updateBytesBack))
@@ -147,7 +215,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	var updateResBack map[string]interface{}
 	_ = json.NewDecoder(respUpdateBack.Body).Decode(&updateResBack)
 	dataUpdateBack := updateResBack["data"].(map[string]interface{})
-	s.Equal("repaired", dataUpdateBack["status"])
+	s.Equal("fixed", dataUpdateBack["status"])
 	s.Nil(dataUpdateBack["exit_date"])
 	s.Nil(dataUpdateBack["warranty_expiry_date"])
 
@@ -173,7 +241,6 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 		s.Equal(0.0, dataUpdatePrice["price"].(float64))
 	}
 }
-
 
 func (s *TicketIntegrationTestSuite) TestDeleteTicket() {
 	// 1. Create a ticket
@@ -226,4 +293,37 @@ func (s *TicketIntegrationTestSuite) TestValidation() {
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+func (s *TicketIntegrationTestSuite) TestInvalidStatusRejected() {
+	// Create a ticket first
+	reqBody := map[string]interface{}{
+		"customer_name":   "Test",
+		"customer_gender": "Male",
+		"brand":           "Xiaomi",
+		"model":           "Redmi Note 12",
+		"issue":           "Speaker Mati",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var createRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	id := createRes["data"].(map[string]interface{})["id"].(string)
+
+	// Try patching with a legacy/invalid status — must be rejected with 400
+	for _, badStatus := range []string{"diagnostics", "in_progress", "waiting_parts", "repaired", "cancelled", "done", "cancel"} {
+		body, _ := json.Marshal(map[string]interface{}{"status": badStatus})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusBadRequest, patchResp.StatusCode,
+			"expected 400 for invalid status %q", badStatus)
+	}
 }
