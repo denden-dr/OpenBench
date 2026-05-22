@@ -18,9 +18,11 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'tickets' AND column_name = 'price'
   ) THEN
-    -- Rename carries the column data and constraints along with it.
+    -- Rename carries the column data (including existing fee values) along with it.
     ALTER TABLE tickets RENAME COLUMN diagnosis_fee TO price;
-    -- Drop the NOT NULL constraint so the column accepts the DEFAULT below.
+    -- Set a DEFAULT so subsequent ADD COLUMN IF NOT EXISTS for price is a no-op
+    -- and any new rows without an explicit value get 0.00.
+    ALTER TABLE tickets ALTER COLUMN price DROP NOT NULL;
     ALTER TABLE tickets ALTER COLUMN price SET DEFAULT 0.00;
   END IF;
 END;
@@ -109,35 +111,98 @@ END;
 $$;
 
 -- =========================================================================
--- Step 6: Map legacy status values to the canonical four-state enum.
+-- Step 6: Map ALL known legacy status values to the canonical four-state enum.
 --
 --   Legacy → Canonical
---   received                             → service_in   (just dropped off)
---   diagnostics / in_progress /
---     waiting_parts / waiting_customer_confirm → on_process (active work)
---   repaired / ready                    → fixed         (done, awaiting pickup)
---   picked_up / completed               → picked_up     (closed)
---   cancelled                           → picked_up     (closed; deliberate
---                                          product decision — no cancel state
---                                          in the simplified workflow)
+--   received                                       → service_in
+--   diagnosing / diagnostics / in_progress /
+--     waiting_parts / waiting_customer_confirm /
+--     repairing                                    → on_process
+--   repaired / ready                               → fixed
+--   completed / picked_up / cancelled              → picked_up
+--
+-- The ELSE branch is intentionally omitted so any unexpected value is caught
+-- by the safety UPDATE immediately below.
 -- =========================================================================
 UPDATE tickets
 SET status = CASE status
   WHEN 'received'                  THEN 'service_in'
+  WHEN 'diagnosing'                THEN 'on_process'
   WHEN 'diagnostics'               THEN 'on_process'
   WHEN 'in_progress'               THEN 'on_process'
   WHEN 'waiting_parts'             THEN 'on_process'
   WHEN 'waiting_customer_confirm'  THEN 'on_process'
+  WHEN 'repairing'                 THEN 'on_process'
   WHEN 'repaired'                  THEN 'fixed'
   WHEN 'ready'                     THEN 'fixed'
   WHEN 'completed'                 THEN 'picked_up'
   WHEN 'cancelled'                 THEN 'picked_up'
-  ELSE status   -- service_in / on_process / fixed / picked_up pass through
-END
-WHERE status NOT IN ('service_in', 'on_process', 'fixed', 'picked_up');
+  -- Canonical values pass through unchanged:
+  WHEN 'service_in'                THEN 'service_in'
+  WHEN 'on_process'                THEN 'on_process'
+  WHEN 'fixed'                     THEN 'fixed'
+  WHEN 'picked_up'                 THEN 'picked_up'
+  -- Safety net: anything not matched above maps to service_in so no row
+  -- is left outside the canonical enum.
+  ELSE 'service_in'
+END;
+
+-- Safety guard: assert no non-canonical status survived the mapping above.
+-- Raises an exception if any row slipped through, surfacing the value so it
+-- can be added to the CASE in a follow-up migration.
+DO $$
+DECLARE
+  bad_count INTEGER;
+  bad_sample TEXT;
+BEGIN
+  SELECT COUNT(*), MIN(status)
+  INTO bad_count, bad_sample
+  FROM tickets
+  WHERE status NOT IN ('service_in', 'on_process', 'fixed', 'picked_up');
+
+  IF bad_count > 0 THEN
+    RAISE EXCEPTION
+      'Migration 000004 status mapping incomplete: % row(s) still have '
+      'non-canonical status (sample: %). Add the value to the CASE and re-run.',
+      bad_count, bad_sample;
+  END IF;
+END;
+$$;
 
 -- =========================================================================
--- Step 7: Archive satellite tables rather than dropping them.
+-- Step 7: Backfill final-state invariants for rows that were already
+--         completed or picked_up before migration.
+--
+--   The ticket service sets these three fields atomically when a ticket
+--   transitions to picked_up at runtime. Rows migrated from 'completed'
+--   or pre-existing 'picked_up' rows may be missing them, which would
+--   cause the frontend revenue logic to ignore them (exit_date IS NULL).
+-- =========================================================================
+UPDATE tickets
+SET
+  payment_status      = 'paid',
+  exit_date           = COALESCE(
+                          exit_date,
+                          updated_at,
+                          entry_date,
+                          created_at,
+                          CURRENT_TIMESTAMP
+                        ),
+  warranty_expiry_date = COALESCE(
+                           warranty_expiry_date,
+                           COALESCE(
+                             exit_date,
+                             updated_at,
+                             entry_date,
+                             created_at,
+                             CURRENT_TIMESTAMP
+                           ) + (warranty_days || ' days')::INTERVAL
+                         )
+WHERE status = 'picked_up'
+  AND (payment_status != 'paid' OR exit_date IS NULL OR warranty_expiry_date IS NULL);
+
+-- =========================================================================
+-- Step 8: Archive satellite tables rather than dropping them.
 --         Tables are renamed to *_archived so data is recoverable.
 -- =========================================================================
 DO $$
