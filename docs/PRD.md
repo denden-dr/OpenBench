@@ -1,82 +1,138 @@
 # PRD - Phone Repair Management System
 
 ## 1. Project Overview
-A single-user admin dashboard designed for local phone repair business owners to track and manage repair tickets in one central web interface. The system replaces complex multi-role workflows and external tracking boards with a direct, single-user dashboard that contains all repair statuses, intake forms, ticket search, and quick stat summary metrics.
+A web application designed to manage the end-to-end workflow of a phone repair business. The system serves both customers (booking and tracking) and staff (workflow and inventory management).
 
 ## 2. User Roles & Permissions
 
 | Role | Access Level | Primary Responsibilities |
 | :--- | :--- | :--- |
-| **Admin/Owner** | Full Access | Full dashboard access: intake new devices, update repair statuses, set payment outcomes, search tickets, and track repair metrics. |
-
-*Note: Authentication and multi-user roles are removed to simplify local management.*
+| **Guest/Public** | Unauthenticated | Track repair status via Ticket ID, view service prices, and view the live Public Status Board. |
+| **Customer** | Authenticated | Manage profile, book new repairs, view full repair history. |
+| **Technician** | Authenticated | View assigned tickets, update repair status, log parts used, add technical notes. |
+| **Admin** | Authenticated | Full system access: manage inventory, users, financial reporting, and system settings. |
 
 ## 3. Functional Requirements
 
-### 3.1 Repair Ticket Intake & Form
-*   **Ticket Creation Form:** Admin can register a new device repair by providing:
-    *   **Customer Details:** Customer Name and Gender (Male / Female).
-    *   **Device Specs:** Brand and Model.
-    *   **Issue:** Primary repair issue (e.g., LCD, battery replacement).
-    *   **Additional Details:** Accessory checklist (SIM, Case, SD Card, etc.) and custom notes.
-    *   **Financials:** Quote price and Warranty period in days.
-*   **Struct Validation:** Inputs like Gender, Status, and Payment Status are fully validated on submission.
+### 3.1 Customer Features
+*   **Booking System:** Multi-step form to select Device -> Brand -> Model -> Issue.
+    *   **Device Access:** Request **Passcode/Pattern** OR instruction to enable **Repair/Maintenance Mode** (for supported devices).
+    *   **Fee Transparency:** Explicitly display the **Mandatory Diagnosis Fee** before booking.
+    *   **Accessory Tracking:** Checklist for items left with the device (SIM, Case, SD Card, etc.).
+    *   **Terms Agreement:** Required checkbox acknowledging the diagnosis fee and terms of service.
+*   **Public Tracker:** Search by Ticket ID + Phone Number to see real-time status.
+    *   **Public Status Board**: A live, Kanban-style dashboard accessible without authentication. Displays active repairs using sanitized data (Masked Ticket ID, Brand, Model, and Status) to protect customer privacy.
+*   **Intake Receipt:** Ability to download/print a PDF receipt with a **QR Code** for easy status tracking and proof of drop-off.
+*   **Profile Management:** View active and past repairs, download invoices.
 
-### 3.2 Main Repair Admin Dashboard
-*   **Performance Metrics (Stats Cards):** Real-time calculations of:
-    *   **Total Revenue:** Total price of completed and paid repairs.
-    *   **Active Repairs:** Count of tickets in active progress.
-    *   **Completed Today:** Number of tickets completed on the current date.
-    *   **Unpaid Repairs:** Value/count of repairs ready or completed but not yet paid.
-*   **Ticket Management Table:** List showing all registered tickets with filters/sorting.
-*   **Inline Edit Drawer:** Select any ticket to slide out a quick-edit panel for updating statuses, payment states, warranties, and pricing.
-*   **Ticket Deletion:** Admin can permanently delete tickets from the registry.
+### 3.2 Staff & Technician Features
+*   **Ticket Queue:** View all unassigned tickets that are ready for diagnosis.
+*   **Claim Ticket:** Technicians can "Take" a ticket, which assigns it to them and updates the status to 'diagnosing'.
+*   **Diagnosis & Estimating:** Add technical notes, diagnostic results, and a mandatory **Estimated Completion Time** (visible to customer).
+*   **Media Documentation:** Upload "Before" photos during diagnosis and "After" photos upon completion for liability protection.
+*   **Internal Comments:** Add private notes or technical updates that aren't visible to the customer.
+*   **Status Management:** One-click status updates for their assigned tickets with return-accessory reminders.
 
-### 3.3 Status & Workflows
-*   **Repair Statuses (canonical enum):**
-    *   `service_in`: Newly received ticket (default on intake).
-    *   `on_process`: Device is actively being diagnosed or repaired.
-    *   `fixed`: Repair complete, waiting for customer collection.
-    *   `picked_up`: Device retrieved by customer. This is the payment moment.
-*   **Payment Statuses:**
-    *   `unpaid`: Repair is not yet settled.
-    *   `paid`: Payment successfully received.
-*   **Dates Logic:**
-    *   When moving to `picked_up`, `exit_date` is recorded, `payment_status` is set to `paid`, and `warranty_expiry_date` is automatically calculated from `warranty_days`.
-    *   Moving from `picked_up` back to any other status clears `exit_date` and `warranty_expiry_date`.
+### 3.3 Admin & Operations
+*   **Inventory Manager:** Track stock levels and specify **Part Grade** (ODM vs Original) for each item.
+*   **Warranty Management:** Automatically calculate warranty expiry based on part grade (ODM: 7 days, Original: 30 days).
+*   **Invoicing & Payments:** Auto-calculate totals: `Diagnosis Fee + Labor Fee + Parts`. Support for **Cash** and **Online Payments** (Midtrans).
+*   **Audit Logging:** Automatic tracking of all sensitive actions (status changes, price updates, inventory adjustments).
+*   **Reporting:** Monthly revenue, most common issues, and technician performance.
 
 ## 4. Technical Architecture
 
 ### 4.1 Frontend (Svelte)
-*   **Framework:** SvelteKit (Single Page App style).
-*   **Styling:** Vanilla CSS styled with custom CSS variables and Tailwind classes.
-*   **Component Structure:** Main dashboard layout (`+page.svelte`), intake modal, slide-out drawer, stats card, and search filter modules.
+*   **Framework:** SvelteKit (for routing and SSR/SPA hybrid).
+*   **Styling:** Vanilla CSS / Modern CSS Variables (for high-performance, premium feel).
+*   **State Management:** Svelte Stores for auth and UI state.
 
 ### 4.2 Backend (Go + Fiber)
-*   **API Framework:** Fiber (Go HTTP web framework).
-*   **Database:** PostgreSQL (Relational storage).
-*   **CORS & Proxy:** Local Vite development proxy configs to forward frontend `/api/*` traffic to the backend server.
+*   **API Framework:** Fiber (Express-like, high performance).
+*   **Database:** PostgreSQL (Relational data for tickets, parts, and users).
+*   **Data Sanitization Strategy:** Public-facing APIs (like the Status Board endpoint) must use strict struct mapping. This guarantees that only safe, non-identifying fields (e.g., masked IDs, status enums) are serialized and sent to unauthenticated clients, actively preventing accidental data leaks.
+*   **Auth:** Supabase Auth integration. Backend will verify Supabase JWTs.
+*   **File Storage:** Supabase Storage or S3-compatible storage.
+### 4.3 System Flow
+For a detailed sequence diagram of the Client -> Frontend -> Backend flow, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ## 5. Data Model (Schema)
 
-### 5.1 Tickets Table
-All details are stored in a single table for maximum query simplicity.
+### 5.1 Users Table
+*   `id`: Primary Key (UUID)
+*   `supabase_uid`: UUID (Unique, maps to Supabase auth.users.id)
+*   `email`: String (Unique)
+*   `role`: Enum (admin, technician, customer)
+*   `name`: String
 
-*   `id`: UUID (Primary Key, automatically generated)
-*   `customer_name`: Text (Name of the customer)
-*   `customer_gender`: Text (Validated: Male, Female)
-*   `brand`: Text (Device brand)
-*   `model`: Text (Device model)
-*   `issue`: Text (Primary repair request details)
-*   `additional_description`: Text (Optional, detailed description or repair notes)
-*   `accessories`: Text (List of physical accessories left with the device)
-*   `price`: Decimal (Total cost of repair)
-*   `status`: Text (Validated: `service_in`, `on_process`, `fixed`, `picked_up`)
-*   `payment_status`: Text (Validated: `unpaid`, `paid`)
-*   `warranty_days`: Integer (Warranty coverage duration)
-*   `entry_date`: Timestamp (Date device entered the shop)
-*   `exit_date`: Timestamp (Date device left the shop or was completed)
-*   `warranty_expiry_date`: Timestamp (Automatically calculated upon completion)
+### 5.2 Customers Table
+*   `id`: Primary Key (UUID)
+*   `user_id`: Foreign Key (Users.id)
+*   `phone`: String
+*   `address`: Text
+
+### 5.3 Tickets Table
+*   `id`: Primary Key (UUID/ShortID) - Note: Must be masked (e.g., ...A9F2) when displayed on the Public Status Board.
+*   `customer_id`: Foreign Key (Customers.id)
+*   `device_type`: Enum (Android, Apple)
+*   `brand`: String
+*   `model`: String
+*   `issue_description`: Text
+*   `device_access_info`: String (Passcode or "Repair Mode Enabled")
+*   `accessories`: JSON/Text (List of items like SIM, Case, etc.)
+*   `diagnosis_fee`: Decimal (Mandatory)
+*   `labor_fee`: Decimal
+*   `status`: Enum (received, diagnosing, waiting_parts, repairing, ready, completed, cancelled)
+*   `technician_id`: Foreign Key (Users.id, Nullable)
+*   `estimated_ready_at`: Timestamp (Nullable, set during diagnosis)
+*   `warranty_expiry`: Timestamp (Nullable, calculated upon completion)
+*   `created_at`: Timestamp
+*   `updated_at`: Timestamp
+
+### 5.4 Parts Table
+*   `id`: Primary Key (UUID)
+*   `name`: String
+*   `brand_compatibility`: String
+*   `grade`: Enum (ODM, Original)
+*   `price`: Decimal
+*   `stock_level`: Integer
+
+### 5.5 TicketParts (Junction Table)
+*   `ticket_id`: Foreign Key (Tickets.id)
+*   `part_id`: Foreign Key (Parts.id)
+*   `quantity`: Integer
+
+### 5.6 Attachments Table
+*   `id`: Primary Key (UUID)
+*   `ticket_id`: Foreign Key (Tickets.id)
+*   `file_url`: String
+*   `type`: Enum (before, after, receipt)
+*   `created_at`: Timestamp
+
+### 5.7 Payments Table
+*   `id`: Primary Key (UUID)
+*   `ticket_id`: Foreign Key (Tickets.id)
+*   `amount`: Decimal
+*   `method`: Enum (cash, online)
+*   `status`: Enum (pending, completed, failed)
+*   `external_id`: String (Midtrans/Xendit Order ID)
+*   `created_at`: Timestamp
+
+### 5.8 TicketComments Table (Threaded)
+*   `id`: Primary Key (UUID)
+*   `ticket_id`: Foreign Key (Tickets.id)
+*   `user_id`: Foreign Key (Users.id)
+*   `content`: Text
+*   `created_at`: Timestamp
+
+### 5.9 AuditLogs Table
+*   `id`: Primary Key (UUID)
+*   `user_id`: Foreign Key (Users.id)
+*   `action`: String (e.g., "update_status", "deduct_stock")
+*   `entity_type`: String (e.g., "ticket", "part", "payment")
+*   `entity_id`: UUID
+*   `changes`: JSON (Old vs New values)
+*   `created_at`: Timestamp
 
 ---
 *End of PRD*

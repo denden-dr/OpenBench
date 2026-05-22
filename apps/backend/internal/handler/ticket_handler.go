@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -34,7 +35,7 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 		if errors.As(err, &ve) {
 			errs := make(map[string]string)
 			for _, f := range ve {
-				errs[f.Field()] = fmt.Sprintf("Field validation for '%s' failed", f.Field())
+				errs[f.Field()] = fmt.Sprintf("Field validation for '%s' failed on the '%s' tag", f.Field(), f.Tag())
 			}
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"success": false,
@@ -42,6 +43,7 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 				"details": errs,
 			})
 		}
+
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"error":   err.Error(),
@@ -56,6 +58,8 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 
 func (h *TicketHandler) GetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+
+	// Validate UUID
 	if _, err := uuid.Parse(id); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -83,7 +87,7 @@ func (h *TicketHandler) GetByID(c *fiber.Ctx) error {
 	})
 }
 
-func (h *TicketHandler) Update(c *fiber.Ctx) error {
+func (h *TicketHandler) ClaimTicket(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if _, err := uuid.Parse(id); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -92,32 +96,23 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	var req dto.UpdateTicketRequest
-	if err := c.BodyParser(&req); err != nil {
+	// For mock auth: technician_id comes from the body.
+	// In production this would come from the JWT.
+	var body struct {
+		TechnicianID string `json:"technician_id" validate:"required,uuid"`
+	}
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"error":   "Invalid request body",
 		})
 	}
 
-	res, err := h.service.UpdateTicket(c.Context(), id, &req)
-	if err != nil {
-		if errors.Is(err, service.ErrTicketNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	if err := h.service.ClaimTicket(c.Context(), id, body.TechnicianID); err != nil {
+		if errors.Is(err, service.ErrClaimConflict) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"success": false,
-				"error":   "Ticket not found",
-			})
-		}
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
-			errs := make(map[string]string)
-			for _, f := range ve {
-				errs[f.Field()] = fmt.Sprintf("Field validation for '%s' failed", f.Field())
-			}
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"success": false,
-				"error":   "Validation failed",
-				"details": errs,
+				"error":   "Ticket is already claimed or not available",
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -126,28 +121,31 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
-	})
+	return c.JSON(fiber.Map{"success": true, "message": "Ticket claimed"})
 }
 
-func (h *TicketHandler) List(c *fiber.Ctx) error {
-	res, err := h.service.ListTickets(c.Context())
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"error":   "Internal server error",
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
-	})
+func (h *TicketHandler) CompleteDiagnosis(c *fiber.Ctx) error {
+	return h.handleTransition(c, h.service.CompleteDiagnosis)
 }
 
-func (h *TicketHandler) Delete(c *fiber.Ctx) error {
+func (h *TicketHandler) ApproveRepair(c *fiber.Ctx) error {
+	return h.handleTransition(c, h.service.ApproveRepair)
+}
+
+func (h *TicketHandler) CancelRepair(c *fiber.Ctx) error {
+	return h.handleTransition(c, h.service.CancelRepair)
+}
+
+func (h *TicketHandler) CompleteRepair(c *fiber.Ctx) error {
+	return h.handleTransition(c, h.service.CompleteRepair)
+}
+
+func (h *TicketHandler) MarkPickedUp(c *fiber.Ctx) error {
+	return h.handleTransition(c, h.service.MarkPickedUp)
+}
+
+// handleTransition is a DRY helper for all status transition endpoints.
+func (h *TicketHandler) handleTransition(c *fiber.Ctx, action func(ctx context.Context, id string) error) error {
 	id := c.Params("id")
 	if _, err := uuid.Parse(id); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -156,12 +154,17 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.service.DeleteTicket(c.Context(), id)
-	if err != nil {
+	if err := action(c.Context(), id); err != nil {
 		if errors.Is(err, service.ErrTicketNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"success": false,
 				"error":   "Ticket not found",
+			})
+		}
+		if errors.Is(err, service.ErrInvalidTransition) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"success": false,
+				"error":   err.Error(),
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -170,8 +173,20 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
+	return c.JSON(fiber.Map{"success": true})
+}
+
+func (h *TicketHandler) GetBoard(c *fiber.Ctx) error {
+	board, err := h.service.ListForBoard(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error":   "Internal server error",
+		})
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
-		"message": "Ticket deleted successfully",
+		"data":    board,
 	})
 }
