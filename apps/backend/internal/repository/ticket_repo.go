@@ -48,7 +48,13 @@ func (r *sqlTicketRepository) Create(ctx context.Context, ticket *model.Ticket) 
 
 func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ticket, error) {
 	var ticket model.Ticket
-	query := `SELECT * FROM tickets WHERE id = $1`
+	query := `
+		SELECT id, customer_name, customer_gender, brand, model, issue,
+		       additional_description, accessories, price, status, payment_status,
+		       warranty_days, entry_date, exit_date, warranty_expiry_date
+		FROM tickets
+		WHERE id = $1
+	`
 	err := r.db.GetContext(ctx, &ticket, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -98,7 +104,13 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 
 func (r *sqlTicketRepository) List(ctx context.Context) ([]model.Ticket, error) {
 	var tickets []model.Ticket
-	query := `SELECT * FROM tickets ORDER BY entry_date DESC`
+	query := `
+		SELECT id, customer_name, customer_gender, brand, model, issue,
+		       additional_description, accessories, price, status, payment_status,
+		       warranty_days, entry_date, exit_date, warranty_expiry_date
+		FROM tickets
+		ORDER BY entry_date DESC
+	`
 	if err := r.db.SelectContext(ctx, &tickets, query); err != nil {
 		return nil, err
 	}
