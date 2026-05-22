@@ -50,4 +50,3 @@ OpenBench Admin provides a unified workspace for the shop owner to manage the en
    npm run dev
    ```
    Open `http://localhost:5173` to access the admin dashboard.
-
