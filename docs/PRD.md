@@ -33,17 +33,17 @@ A single-user admin dashboard designed for local phone repair business owners to
 *   **Ticket Deletion:** Admin can permanently delete tickets from the registry.
 
 ### 3.3 Status & Workflows
-*   **Repair Statuses:**
-    *   `service_in`: Newly received ticket.
-    *   `picked_up`: Ticket claimed or in active diagnosis/repair.
-    *   `done`: Repair successfully completed.
-    *   `cancel`: Repair cancelled or unrepairable.
+*   **Repair Statuses (canonical enum):**
+    *   `service_in`: Newly received ticket (default on intake).
+    *   `on_process`: Device is actively being diagnosed or repaired.
+    *   `fixed`: Repair complete, waiting for customer collection.
+    *   `picked_up`: Device retrieved by customer. This is the payment moment.
 *   **Payment Statuses:**
     *   `unpaid`: Repair is not yet settled.
     *   `paid`: Payment successfully received.
 *   **Dates Logic:**
-    *   When moving to `picked_up`, the entry date is recorded.
-    *   When moving to `done` or `cancel`, the exit date is logged and the warranty expiry is automatically calculated based on the ticket's warranty days.
+    *   When moving to `picked_up`, `exit_date` is recorded, `payment_status` is set to `paid`, and `warranty_expiry_date` is automatically calculated from `warranty_days`.
+    *   Moving from `picked_up` back to any other status clears `exit_date` and `warranty_expiry_date`.
 
 ## 4. Technical Architecture
 
@@ -71,7 +71,7 @@ All details are stored in a single table for maximum query simplicity.
 *   `additional_description`: Text (Optional, detailed description or repair notes)
 *   `accessories`: Text (List of physical accessories left with the device)
 *   `price`: Decimal (Total cost of repair)
-*   `status`: Text (Validated: `service_in`, `picked_up`, `done`, `cancel`)
+*   `status`: Text (Validated: `service_in`, `on_process`, `fixed`, `picked_up`)
 *   `payment_status`: Text (Validated: `unpaid`, `paid`)
 *   `warranty_days`: Integer (Warranty coverage duration)
 *   `entry_date`: Timestamp (Date device entered the shop)
