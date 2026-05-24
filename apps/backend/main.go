@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
+	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
+	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -17,7 +19,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize Database
-	db, err := repository.NewDB(cfg.DBURL)
+	db, err := database.NewDB(cfg.Database)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
@@ -29,7 +31,9 @@ func main() {
 	ticketService := service.NewTicketService(ticketRepo)
 	ticketHandler := handler.NewTicketHandler(ticketService)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: middleware.ErrorHandler,
+	})
 
 	// Middleware
 	app.Use(logger.New())

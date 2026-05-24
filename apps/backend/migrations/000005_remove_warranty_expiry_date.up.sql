@@ -1,0 +1,1 @@
+ALTER TABLE tickets DROP COLUMN IF EXISTS warranty_expiry_date;

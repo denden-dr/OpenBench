@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/jmoiron/sqlx"
@@ -31,7 +29,7 @@ func (r *sqlTicketRepository) Create(ctx context.Context, ticket *model.Ticket) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, entry_date, status, payment_status
 	`
-	return r.db.QueryRowxContext(ctx, query,
+	err := r.db.QueryRowxContext(ctx, query,
 		ticket.CustomerName,
 		ticket.CustomerGender,
 		ticket.Brand,
@@ -44,6 +42,7 @@ func (r *sqlTicketRepository) Create(ctx context.Context, ticket *model.Ticket) 
 		"unpaid",     // Default initial payment status
 		ticket.WarrantyDays,
 	).Scan(&ticket.ID, &ticket.EntryDate, &ticket.Status, &ticket.PaymentStatus)
+	return MapDatabaseError(err)
 }
 
 func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ticket, error) {
@@ -51,16 +50,13 @@ func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ti
 	query := `
 		SELECT id, customer_name, customer_gender, brand, model, issue,
 		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date, warranty_expiry_date
+		       warranty_days, entry_date, exit_date
 		FROM tickets
 		WHERE id = $1
 	`
 	err := r.db.GetContext(ctx, &ticket, query, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, err
+		return nil, MapDatabaseError(err)
 	}
 	return &ticket, nil
 }
@@ -70,8 +66,8 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 		UPDATE tickets
 		SET customer_name = $1, customer_gender = $2, brand = $3, model = $4, issue = $5,
 		    additional_description = $6, accessories = $7, price = $8, status = $9,
-		    payment_status = $10, warranty_days = $11, exit_date = $12, warranty_expiry_date = $13
-		WHERE id = $14
+		    payment_status = $10, warranty_days = $11, exit_date = $12
+		WHERE id = $13
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		ticket.CustomerName,
@@ -86,15 +82,14 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 		ticket.PaymentStatus,
 		ticket.WarrantyDays,
 		ticket.ExitDate,
-		ticket.WarrantyExpiryDate,
 		ticket.ID,
 	)
 	if err != nil {
-		return err
+		return MapDatabaseError(err)
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return MapDatabaseError(err)
 	}
 	if rows == 0 {
 		return ErrNotFound
@@ -107,12 +102,12 @@ func (r *sqlTicketRepository) List(ctx context.Context) ([]model.Ticket, error) 
 	query := `
 		SELECT id, customer_name, customer_gender, brand, model, issue,
 		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date, warranty_expiry_date
+		       warranty_days, entry_date, exit_date
 		FROM tickets
 		ORDER BY entry_date DESC
 	`
 	if err := r.db.SelectContext(ctx, &tickets, query); err != nil {
-		return nil, err
+		return nil, MapDatabaseError(err)
 	}
 	return tickets, nil
 }
@@ -121,11 +116,11 @@ func (r *sqlTicketRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM tickets WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return err
+		return MapDatabaseError(err)
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return MapDatabaseError(err)
 	}
 	if rows == 0 {
 		return ErrNotFound

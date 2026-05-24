@@ -1,0 +1,13 @@
+with-expecter: true
+all: false
+dir: "mocks"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+filename: "mock_{{.InterfaceName | snakecase}}.go"
+packages:
+  github.com/denden-dr/openbench/apps/backend/internal/repository:
+    config:
+      dir: "mocks/repository"
+      outpkg: "repository"
+    interfaces:
+      TicketRepository:

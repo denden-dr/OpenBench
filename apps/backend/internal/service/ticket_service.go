@@ -2,17 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/go-playground/validator/v10"
-)
-
-var (
-	ErrTicketNotFound = errors.New("ticket not found")
 )
 
 type TicketService interface {
@@ -55,12 +49,13 @@ func (s *ticketService) CreateTicket(ctx context.Context, req *dto.CreateTicketR
 	if req.Accessories != "" {
 		ticket.Accessories = &req.Accessories
 	}
-	if ticket.WarrantyDays <= 0 {
-		ticket.WarrantyDays = 30 // Default to 30 days
+
+	if err := ticket.PrepareForCreate(); err != nil {
+		return nil, MapModelError(err)
 	}
 
 	if err := s.repo.Create(ctx, ticket); err != nil {
-		return nil, err
+		return nil, MapRepositoryError(err)
 	}
 
 	return s.mapToResponse(ticket), nil
@@ -69,10 +64,7 @@ func (s *ticketService) CreateTicket(ctx context.Context, req *dto.CreateTicketR
 func (s *ticketService) GetTicket(ctx context.Context, id string) (*dto.TicketResponse, error) {
 	ticket, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, ErrTicketNotFound
-		}
-		return nil, err
+		return nil, MapRepositoryError(err)
 	}
 	return s.mapToResponse(ticket), nil
 }
@@ -82,73 +74,35 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 		return nil, err
 	}
 
+	update := model.TicketUpdate{
+		CustomerName:          req.CustomerName,
+		CustomerGender:        req.CustomerGender,
+		Brand:                 req.Brand,
+		Model:                 req.Model,
+		Issue:                 req.Issue,
+		AdditionalDescription: req.AdditionalDescription,
+		Accessories:           req.Accessories,
+		Price:                 req.Price,
+		Status:                req.Status,
+		PaymentStatus:         req.PaymentStatus,
+		WarrantyDays:          req.WarrantyDays,
+		ExitDate:              req.ExitDate,
+	}
+	if err := model.ValidateTicketUpdate(update); err != nil {
+		return nil, MapModelError(err)
+	}
+
 	ticket, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, ErrTicketNotFound
-		}
-		return nil, err
+		return nil, MapRepositoryError(err)
 	}
 
-	// Apply updates
-	if req.CustomerName != nil {
-		ticket.CustomerName = *req.CustomerName
-	}
-	if req.CustomerGender != nil {
-		ticket.CustomerGender = *req.CustomerGender
-	}
-	if req.Brand != nil {
-		ticket.Brand = *req.Brand
-	}
-	if req.Model != nil {
-		ticket.Model = *req.Model
-	}
-	if req.Issue != nil {
-		ticket.Issue = *req.Issue
-	}
-	if req.AdditionalDescription != nil {
-		if *req.AdditionalDescription == "" {
-			ticket.AdditionalDescription = nil
-		} else {
-			ticket.AdditionalDescription = req.AdditionalDescription
-		}
-	}
-	if req.Accessories != nil {
-		if *req.Accessories == "" {
-			ticket.Accessories = nil
-		} else {
-			ticket.Accessories = req.Accessories
-		}
-	}
-	if req.Price != nil {
-		ticket.Price = *req.Price
-	}
-	if req.WarrantyDays != nil {
-		ticket.WarrantyDays = *req.WarrantyDays
-	}
-
-	// Status change logic
-	if req.Status != nil && *req.Status != ticket.Status {
-		ticket.Status = *req.Status
-		if *req.Status == "picked_up" {
-			// When picked up, it is the payment moment
-			ticket.PaymentStatus = "paid"
-			now := time.Now()
-			ticket.ExitDate = &now
-			expiry := now.AddDate(0, 0, ticket.WarrantyDays)
-			ticket.WarrantyExpiryDate = &expiry
-		} else {
-			// Transitioning to any other status clears exit and warranty dates
-			ticket.ExitDate = nil
-			ticket.WarrantyExpiryDate = nil
-		}
-	}
-	if req.PaymentStatus != nil {
-		ticket.PaymentStatus = *req.PaymentStatus
+	if err := ticket.ApplyUpdate(update); err != nil {
+		return nil, MapModelError(err)
 	}
 
 	if err := s.repo.Update(ctx, ticket); err != nil {
-		return nil, err
+		return nil, MapRepositoryError(err)
 	}
 
 	return s.mapToResponse(ticket), nil
@@ -157,7 +111,7 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 func (s *ticketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, error) {
 	tickets, err := s.repo.List(ctx)
 	if err != nil {
-		return nil, err
+		return nil, MapRepositoryError(err)
 	}
 
 	responses := make([]dto.TicketResponse, len(tickets))
@@ -170,10 +124,7 @@ func (s *ticketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, 
 func (s *ticketService) DeleteTicket(ctx context.Context, id string) error {
 	err := s.repo.Delete(ctx, id)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return ErrTicketNotFound
-		}
-		return err
+		return MapRepositoryError(err)
 	}
 	return nil
 }
@@ -189,11 +140,11 @@ func (s *ticketService) mapToResponse(ticket *model.Ticket) *dto.TicketResponse 
 		AdditionalDescription: ticket.AdditionalDescription,
 		Accessories:           ticket.Accessories,
 		Price:                 ticket.Price,
-		Status:                ticket.Status,
-		PaymentStatus:         ticket.PaymentStatus,
+		Status:                string(ticket.Status),
+		PaymentStatus:         string(ticket.PaymentStatus),
 		WarrantyDays:          ticket.WarrantyDays,
 		EntryDate:             ticket.EntryDate,
 		ExitDate:              ticket.ExitDate,
-		WarrantyExpiryDate:    ticket.WarrantyExpiryDate,
+		WarrantyExpiryDate:    ticket.WarrantyExpiryDate(),
 	}
 }
