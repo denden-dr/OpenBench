@@ -1,12 +1,16 @@
-package test
+//go:build integration
+
+package handler_test
 
 import (
 	"bytes"
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
+	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -27,7 +31,9 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	ticketService := service.NewTicketService(ticketRepo)
 	ticketHandler := handler.NewTicketHandler(ticketService)
 
-	s.app = fiber.New()
+	s.app = fiber.New(fiber.Config{
+		ErrorHandler: middleware.ErrorHandler,
+	})
 	api := s.app.Group("/api/v1")
 	tickets := api.Group("/tickets")
 	tickets.Post("/", ticketHandler.Create)
@@ -37,12 +43,8 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	tickets.Delete("/:id", ticketHandler.Delete)
 }
 
-func (s *TicketIntegrationTestSuite) TearDownSuite() {
-	s.db.Close()
-}
-
 func (s *TicketIntegrationTestSuite) SetupTest() {
-	CleanTestDB(s.db)
+	CleanTestDB(s.T(), s.db)
 }
 
 func TestTicketIntegrationSuite(t *testing.T) {
@@ -325,5 +327,145 @@ func (s *TicketIntegrationTestSuite) TestInvalidStatusRejected() {
 		s.Require().NoError(pErr)
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode,
 			"expected 400 for invalid status %q", badStatus)
+	}
+}
+
+func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
+	// 1. Create a ticket first
+	reqBody := map[string]interface{}{
+		"customer_name":   "Business Validation Tester",
+		"customer_gender": "Female",
+		"brand":           "Google",
+		"model":           "Pixel 8",
+		"issue":           "Camera glass cracked",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var createRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	id := createRes["data"].(map[string]interface{})["id"].(string)
+
+	// 2. Try updating price to negative value - must return 400
+	{
+		body, _ := json.Marshal(map[string]interface{}{"price": -100})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
+	}
+
+	// 3. Try updating warranty days to negative value - must return 400
+	{
+		body, _ := json.Marshal(map[string]interface{}{"warranty_days": -1})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
+	}
+
+	// 4. Try updating status to picked_up with payment_status unpaid - must return 400
+	{
+		body, _ := json.Marshal(map[string]interface{}{
+			"status":         "picked_up",
+			"payment_status": "unpaid",
+		})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
+	}
+
+	// 5. Try creating a ticket with negative price - must return 400
+	{
+		badReqBody := map[string]interface{}{
+			"customer_name":   "Negative Price Creator",
+			"customer_gender": "Female",
+			"brand":           "Google",
+			"model":           "Pixel 8",
+			"issue":           "Camera glass cracked",
+			"price":           -50,
+		}
+		badBodyBytes, _ := json.Marshal(badReqBody)
+		badReq, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(badBodyBytes))
+		badReq.Header.Set("Content-Type", "application/json")
+		badResp, cErr := s.app.Test(badReq)
+		s.Require().NoError(cErr)
+		s.Equal(http.StatusBadRequest, badResp.StatusCode)
+	}
+
+	// 6. Try creating a ticket with negative warranty_days - must return 400
+	{
+		badReqBody := map[string]interface{}{
+			"customer_name":   "Negative Warranty Creator",
+			"customer_gender": "Female",
+			"brand":           "Google",
+			"model":           "Pixel 8",
+			"issue":           "Camera glass cracked",
+			"warranty_days":   -10,
+		}
+		badBodyBytes, _ := json.Marshal(badReqBody)
+		badReq, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(badBodyBytes))
+		badReq.Header.Set("Content-Type", "application/json")
+		badResp, cErr := s.app.Test(badReq)
+		s.Require().NoError(cErr)
+		s.Equal(http.StatusBadRequest, badResp.StatusCode)
+	}
+
+	// 7. Try patching with a non-picked_up ticket having an exit_date — must return 400
+	{
+		body, _ := json.Marshal(map[string]interface{}{
+			"status":    "fixed",
+			"exit_date": time.Now().Format(time.RFC3339),
+		})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
+	}
+
+	// 8. Try patching with a picked_up ticket and update warranty_days and exit_date — must succeed, persist exit_date, and return dynamically calculated warranty_expiry_date
+	{
+		exitDate := time.Now().Add(-24 * time.Hour).Truncate(time.Second)
+		body, _ := json.Marshal(map[string]interface{}{
+			"status":         "picked_up",
+			"payment_status": "paid",
+			"exit_date":      exitDate.Format(time.RFC3339),
+			"warranty_days":  45,
+		})
+		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchResp, pErr := s.app.Test(patchReq)
+		s.Require().NoError(pErr)
+		s.Equal(http.StatusOK, patchResp.StatusCode)
+
+		var updateRes map[string]interface{}
+		_ = json.NewDecoder(patchResp.Body).Decode(&updateRes)
+		data := updateRes["data"].(map[string]interface{})
+
+		s.Equal("picked_up", data["status"])
+		s.Equal("paid", data["payment_status"])
+		s.Equal(float64(45), data["warranty_days"])
+
+		resExitDateStr := data["exit_date"].(string)
+		resExpiryDateStr := data["warranty_expiry_date"].(string)
+
+		resExitDate, err := time.Parse(time.RFC3339, resExitDateStr)
+		s.Require().NoError(err)
+		resExpiryDate, err := time.Parse(time.RFC3339, resExpiryDateStr)
+		s.Require().NoError(err)
+
+		s.True(exitDate.Equal(resExitDate), "expected exit_date %v, got %v", exitDate, resExitDate)
+		expectedExpiry := exitDate.AddDate(0, 0, 45)
+		s.True(expectedExpiry.Equal(resExpiryDate), "expected warranty_expiry_date %v, got %v", expectedExpiry, resExpiryDate)
 	}
 }
