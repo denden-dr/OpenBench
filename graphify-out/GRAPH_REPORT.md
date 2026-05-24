@@ -1,7 +1,7 @@
 # Graph Report - OpenBench  (2026-05-24)
 
 ## Corpus Check
-- 27 files · ~79,382 words
+- 27 files · ~79,409 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
