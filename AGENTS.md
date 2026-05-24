@@ -6,7 +6,7 @@ OpenBench is a phone repair admin app split into two apps:
 
 - `apps/backend`: Go Fiber API, PostgreSQL access through `sqlx`, migrations in `apps/backend/migrations`.
 - `apps/backend/internal`: backend layers: `handler`, `service`, `repository`, `dto`, `model`, `config`.
-- `apps/backend/database`: shared database connection setup.
+- `apps/backend/internal/database`: shared database connection setup.
 - `apps/backend/mocks`: generated Mockery mocks.
 - `apps/frontend`: SvelteKit/Svelte 5 frontend. Source is in `apps/frontend/src`; static assets are in `apps/frontend/static`.
 - `docs`: product specs and implementation plans.
@@ -57,3 +57,9 @@ Rules:
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+
+## Deployment & Schema Migrations
+
+- Schema migrations that drop columns (such as `000005_remove_warranty_expiry_date`) require a downtime deployment window or an expand/contract rollout strategy to be rolling-compatible.
+- Production deployments for OpenBench currently assume a single-instance deployment model with scheduled downtime for migrations.
+

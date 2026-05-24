@@ -44,11 +44,8 @@ var (
 	ErrInvalidPaymentStatus    = NewAppError(400, "a picked up ticket must be paid")
 	ErrNegativePrice           = NewAppError(400, "price cannot be negative")
 	ErrNegativeWarranty        = NewAppError(400, "warranty days cannot be negative")
-	ErrWarrantyBeforeExit      = NewAppError(400, "warranty expiry date cannot be before exit date")
-	ErrNonPickedUpWithDates    = NewAppError(400, "non-picked up ticket cannot have exit date or warranty expiry date")
+	ErrNonPickedUpWithDates    = NewAppError(400, "non-picked up ticket cannot have exit date")
 	ErrPickedUpMissingExitDate = NewAppError(400, "picked up ticket must have an exit date")
-	ErrPickedUpMissingWarranty = NewAppError(400, "picked up ticket must have a warranty expiry date")
-	ErrConflictingWarrantyInfo = NewAppError(400, "warranty days and expiry date conflict")
 
 	ErrDuplicate           = NewAppError(409, "resource already exists")
 	ErrDatabaseUnavailable = NewAppError(503, "database is currently unavailable")

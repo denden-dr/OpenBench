@@ -1,7 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (event.url.pathname.startsWith('/api')) {
+	if (event.url.pathname === '/api' || event.url.pathname.startsWith('/api/')) {
 		const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
 		const targetUrl = new URL(event.url.pathname + event.url.search, backendUrl);
 		

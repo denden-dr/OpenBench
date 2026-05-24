@@ -76,6 +76,12 @@
     warranty_days: 30
   });
 
+  $effect(() => {
+    if (editForm.status === 'picked_up') {
+      editForm.payment_status = 'paid';
+    }
+  });
+
   // Load tickets on mount
   onMount(async () => {
     await fetchTickets();
@@ -823,7 +829,7 @@
                 bind:value={editForm.payment_status}
                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors cursor-pointer"
               >
-                <option value="unpaid">Unpaid</option>
+                <option value="unpaid" disabled={editForm.status === 'picked_up'}>Unpaid</option>
                 <option value="paid">Paid</option>
               </select>
             </div>
