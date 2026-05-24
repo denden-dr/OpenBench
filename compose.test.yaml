@@ -24,6 +24,17 @@ services:
       DB_URL: postgres://postgres:postgres@db:5432/openbench?sslmode=disable
       PORT: 3000
 
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: openbench-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:3000
 
 volumes:
   postgres_data:

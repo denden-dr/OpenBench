@@ -7,21 +7,6 @@ ifeq ($(shell basename $(CONTAINER_TOOL)),podman)
 	export DOCKER_HOST ?= unix:///run/user/$(shell id -u)/podman/podman.sock
 endif
 
-db-up:
-	$(COMPOSE_TOOL) up -d db
-
-db-down:
-	$(COMPOSE_TOOL) stop db && $(COMPOSE_TOOL) rm -f db
-
-supabase-up:
-	supabase start
-
-supabase-down:
-	supabase stop
-
-supabase-status:
-	supabase status
-
 compose-up:
 	$(COMPOSE_TOOL) up -d --build
 
@@ -43,8 +28,29 @@ migrate-down:
 migrate-create:
 	migrate create -ext sql -dir apps/backend/migrations -seq $(NAME)
 
+mock-backend:
+	cd apps/backend && go run github.com/vektra/mockery/v2
+
+test-backend-unit:
+	cd apps/backend && go test ./... -v
+
+test-backend-integration:
+	cd apps/backend && go test -tags=integration ./... -v
+
+.PHONY: run-db run-backend run-frontend up down
+
+run-db: compose-up
+
 run-backend:
 	cd apps/backend && go run main.go
 
-test-backend:
-	cd apps/backend && go test ./... -v
+run-frontend:
+	cd apps/frontend && npm run dev
+
+up: run-db
+	$(MAKE) -j 2 run-backend run-frontend
+
+down: compose-down
+	@echo "Stopping backend and frontend processes..."
+	@pkill -f "go run main.go" || true
+	@pkill -f "vite dev" || true

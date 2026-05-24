@@ -62,3 +62,6 @@ __pycache__/
 
 # Antigravity CLI
 .antigravitycli/
+
+# Graphify
+graphify-out/cache
