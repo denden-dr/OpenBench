@@ -47,6 +47,7 @@
   // Modal & Drawer State
   let showCreateModal = $state(false);
   let selectedTicket = $state<Ticket | null>(null);
+  let editFormElement = $state<HTMLFormElement | null>(null);
 
   // Form States
   let createForm = $state({
@@ -169,6 +170,19 @@
     };
   }
 
+  function closeEditDrawer() {
+    selectedTicket = null;
+  }
+
+  function submitEditForm() {
+    editFormElement?.requestSubmit();
+  }
+
+  async function deleteSelectedTicket() {
+    if (!selectedTicket) return;
+    await handleDeleteTicket(selectedTicket.id);
+  }
+
   async function handleUpdateTicket(e: SubmitEvent) {
     e.preventDefault();
     if (!selectedTicket) return;
@@ -181,7 +195,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        selectedTicket = null;
+        closeEditDrawer();
         await fetchTickets();
       } else {
         alert('Failed to update ticket: ' + (data.error || 'Unknown error'));
@@ -200,7 +214,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        selectedTicket = null;
+        closeEditDrawer();
         await fetchTickets();
       } else {
         alert('Failed to delete ticket: ' + (data.error || 'Unknown error'));
@@ -632,7 +646,7 @@
 {#if selectedTicket}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-sm animate-fade-in" onclick={() => selectedTicket = null}>
+  <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-sm animate-fade-in" onclick={closeEditDrawer}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
@@ -646,7 +660,7 @@
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">ID: {selectedTicket.id}</p>
         </div>
         <button
-          onclick={() => selectedTicket = null}
+          onclick={closeEditDrawer}
           class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
         >
           <X size={18} />
@@ -654,7 +668,7 @@
       </div>
 
       <!-- Body -->
-      <form onsubmit={handleUpdateTicket} class="flex-1 overflow-y-auto p-6 space-y-6">
+      <form bind:this={editFormElement} onsubmit={handleUpdateTicket} class="flex-1 overflow-y-auto p-6 space-y-6">
         <!-- Status Panel -->
         <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-850 space-y-3">
           <div class="flex justify-between items-center">
@@ -820,7 +834,7 @@
         <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
           <button
             type="button"
-            onclick={() => handleDeleteTicket(selectedTicket!.id)}
+            onclick={deleteSelectedTicket}
             class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors inline-flex items-center gap-1.5 border border-red-200"
           >
             <Trash2 size={14} />
@@ -830,13 +844,14 @@
           <div class="flex gap-3">
             <button
               type="button"
-              onclick={() => selectedTicket = null}
+              onclick={closeEditDrawer}
               class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
             >
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              onclick={submitEditForm}
               class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm"
             >
               Save Changes
