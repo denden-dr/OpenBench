@@ -93,7 +93,7 @@ func TestMapModelError(t *testing.T) {
 		{
 			name:     "model.ErrNonPickedUpCannotHaveExitDate",
 			input:    model.ErrNonPickedUpCannotHaveExitDate,
-			expected: ErrNonPickedUpWithDates,
+			expected: ErrNonPickedUpWithExitDate,
 		},
 		{
 			name:     "generic error pass-through",

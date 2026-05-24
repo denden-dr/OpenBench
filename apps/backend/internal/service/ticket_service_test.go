@@ -492,7 +492,7 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 					Status: "service_in",
 				}, nil).Once()
 			},
-			expectedError: ErrNonPickedUpWithDates,
+			expectedError: ErrNonPickedUpWithExitDate,
 		},
 		{
 			name: "error repository update returns not found",
