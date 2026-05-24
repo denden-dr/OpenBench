@@ -79,7 +79,7 @@ All details are stored in a single table for maximum query simplicity.
 *   `warranty_days`: Integer (Warranty coverage duration)
 *   `entry_date`: Timestamp (Date device entered the shop)
 *   `exit_date`: Timestamp (Date device left the shop or was completed)
-*   `warranty_expiry_date`: Timestamp (Automatically calculated upon completion)
+*   `warranty_expiry_date`: Timestamp (Computed dynamically as exit_date + warranty_days, not stored in database)
 
 ---
 *End of PRD*
