@@ -151,3 +151,15 @@ func TestHashIdempotencyRequest(t *testing.T) {
 	hashDiffMethod := hashIdempotencyRequest("PATCH", path, body)
 	assert.NotEqual(t, hash1, hashDiffMethod, "hashes should differ when HTTP method changes")
 }
+
+func TestHashIdempotencyRequestChangesAfterValidationCorrection(t *testing.T) {
+	method := "POST"
+	path := "/api/v1/tickets"
+	invalidBody := []byte(`{"customer_name":"Budi","customer_gender":"Male"}`)
+	correctedBody := []byte(`{"customer_name":"Budi","customer_gender":"Male","brand":"Apple","model":"iPhone 13","issue":"LCD Mati"}`)
+
+	invalidHash := hashIdempotencyRequest(method, path, invalidBody)
+	correctedHash := hashIdempotencyRequest(method, path, correctedBody)
+
+	assert.NotEqual(t, invalidHash, correctedHash)
+}

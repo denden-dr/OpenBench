@@ -44,6 +44,7 @@ func main() {
 	// OpenBench runs as a single backend instance. Use a DB-backed lock before
 	// moving to multi-instance or rolling deployments.
 	idempotencyStore := database.NewPostgresStorage(db)
+	defer idempotencyStore.Close()
 	app.Use(middleware.ScopeTicketIdempotencyKey(idempotencyStore))
 	app.Use(middleware.NewTicketIdempotency(idempotencyStore))
 

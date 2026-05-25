@@ -185,6 +185,7 @@
         await fetchTickets();
       } else {
         alert("Failed to create ticket: " + (data.error || "Unknown error"));
+        regenerateCreateIdempotencyKey();
       }
     } catch (e) {
       console.error(e);
@@ -227,6 +228,7 @@
         }
       } else {
         alert("Failed to update status: " + (data.error || "Unknown error"));
+        quickActionKeys[ticketId] = newIdempotencyKey();
       }
     } catch (e) {
       console.error(e);
@@ -292,6 +294,7 @@
         }
       } else {
         alert("Failed to update ticket: " + (data.error || "Unknown error"));
+        regenerateEditIdempotencyKey();
       }
     } catch (e) {
       console.error(e);

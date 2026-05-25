@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2/utils"
@@ -13,11 +14,57 @@ import (
 var ErrIdempotencyConflict = errors.New("idempotency key reused with different request body")
 
 type PostgresStorage struct {
-	db *sqlx.DB
+	db              *sqlx.DB
+	quit            chan struct{}
+	closeOnce       sync.Once
+	wg              sync.WaitGroup
+	cleanupInterval time.Duration
 }
 
-func NewPostgresStorage(db *sqlx.DB) *PostgresStorage {
-	return &PostgresStorage{db: db}
+type StorageOption func(*PostgresStorage)
+
+func WithCleanupInterval(d time.Duration) StorageOption {
+	return func(s *PostgresStorage) {
+		s.cleanupInterval = d
+	}
+}
+
+func NewPostgresStorage(db *sqlx.DB, opts ...StorageOption) *PostgresStorage {
+	s := &PostgresStorage{
+		db:              db,
+		quit:            make(chan struct{}),
+		cleanupInterval: 5 * time.Minute,
+	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	if s.cleanupInterval > 0 {
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			ticker := time.NewTicker(s.cleanupInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					select {
+					case <-s.quit:
+						return
+					default:
+					}
+					if err := s.DeleteExpired(); err != nil {
+						slog.Error("failed to run background cleanup for idempotency keys", "error", err)
+					}
+				case <-s.quit:
+					return
+				}
+			}
+		}()
+	}
+
+	return s
 }
 
 func (s *PostgresStorage) Get(key string) ([]byte, error) {
@@ -46,10 +93,6 @@ func (s *PostgresStorage) Get(key string) ([]byte, error) {
 func (s *PostgresStorage) ReserveRequest(key string, requestHash string, exp time.Duration) error {
 	if key == "" || requestHash == "" {
 		return nil
-	}
-
-	if err := s.DeleteExpired(); err != nil {
-		return err
 	}
 
 	expiresAt := time.Now().Add(exp)
@@ -112,10 +155,6 @@ func (s *PostgresStorage) Set(key string, val []byte, exp time.Duration) error {
 		return nil
 	}
 
-	if err := s.DeleteExpired(); err != nil {
-		slog.Error("failed to clean expired idempotency keys before cache write", "error", err)
-	}
-
 	expiresAt := time.Now().Add(exp)
 	if exp == 0 {
 		expiresAt = time.Now().Add(24 * time.Hour)
@@ -149,6 +188,10 @@ func (s *PostgresStorage) Reset() error {
 }
 
 func (s *PostgresStorage) Close() error {
+	s.closeOnce.Do(func() {
+		close(s.quit)
+		s.wg.Wait()
+	})
 	return nil
 }
 
