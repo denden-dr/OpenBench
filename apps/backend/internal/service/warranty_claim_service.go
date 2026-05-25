@@ -25,6 +25,10 @@ type warrantyClaimService struct {
 	validate   *validator.Validate
 }
 
+type txRollbacker interface {
+	Rollback() error
+}
+
 func NewWarrantyClaimService(claimRepo repository.WarrantyClaimRepository, ticketRepo repository.TicketRepository) WarrantyClaimService {
 	return &warrantyClaimService{
 		claimRepo:  claimRepo,
@@ -100,9 +104,9 @@ func (s *warrantyClaimService) ApproveClaim(ctx context.Context, id string) (*dt
 	if err != nil {
 		return nil, MapRepositoryError(err)
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
-	claim, err := s.claimRepo.GetByID(ctx, id)
+	claim, err := s.claimRepo.GetByIDForUpdateTx(ctx, tx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrWarrantyClaimNotFound
@@ -173,9 +177,9 @@ func (s *warrantyClaimService) VoidClaim(ctx context.Context, id string, req *dt
 	if err != nil {
 		return nil, MapRepositoryError(err)
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
-	claim, err := s.claimRepo.GetByID(ctx, id)
+	claim, err := s.claimRepo.GetByIDForUpdateTx(ctx, tx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrWarrantyClaimNotFound
@@ -252,4 +256,8 @@ func (s *warrantyClaimService) mapToResponse(claim *model.WarrantyClaim, ticket 
 		UpdatedAt:             claim.UpdatedAt,
 		OriginalTicket:        MapTicketToResponse(ticket),
 	}
+}
+
+func rollbackTx(tx txRollbacker) {
+	_ = tx.Rollback()
 }

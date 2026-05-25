@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
@@ -92,8 +93,17 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 		return nil, MapModelError(err)
 	}
 
-	ticket, err := s.repo.GetByID(ctx, id)
+	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
+		return nil, MapRepositoryError(err)
+	}
+	defer rollbackTx(tx)
+
+	ticket, err := s.repo.GetByIDForUpdateTx(ctx, tx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrTicketNotFound
+		}
 		return nil, MapRepositoryError(err)
 	}
 
@@ -101,7 +111,11 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 		return nil, MapModelError(err)
 	}
 
-	if err := s.repo.Update(ctx, ticket); err != nil {
+	if err := s.repo.UpdateTx(ctx, tx, ticket); err != nil {
+		return nil, MapRepositoryError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, MapRepositoryError(err)
 	}
 
