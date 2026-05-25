@@ -40,8 +40,8 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	})
 
 	s.idempotencyStore = database.NewPostgresStorage(s.db)
-	s.app.Use(middleware.ScopeTicketIdempotencyKey(s.idempotencyStore))
-	s.app.Use(middleware.NewTicketIdempotency(s.idempotencyStore))
+	s.app.Use(middleware.ScopeIdempotencyKey(s.idempotencyStore))
+	s.app.Use(middleware.NewIdempotency(s.idempotencyStore))
 
 	api := s.app.Group("/api/v1")
 	tickets := api.Group("/tickets")

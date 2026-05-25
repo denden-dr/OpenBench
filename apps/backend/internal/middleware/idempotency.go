@@ -19,7 +19,7 @@ const (
 	scopedIdempotencyHeader = "X-Scoped-Idempotency-Key"
 )
 
-func ticketIdempotencyConcretePath(c *fiber.Ctx) (string, bool) {
+func idempotencyConcretePath(c *fiber.Ctx) (string, bool) {
 	path := strings.TrimRight(c.Path(), "/")
 	method := c.Method()
 
@@ -34,15 +34,30 @@ func ticketIdempotencyConcretePath(c *fiber.Ctx) (string, bool) {
 		}
 	}
 
+	if method == fiber.MethodPost && path == "/api/v1/warranty-claims" {
+		return "/api/v1/warranty-claims", true
+	}
+
+	if method == fiber.MethodPost && strings.HasPrefix(path, "/api/v1/warranty-claims/") {
+		suffix := strings.TrimPrefix(path, "/api/v1/warranty-claims/")
+		parts := strings.Split(suffix, "/")
+		if len(parts) == 2 && (parts[1] == "approve" || parts[1] == "void") {
+			id := parts[0]
+			if id != "" {
+				return "/api/v1/warranty-claims/" + id + "/" + parts[1], true
+			}
+		}
+	}
+
 	return "", false
 }
 
-func ScopeTicketIdempotencyKey(store *database.PostgresStorage) fiber.Handler {
+func ScopeIdempotencyKey(store *database.PostgresStorage) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Clean spoofed internal header from client
 		c.Request().Header.Del(scopedIdempotencyHeader)
 
-		concretePath, ok := ticketIdempotencyConcretePath(c)
+		concretePath, ok := idempotencyConcretePath(c)
 		if !ok {
 			return c.Next()
 		}
@@ -80,10 +95,10 @@ func hashIdempotencyRequest(method string, concretePath string, body []byte) str
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func NewTicketIdempotency(storage fiber.Storage) fiber.Handler {
+func NewIdempotency(storage fiber.Storage) fiber.Handler {
 	return idempotency.New(idempotency.Config{
 		Next: func(c *fiber.Ctx) bool {
-			_, ok := ticketIdempotencyConcretePath(c)
+			_, ok := idempotencyConcretePath(c)
 			return !ok
 		},
 		Storage:           storage,

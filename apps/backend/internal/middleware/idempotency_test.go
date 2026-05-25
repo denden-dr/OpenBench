@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTicketIdempotencyConcretePath(t *testing.T) {
+func TestIdempotencyConcretePath(t *testing.T) {
 	app := fiber.New()
 
 	var actualPath string
 	var actualOk bool
 
 	app.Use(func(c *fiber.Ctx) error {
-		actualPath, actualOk = ticketIdempotencyConcretePath(c)
+		actualPath, actualOk = idempotencyConcretePath(c)
 		return c.SendStatus(fiber.StatusOK)
 	})
 
@@ -72,6 +72,62 @@ func TestTicketIdempotencyConcretePath(t *testing.T) {
 			name:       "empty ID on PATCH",
 			method:     fiber.MethodPatch,
 			path:       "/api/v1/tickets/",
+			expectPath: "",
+			expectOk:   false,
+		},
+		{
+			name:       "valid POST warranty claims",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims",
+			expectPath: "/api/v1/warranty-claims",
+			expectOk:   true,
+		},
+		{
+			name:       "valid POST warranty claims with trailing slash",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/",
+			expectPath: "/api/v1/warranty-claims",
+			expectOk:   true,
+		},
+		{
+			name:       "valid POST warranty claims approve",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/123/approve",
+			expectPath: "/api/v1/warranty-claims/123/approve",
+			expectOk:   true,
+		},
+		{
+			name:       "valid POST warranty claims approve trailing slash",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/123/approve/",
+			expectPath: "/api/v1/warranty-claims/123/approve",
+			expectOk:   true,
+		},
+		{
+			name:       "valid POST warranty claims void",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/456/void",
+			expectPath: "/api/v1/warranty-claims/456/void",
+			expectOk:   true,
+		},
+		{
+			name:       "invalid method GET warranty claims",
+			method:     fiber.MethodGet,
+			path:       "/api/v1/warranty-claims",
+			expectPath: "",
+			expectOk:   false,
+		},
+		{
+			name:       "invalid path nested warranty claim subroute",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/123/approve/extra",
+			expectPath: "",
+			expectOk:   false,
+		},
+		{
+			name:       "invalid path wrong action word",
+			method:     fiber.MethodPost,
+			path:       "/api/v1/warranty-claims/123/something",
 			expectPath: "",
 			expectOk:   false,
 		},
