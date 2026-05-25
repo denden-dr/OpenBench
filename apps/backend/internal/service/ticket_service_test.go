@@ -264,6 +264,8 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 	invalidGender := "InvalidGender"
 	newWarrantyDays := 60
 	customExitDate := time.Now().Add(-48 * time.Hour)
+	statusWaiting := "waiting_confirmation"
+	statusCancelled := "cancelled"
 
 	tests := []struct {
 		name           string
@@ -508,6 +510,48 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				m.On("Update", mock.Anything, mock.Anything).Return(repository.ErrNotFound).Once()
 			},
 			expectedError: ErrTicketNotFound,
+		},
+		{
+			name: "success transition to waiting_confirmation",
+			id:   "ticket-123",
+			req: &dto.UpdateTicketRequest{
+				Status: &statusWaiting,
+			},
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+					ID:           "ticket-123",
+					CustomerName: "Budi",
+					Status:       "on_process",
+				}, nil).Once()
+				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+					return t.Status == "waiting_confirmation"
+				})).Return(nil).Once()
+			},
+			expectedError: nil,
+			expectedAssert: func(t *testing.T, res *dto.TicketResponse) {
+				assert.Equal(t, "waiting_confirmation", res.Status)
+			},
+		},
+		{
+			name: "success transition to cancelled",
+			id:   "ticket-123",
+			req: &dto.UpdateTicketRequest{
+				Status: &statusCancelled,
+			},
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+					ID:           "ticket-123",
+					CustomerName: "Budi",
+					Status:       "waiting_confirmation",
+				}, nil).Once()
+				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+					return t.Status == "cancelled"
+				})).Return(nil).Once()
+			},
+			expectedError: nil,
+			expectedAssert: func(t *testing.T, res *dto.TicketResponse) {
+				assert.Equal(t, "cancelled", res.Status)
+			},
 		},
 	}
 

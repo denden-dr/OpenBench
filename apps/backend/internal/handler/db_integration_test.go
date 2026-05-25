@@ -95,9 +95,9 @@ func SetupTestDB() *sqlx.DB {
 }
 
 func CleanTestDB(t testing.TB, db *sqlx.DB) {
-	_, err := db.Exec("TRUNCATE TABLE tickets RESTART IDENTITY CASCADE;")
+	_, err := db.Exec("TRUNCATE TABLE tickets, idempotency_keys RESTART IDENTITY CASCADE;")
 	if err != nil {
-		t.Fatalf("failed to truncate tickets table: %v", err)
+		t.Fatalf("failed to truncate tables: %v", err)
 	}
 }
 

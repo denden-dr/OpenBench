@@ -174,6 +174,30 @@ func TestTicketApplyUpdate(t *testing.T) {
 		assert.True(t, ticket.ExitDate.Equal(exitDate))
 		assert.True(t, ticket.WarrantyExpiryDate().Equal(exitDate.AddDate(0, 0, 30)))
 	})
+
+	t.Run("transitions to waiting_confirmation and cancelled successfully", func(t *testing.T) {
+		statusWaiting := string(StatusWaitingConfirmation)
+		statusCancelled := string(StatusCancelled)
+
+		ticket := Ticket{
+			Status:        StatusOnProcess,
+			PaymentStatus: PaymentUnpaid,
+		}
+
+		// Update to waiting_confirmation
+		err := ticket.ApplyUpdate(TicketUpdate{
+			Status: &statusWaiting,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, StatusWaitingConfirmation, ticket.Status)
+
+		// Update to cancelled
+		err = ticket.ApplyUpdate(TicketUpdate{
+			Status: &statusCancelled,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, StatusCancelled, ticket.Status)
+	})
 }
 
 func TestValidateTicketUpdate(t *testing.T) {
