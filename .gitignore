@@ -65,3 +65,4 @@ __pycache__/
 
 # Graphify
 graphify-out/cache
+.graphify/
