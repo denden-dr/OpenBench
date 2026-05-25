@@ -49,7 +49,7 @@ FRONTEND_PID := /tmp/openbench-frontend.pid
 .PHONY: run-backend run-frontend up down start stop
 
 run-backend:
-	cd apps/backend && go run main.go & echo $$! > $(BACKEND_PID) && wait
+	cd apps/backend && go build -o bin/tmp-server main.go && ./bin/tmp-server & echo $$! > $(BACKEND_PID) && wait
 
 run-frontend-mock:
 	cd apps/frontend && npm run dev:mock
@@ -66,4 +66,5 @@ down stop:
 	$(COMPOSE_TOOL) down 2>/dev/null || true
 	@if [ -f $(BACKEND_PID) ]; then kill $$(cat $(BACKEND_PID)) 2>/dev/null && rm $(BACKEND_PID) || true; fi
 	@if [ -f $(FRONTEND_PID) ]; then kill $$(cat $(FRONTEND_PID)) 2>/dev/null && rm $(FRONTEND_PID) || true; fi
+	rm -f apps/backend/bin/tmp-server
 	@echo "All services stopped"
