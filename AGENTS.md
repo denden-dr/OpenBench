@@ -48,6 +48,11 @@ Pull requests should include a summary, linked issue or plan, test results, and 
 
 Do not commit secrets. Use `apps/backend/.env.example` for local configuration. Review down migrations with schema changes, and document container assumptions in Makefile targets or PR notes.
 
+## Runner Notes
+
+- When using `agent-browser` in this workspace, set `XDG_RUNTIME_DIR` to a writable path under `/tmp` before opening a browser session.
+- When starting `compose-test-up` or other rootless Podman flows from the Codex sandbox, prefer running the command outside the sandbox with escalated permissions if the local runtime cannot write to `/run/user/*` or set up user namespaces.
+
 ## graphify
 
 This project has a graphify knowledge graph at graphify-out/.
@@ -62,4 +67,3 @@ Rules:
 
 - Schema migrations that drop columns (such as `000005_remove_warranty_expiry_date`) require a downtime deployment window or an expand/contract rollout strategy to be rolling-compatible.
 - Production deployments for OpenBench currently assume a single-instance deployment model with scheduled downtime for migrations.
-
