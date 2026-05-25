@@ -50,60 +50,6 @@
   },
   "nodes": [
     {
-      "label": "translate.js",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L1",
-      "id": "translate_js",
-      "community": 17,
-      "norm_label": "translate.js"
-    },
-    {
-      "label": "fs",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L1",
-      "id": "openbench_translate_fs",
-      "community": 17,
-      "norm_label": "fs"
-    },
-    {
-      "label": "path",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L2",
-      "id": "openbench_translate_path",
-      "community": 17,
-      "norm_label": "path"
-    },
-    {
-      "label": "file",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L4",
-      "id": "openbench_translate_file",
-      "community": 17,
-      "norm_label": "file"
-    },
-    {
-      "label": "content",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L5",
-      "id": "openbench_translate_content",
-      "community": 17,
-      "norm_label": "content"
-    },
-    {
-      "label": "replacements",
-      "file_type": "code",
-      "source_file": "translate.js",
-      "source_location": "L7",
-      "id": "openbench_translate_replacements",
-      "community": 17,
-      "norm_label": "replacements"
-    },
-    {
       "label": "core.py",
       "file_type": "code",
       "source_file": ".agents/skills/common/ui-ux-pro-max/scripts/core.py",
@@ -1133,7 +1079,7 @@
       "label": "index",
       "file_type": "code",
       "source_file": "apps/frontend/src/routes/+page.svelte",
-      "source_location": "L224",
+      "source_location": "L225",
       "id": "routes_page_index",
       "community": 1,
       "norm_label": "index"
@@ -1142,7 +1088,7 @@
       "label": "exitDate",
       "file_type": "code",
       "source_file": "apps/frontend/src/routes/+page.svelte",
-      "source_location": "L341",
+      "source_location": "L344",
       "id": "routes_page_exitdate",
       "community": 1,
       "norm_label": "exitdate"
@@ -1151,7 +1097,7 @@
       "label": "today",
       "file_type": "code",
       "source_file": "apps/frontend/src/routes/+page.svelte",
-      "source_location": "L342",
+      "source_location": "L345",
       "id": "routes_page_today",
       "community": 1,
       "norm_label": "today"
@@ -1160,7 +1106,7 @@
       "label": "formatCurrency()",
       "file_type": "code",
       "source_file": "apps/frontend/src/routes/+page.svelte",
-      "source_location": "L680",
+      "source_location": "L683",
       "id": "routes_page_formatcurrency",
       "community": 1,
       "norm_label": "formatcurrency()"
@@ -1475,7 +1421,7 @@
       "label": ".SetupSuite()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L30",
+      "source_location": "L31",
       "id": "handler_ticketintegrationtestsuite_setupsuite",
       "community": 5,
       "norm_label": ".setupsuite()"
@@ -1484,16 +1430,25 @@
       "label": ".SetupTest()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L54",
+      "source_location": "L55",
       "id": "handler_ticketintegrationtestsuite_setuptest",
       "community": 8,
       "norm_label": ".setuptest()"
     },
     {
+      "label": ".TearDownSuite()",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L59",
+      "id": "handler_ticketintegrationtestsuite_teardownsuite",
+      "community": 3,
+      "norm_label": ".teardownsuite()"
+    },
+    {
       "label": "TestTicketIntegrationSuite()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L58",
+      "source_location": "L65",
       "id": "handler_ticket_handler_integration_test_testticketintegrationsuite",
       "community": 3,
       "norm_label": "testticketintegrationsuite()"
@@ -1502,7 +1457,7 @@
       "label": ".TestCreateAndListTicket()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L62",
+      "source_location": "L69",
       "id": "handler_ticketintegrationtestsuite_testcreateandlistticket",
       "community": 3,
       "norm_label": ".testcreateandlistticket()"
@@ -1511,7 +1466,7 @@
       "label": ".TestDashboardStatusFlow()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L106",
+      "source_location": "L115",
       "id": "handler_ticketintegrationtestsuite_testdashboardstatusflow",
       "community": 3,
       "norm_label": ".testdashboardstatusflow()"
@@ -1520,7 +1475,7 @@
       "label": ".TestUpdateTicket()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L169",
+      "source_location": "L180",
       "id": "handler_ticketintegrationtestsuite_testupdateticket",
       "community": 3,
       "norm_label": ".testupdateticket()"
@@ -1529,7 +1484,7 @@
       "label": ".TestDeleteTicket()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L255",
+      "source_location": "L270",
       "id": "handler_ticketintegrationtestsuite_testdeleteticket",
       "community": 3,
       "norm_label": ".testdeleteticket()"
@@ -1538,7 +1493,7 @@
       "label": ".TestValidation()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L290",
+      "source_location": "L308",
       "id": "handler_ticketintegrationtestsuite_testvalidation",
       "community": 3,
       "norm_label": ".testvalidation()"
@@ -1547,7 +1502,7 @@
       "label": ".TestInvalidStatusRejected()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L308",
+      "source_location": "L327",
       "id": "handler_ticketintegrationtestsuite_testinvalidstatusrejected",
       "community": 3,
       "norm_label": ".testinvalidstatusrejected()"
@@ -1556,7 +1511,7 @@
       "label": ".TestBusinessValidationRules()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L341",
+      "source_location": "L362",
       "id": "handler_ticketintegrationtestsuite_testbusinessvalidationrules",
       "community": 3,
       "norm_label": ".testbusinessvalidationrules()"
@@ -1565,7 +1520,7 @@
       "label": ".TestIdempotency_DuplicatePOST()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L481",
+      "source_location": "L510",
       "id": "handler_ticketintegrationtestsuite_testidempotency_duplicatepost",
       "community": 3,
       "norm_label": ".testidempotency_duplicatepost()"
@@ -1574,7 +1529,7 @@
       "label": ".TestIdempotency_DuplicatePATCH()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L532",
+      "source_location": "L564",
       "id": "handler_ticketintegrationtestsuite_testidempotency_duplicatepatch",
       "community": 3,
       "norm_label": ".testidempotency_duplicatepatch()"
@@ -1583,7 +1538,7 @@
       "label": ".TestIdempotency_ConcurrentPOST()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L579",
+      "source_location": "L614",
       "id": "handler_ticketintegrationtestsuite_testidempotency_concurrentpost",
       "community": 3,
       "norm_label": ".testidempotency_concurrentpost()"
@@ -1592,7 +1547,7 @@
       "label": ".TestIdempotency_KeyIsolation()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L640",
+      "source_location": "L680",
       "id": "handler_ticketintegrationtestsuite_testidempotency_keyisolation",
       "community": 3,
       "norm_label": ".testidempotency_keyisolation()"
@@ -1601,7 +1556,7 @@
       "label": ".TestIdempotency_TicketSpecificPATCHKeyIsolation()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L679",
+      "source_location": "L721",
       "id": "handler_ticketintegrationtestsuite_testidempotency_ticketspecificpatchkeyisolation",
       "community": 3,
       "norm_label": ".testidempotency_ticketspecificpatchkeyisolation()"
@@ -1610,16 +1565,25 @@
       "label": ".TestIdempotency_BodyFingerprintConflict()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L724",
+      "source_location": "L770",
       "id": "handler_ticketintegrationtestsuite_testidempotency_bodyfingerprintconflict",
       "community": 3,
       "norm_label": ".testidempotency_bodyfingerprintconflict()"
     },
     {
+      "label": ".TestIdempotency_ValidationErrorRequiresFreshKeyForCorrectedPayload()",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L794",
+      "id": "handler_ticketintegrationtestsuite_testidempotency_validationerrorrequiresfreshkeyforcorrectedpayload",
+      "community": 3,
+      "norm_label": ".testidempotency_validationerrorrequiresfreshkeyforcorrectedpayload()"
+    },
+    {
       "label": ".TestIdempotency_InvalidKey()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L746",
+      "source_location": "L836",
       "id": "handler_ticketintegrationtestsuite_testidempotency_invalidkey",
       "community": 3,
       "norm_label": ".testidempotency_invalidkey()"
@@ -1628,7 +1592,7 @@
       "label": ".TestIdempotency_NoKeyCompatibility()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L757",
+      "source_location": "L848",
       "id": "handler_ticketintegrationtestsuite_testidempotency_nokeycompatibility",
       "community": 3,
       "norm_label": ".testidempotency_nokeycompatibility()"
@@ -1637,7 +1601,7 @@
       "label": ".TestIdempotency_ScopedHeaderSpoofing()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L781",
+      "source_location": "L875",
       "id": "handler_ticketintegrationtestsuite_testidempotency_scopedheaderspoofing",
       "community": 3,
       "norm_label": ".testidempotency_scopedheaderspoofing()"
@@ -1646,7 +1610,7 @@
       "label": ".TestIdempotency_ScopeExclusionDelete()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L808",
+      "source_location": "L904",
       "id": "handler_ticketintegrationtestsuite_testidempotency_scopeexclusiondelete",
       "community": 3,
       "norm_label": ".testidempotency_scopeexclusiondelete()"
@@ -1655,7 +1619,7 @@
       "label": ".TestPostgresStorage_GetAndSet()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L836",
+      "source_location": "L935",
       "id": "handler_ticketintegrationtestsuite_testpostgresstorage_getandset",
       "community": 3,
       "norm_label": ".testpostgresstorage_getandset()"
@@ -1664,7 +1628,7 @@
       "label": ".TestPostgresStorage_ReserveRequest()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L868",
+      "source_location": "L968",
       "id": "handler_ticketintegrationtestsuite_testpostgresstorage_reserverequest",
       "community": 3,
       "norm_label": ".testpostgresstorage_reserverequest()"
@@ -1673,16 +1637,25 @@
       "label": ".TestPostgresStorage_DeleteExpired()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L885",
+      "source_location": "L986",
       "id": "handler_ticketintegrationtestsuite_testpostgresstorage_deleteexpired",
       "community": 3,
       "norm_label": ".testpostgresstorage_deleteexpired()"
     },
     {
+      "label": ".TestPostgresStorage_RequestPathDoesNotSynchronouslyDeleteExpiredKeys()",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L1011",
+      "id": "handler_ticketintegrationtestsuite_testpostgresstorage_requestpathdoesnotsynchronouslydeleteexpiredkeys",
+      "community": 3,
+      "norm_label": ".testpostgresstorage_requestpathdoesnotsynchronouslydeleteexpiredkeys()"
+    },
+    {
       "label": ".TestPostgresStorage_CacheWriteFailure()",
       "file_type": "code",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
-      "source_location": "L909",
+      "source_location": "L1033",
       "id": "handler_ticketintegrationtestsuite_testpostgresstorage_cachewritefailure",
       "community": 3,
       "norm_label": ".testpostgresstorage_cachewritefailure()"
@@ -2152,7 +2125,7 @@
       "source_file": "apps/backend/internal/service/ticket_service.go",
       "source_location": "L1",
       "id": "apps_backend_internal_service_ticket_service_go",
-      "community": 6,
+      "community": 5,
       "norm_label": "ticket_service.go"
     },
     {
@@ -2305,23 +2278,41 @@
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
       "source_location": "L1",
       "id": "apps_backend_internal_database_idempotency_storage_go",
-      "community": 43,
+      "community": 3,
       "norm_label": "idempotency_storage.go"
     },
     {
       "label": "PostgresStorage",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L15",
+      "source_location": "L16",
       "id": "database_postgresstorage",
-      "community": 43,
+      "community": 3,
       "norm_label": "postgresstorage"
+    },
+    {
+      "label": "StorageOption",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/database/idempotency_storage.go",
+      "source_location": "L24",
+      "id": "database_storageoption",
+      "community": 3,
+      "norm_label": "storageoption"
+    },
+    {
+      "label": "WithCleanupInterval()",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/database/idempotency_storage.go",
+      "source_location": "L26",
+      "id": "database_idempotency_storage_withcleanupinterval",
+      "community": 3,
+      "norm_label": "withcleanupinterval()"
     },
     {
       "label": "NewPostgresStorage()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L19",
+      "source_location": "L32",
       "id": "database_idempotency_storage_newpostgresstorage",
       "community": 3,
       "norm_label": "newpostgresstorage()"
@@ -2330,63 +2321,63 @@
       "label": ".Get()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L23",
+      "source_location": "L70",
       "id": "database_postgresstorage_get",
-      "community": 43,
+      "community": 3,
       "norm_label": ".get()"
     },
     {
       "label": ".ReserveRequest()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L46",
+      "source_location": "L93",
       "id": "database_postgresstorage_reserverequest",
-      "community": 43,
+      "community": 3,
       "norm_label": ".reserverequest()"
     },
     {
       "label": ".Set()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L110",
+      "source_location": "L153",
       "id": "database_postgresstorage_set",
-      "community": 43,
+      "community": 3,
       "norm_label": ".set()"
     },
     {
       "label": ".Delete()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L137",
+      "source_location": "L176",
       "id": "database_postgresstorage_delete",
-      "community": 43,
+      "community": 3,
       "norm_label": ".delete()"
     },
     {
       "label": ".Reset()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L146",
+      "source_location": "L185",
       "id": "database_postgresstorage_reset",
-      "community": 43,
+      "community": 3,
       "norm_label": ".reset()"
     },
     {
       "label": ".Close()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L151",
+      "source_location": "L190",
       "id": "database_postgresstorage_close",
-      "community": 43,
+      "community": 3,
       "norm_label": ".close()"
     },
     {
       "label": ".DeleteExpired()",
       "file_type": "code",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
-      "source_location": "L155",
+      "source_location": "L198",
       "id": "database_postgresstorage_deleteexpired",
-      "community": 43,
+      "community": 3,
       "norm_label": ".deleteexpired()"
     },
     {
@@ -2496,6 +2487,15 @@
       "id": "middleware_idempotency_test_testhashidempotencyrequest",
       "community": 5,
       "norm_label": "testhashidempotencyrequest()"
+    },
+    {
+      "label": "TestHashIdempotencyRequestChangesAfterValidationCorrection()",
+      "file_type": "code",
+      "source_file": "apps/backend/internal/middleware/idempotency_test.go",
+      "source_location": "L155",
+      "id": "middleware_idempotency_test_testhashidempotencyrequestchangesaftervalidationcorrection",
+      "community": 5,
+      "norm_label": "testhashidempotencyrequestchangesaftervalidationcorrection()"
     },
     {
       "label": "mock_ticket_repository.go",
@@ -3056,247 +3056,130 @@
       "norm_label": "deployment & schema migrations"
     },
     {
-      "label": "manual_test_guide.md",
+      "label": "issue.md",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L1",
-      "id": "manual_test_guide_md",
-      "community": 36,
-      "norm_label": "manual_test_guide.md"
+      "id": "issue_md",
+      "community": 43,
+      "norm_label": "issue.md"
     },
     {
-      "label": "Panduan Pengujian Manual: Idempotensi & Loading States",
+      "label": "Code Review: PR 17 - Idempotency and Loading-Aware Ticket Flows",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L1",
-      "id": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
-      "community": 36,
-      "norm_label": "panduan pengujian manual: idempotensi & loading states"
+      "id": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows",
+      "community": 43,
+      "norm_label": "code review: pr 17 - idempotency and loading-aware ticket flows"
     },
     {
-      "label": "1. Prasyarat Pengujian",
+      "label": "Strengths",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L7",
-      "id": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "community": 36,
-      "norm_label": "1. prasyarat pengujian"
+      "source_file": "issue.md",
+      "source_location": "L3",
+      "id": "openbench_issue_strengths",
+      "community": 43,
+      "norm_label": "strengths"
     },
     {
-      "label": "code:bash (make compose-up)",
+      "label": "Issues",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L10",
-      "id": "openbench_manual_test_guide_codeblock_1",
-      "community": 36,
-      "norm_label": "code:bash (make compose-up)"
+      "source_file": "issue.md",
+      "source_location": "L11",
+      "id": "openbench_issue_issues",
+      "community": 43,
+      "norm_label": "issues"
     },
     {
-      "label": "code:bash (make migrate-up)",
+      "label": "Critical (Must Fix)",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L14",
-      "id": "openbench_manual_test_guide_codeblock_2",
-      "community": 36,
-      "norm_label": "code:bash (make migrate-up)"
+      "source_file": "issue.md",
+      "source_location": "L13",
+      "id": "openbench_issue_critical_must_fix",
+      "community": 43,
+      "norm_label": "critical (must fix)"
     },
     {
-      "label": "code:bash (make run-backend)",
+      "label": "Important (Should Fix)",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L18",
-      "id": "openbench_manual_test_guide_codeblock_3",
-      "community": 36,
-      "norm_label": "code:bash (make run-backend)"
+      "source_file": "issue.md",
+      "source_location": "L21",
+      "id": "openbench_issue_important_should_fix",
+      "community": 43,
+      "norm_label": "important (should fix)"
     },
     {
-      "label": "code:bash (make run-frontend)",
+      "label": "Minor (Nice to Have)",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L22",
-      "id": "openbench_manual_test_guide_codeblock_4",
-      "community": 36,
-      "norm_label": "code:bash (make run-frontend)"
-    },
-    {
-      "label": "2. Skenario Pengujian",
-      "file_type": "document",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L29",
-      "id": "openbench_manual_test_guide_2_skenario_pengujian",
-      "community": 36,
-      "norm_label": "2. skenario pengujian"
+      "id": "openbench_issue_minor_nice_to_have",
+      "community": 43,
+      "norm_label": "minor (nice to have)"
     },
     {
-      "label": "Skenario A: Verifikasi Header Idempotensi pada Mutasi Tiket",
+      "label": "Recommendations",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L31",
-      "id": "openbench_manual_test_guide_skenario_a_verifikasi_header_idempotensi_pada_mutasi_tiket",
-      "community": 36,
-      "norm_label": "skenario a: verifikasi header idempotensi pada mutasi tiket"
+      "source_file": "issue.md",
+      "source_location": "L39",
+      "id": "openbench_issue_recommendations",
+      "community": 43,
+      "norm_label": "recommendations"
     },
     {
-      "label": "Skenario B: Verifikasi Regenerasi Kunci Idempotensi",
+      "label": "Assessment",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L45",
-      "id": "openbench_manual_test_guide_skenario_b_verifikasi_regenerasi_kunci_idempotensi",
-      "community": 36,
-      "norm_label": "skenario b: verifikasi regenerasi kunci idempotensi"
+      "id": "openbench_issue_assessment",
+      "community": 43,
+      "norm_label": "assessment"
     },
     {
-      "label": "Skenario C: Uji Coba Loading States & Penonaktifan Tombol (Simulasi Jaringan Lambat)",
+      "label": "DONE",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L58",
-      "id": "openbench_manual_test_guide_skenario_c_uji_coba_loading_states_penonaktifan_tombol_simulasi_jaringan_lambat",
-      "community": 36,
-      "norm_label": "skenario c: uji coba loading states & penonaktifan tombol (simulasi jaringan lambat)"
+      "source_file": "issue.md",
+      "source_location": "L51",
+      "id": "openbench_issue_done",
+      "community": 43,
+      "norm_label": "done"
     },
     {
-      "label": "Skenario D: Deteksi Konflik Payload dengan Kunci Sama (Backend Verification)",
+      "label": "Code Review: PR 17 Fixes",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L81",
-      "id": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
-      "community": 36,
-      "norm_label": "skenario d: deteksi konflik payload dengan kunci sama (backend verification)"
+      "source_file": "issue.md",
+      "source_location": "L55",
+      "id": "openbench_issue_code_review_pr_17_fixes",
+      "community": 43,
+      "norm_label": "code review: pr 17 fixes"
     },
     {
-      "label": "code:bash (curl -X POST http://localhost:3000/api/v1/tickets \\)",
+      "label": "Critical",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L87",
-      "id": "openbench_manual_test_guide_codeblock_5",
-      "community": 36,
-      "norm_label": "code:bash (curl -x post http://localhost:3000/api/v1/tickets \\)"
+      "source_file": "issue.md",
+      "source_location": "L57",
+      "id": "openbench_issue_critical",
+      "community": 43,
+      "norm_label": "critical"
     },
     {
-      "label": "code:bash (curl -X POST http://localhost:3000/api/v1/tickets \\)",
+      "label": "Important",
       "file_type": "document",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L96",
-      "id": "openbench_manual_test_guide_codeblock_6",
-      "community": 36,
-      "norm_label": "code:bash (curl -x post http://localhost:3000/api/v1/tickets \\)"
+      "source_file": "issue.md",
+      "source_location": "L60",
+      "id": "openbench_issue_important",
+      "community": 43,
+      "norm_label": "important"
     },
     {
-      "label": "manual_test_report.md",
+      "label": "Minor",
       "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L1",
-      "id": "manual_test_report_md",
-      "community": 37,
-      "norm_label": "manual_test_report.md"
-    },
-    {
-      "label": "Manual Test Report",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L1",
-      "id": "openbench_manual_test_report_manual_test_report",
-      "community": 37,
-      "norm_label": "manual test report"
-    },
-    {
-      "label": "Scope",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L6",
-      "id": "openbench_manual_test_report_scope",
-      "community": 37,
-      "norm_label": "scope"
-    },
-    {
-      "label": "Summary",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L14",
-      "id": "openbench_manual_test_report_summary",
-      "community": 37,
-      "norm_label": "summary"
-    },
-    {
-      "label": "Results",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L23",
-      "id": "openbench_manual_test_report_results",
-      "community": 37,
-      "norm_label": "results"
-    },
-    {
-      "label": "1. Create ticket",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L24",
-      "id": "openbench_manual_test_report_1_create_ticket",
-      "community": 37,
-      "norm_label": "1. create ticket"
-    },
-    {
-      "label": "2. Idempotency key regeneration",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L30",
-      "id": "openbench_manual_test_report_2_idempotency_key_regeneration",
-      "community": 37,
-      "norm_label": "2. idempotency key regeneration"
-    },
-    {
-      "label": "3. Duplicate request handling",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L35",
-      "id": "openbench_manual_test_report_3_duplicate_request_handling",
-      "community": 37,
-      "norm_label": "3. duplicate request handling"
-    },
-    {
-      "label": "4. Loading state",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L41",
-      "id": "openbench_manual_test_report_4_loading_state",
-      "community": 37,
-      "norm_label": "4. loading state"
-    },
-    {
-      "label": "5. Quick action",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L47",
-      "id": "openbench_manual_test_report_5_quick_action",
-      "community": 37,
-      "norm_label": "5. quick action"
-    },
-    {
-      "label": "6. Delete / cancel flow",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L53",
-      "id": "openbench_manual_test_report_6_delete_cancel_flow",
-      "community": 37,
-      "norm_label": "6. delete / cancel flow"
-    },
-    {
-      "label": "Issues Found",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L59",
-      "id": "openbench_manual_test_report_issues_found",
-      "community": 37,
-      "norm_label": "issues found"
-    },
-    {
-      "label": "Notes",
-      "file_type": "document",
-      "source_file": "manual_test_report.md",
-      "source_location": "L63",
-      "id": "openbench_manual_test_report_notes",
-      "community": 37,
-      "norm_label": "notes"
+      "source_file": "issue.md",
+      "source_location": "L64",
+      "id": "openbench_issue_minor",
+      "community": 43,
+      "norm_label": "minor"
     },
     {
       "label": "SKILL.md",
@@ -4163,6 +4046,303 @@
       "norm_label": "5.1 tickets table"
     },
     {
+      "label": "translate.js",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L1",
+      "community": 17,
+      "norm_label": "translate.js",
+      "id": "translate_js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L1",
+      "community": 17,
+      "norm_label": "fs",
+      "id": "openbench_translate_fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L2",
+      "community": 17,
+      "norm_label": "path",
+      "id": "openbench_translate_path"
+    },
+    {
+      "label": "file",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L4",
+      "community": 17,
+      "norm_label": "file",
+      "id": "openbench_translate_file"
+    },
+    {
+      "label": "content",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L5",
+      "community": 17,
+      "norm_label": "content",
+      "id": "openbench_translate_content"
+    },
+    {
+      "label": "replacements",
+      "file_type": "code",
+      "source_file": "translate.js",
+      "source_location": "L7",
+      "community": 17,
+      "norm_label": "replacements",
+      "id": "openbench_translate_replacements"
+    },
+    {
+      "label": "manual_test_guide.md",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L1",
+      "community": 36,
+      "norm_label": "manual_test_guide.md",
+      "id": "manual_test_guide_md"
+    },
+    {
+      "label": "Panduan Pengujian Manual: Idempotensi & Loading States",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L1",
+      "community": 36,
+      "norm_label": "panduan pengujian manual: idempotensi & loading states",
+      "id": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states"
+    },
+    {
+      "label": "1. Prasyarat Pengujian",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L7",
+      "community": 36,
+      "norm_label": "1. prasyarat pengujian",
+      "id": "openbench_manual_test_guide_1_prasyarat_pengujian"
+    },
+    {
+      "label": "code:bash (make compose-up)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L10",
+      "community": 36,
+      "norm_label": "code:bash (make compose-up)",
+      "id": "openbench_manual_test_guide_codeblock_1"
+    },
+    {
+      "label": "code:bash (make migrate-up)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L14",
+      "community": 36,
+      "norm_label": "code:bash (make migrate-up)",
+      "id": "openbench_manual_test_guide_codeblock_2"
+    },
+    {
+      "label": "code:bash (make run-backend)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L18",
+      "community": 36,
+      "norm_label": "code:bash (make run-backend)",
+      "id": "openbench_manual_test_guide_codeblock_3"
+    },
+    {
+      "label": "code:bash (make run-frontend)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L22",
+      "community": 36,
+      "norm_label": "code:bash (make run-frontend)",
+      "id": "openbench_manual_test_guide_codeblock_4"
+    },
+    {
+      "label": "2. Skenario Pengujian",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L29",
+      "community": 36,
+      "norm_label": "2. skenario pengujian",
+      "id": "openbench_manual_test_guide_2_skenario_pengujian"
+    },
+    {
+      "label": "Skenario A: Verifikasi Header Idempotensi pada Mutasi Tiket",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L31",
+      "community": 36,
+      "norm_label": "skenario a: verifikasi header idempotensi pada mutasi tiket",
+      "id": "openbench_manual_test_guide_skenario_a_verifikasi_header_idempotensi_pada_mutasi_tiket"
+    },
+    {
+      "label": "Skenario B: Verifikasi Regenerasi Kunci Idempotensi",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L45",
+      "community": 36,
+      "norm_label": "skenario b: verifikasi regenerasi kunci idempotensi",
+      "id": "openbench_manual_test_guide_skenario_b_verifikasi_regenerasi_kunci_idempotensi"
+    },
+    {
+      "label": "Skenario C: Uji Coba Loading States & Penonaktifan Tombol (Simulasi Jaringan Lambat)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L58",
+      "community": 36,
+      "norm_label": "skenario c: uji coba loading states & penonaktifan tombol (simulasi jaringan lambat)",
+      "id": "openbench_manual_test_guide_skenario_c_uji_coba_loading_states_penonaktifan_tombol_simulasi_jaringan_lambat"
+    },
+    {
+      "label": "Skenario D: Deteksi Konflik Payload dengan Kunci Sama (Backend Verification)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L81",
+      "community": 36,
+      "norm_label": "skenario d: deteksi konflik payload dengan kunci sama (backend verification)",
+      "id": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification"
+    },
+    {
+      "label": "code:bash (curl -X POST http://localhost:3000/api/v1/tickets \\)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L87",
+      "community": 36,
+      "norm_label": "code:bash (curl -x post http://localhost:3000/api/v1/tickets \\)",
+      "id": "openbench_manual_test_guide_codeblock_5"
+    },
+    {
+      "label": "code:bash (curl -X POST http://localhost:3000/api/v1/tickets \\)",
+      "file_type": "document",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L96",
+      "community": 36,
+      "norm_label": "code:bash (curl -x post http://localhost:3000/api/v1/tickets \\)",
+      "id": "openbench_manual_test_guide_codeblock_6"
+    },
+    {
+      "label": "manual_test_report.md",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L1",
+      "community": 37,
+      "norm_label": "manual_test_report.md",
+      "id": "manual_test_report_md"
+    },
+    {
+      "label": "Manual Test Report",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L1",
+      "community": 37,
+      "norm_label": "manual test report",
+      "id": "openbench_manual_test_report_manual_test_report"
+    },
+    {
+      "label": "Scope",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L6",
+      "community": 37,
+      "norm_label": "scope",
+      "id": "openbench_manual_test_report_scope"
+    },
+    {
+      "label": "Summary",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L14",
+      "community": 37,
+      "norm_label": "summary",
+      "id": "openbench_manual_test_report_summary"
+    },
+    {
+      "label": "Results",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L23",
+      "community": 37,
+      "norm_label": "results",
+      "id": "openbench_manual_test_report_results"
+    },
+    {
+      "label": "1. Create ticket",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L24",
+      "community": 37,
+      "norm_label": "1. create ticket",
+      "id": "openbench_manual_test_report_1_create_ticket"
+    },
+    {
+      "label": "2. Idempotency key regeneration",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L30",
+      "community": 37,
+      "norm_label": "2. idempotency key regeneration",
+      "id": "openbench_manual_test_report_2_idempotency_key_regeneration"
+    },
+    {
+      "label": "3. Duplicate request handling",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L35",
+      "community": 37,
+      "norm_label": "3. duplicate request handling",
+      "id": "openbench_manual_test_report_3_duplicate_request_handling"
+    },
+    {
+      "label": "4. Loading state",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L41",
+      "community": 37,
+      "norm_label": "4. loading state",
+      "id": "openbench_manual_test_report_4_loading_state"
+    },
+    {
+      "label": "5. Quick action",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L47",
+      "community": 37,
+      "norm_label": "5. quick action",
+      "id": "openbench_manual_test_report_5_quick_action"
+    },
+    {
+      "label": "6. Delete / cancel flow",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L53",
+      "community": 37,
+      "norm_label": "6. delete / cancel flow",
+      "id": "openbench_manual_test_report_6_delete_cancel_flow"
+    },
+    {
+      "label": "Issues Found",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L59",
+      "community": 37,
+      "norm_label": "issues found",
+      "id": "openbench_manual_test_report_issues_found"
+    },
+    {
+      "label": "Notes",
+      "file_type": "document",
+      "source_file": "manual_test_report.md",
+      "source_location": "L63",
+      "community": 37,
+      "norm_label": "notes",
+      "id": "openbench_manual_test_report_notes"
+    },
+    {
       "label": ".graphify_detect.json",
       "file_type": "code",
       "source_file": ".graphify_detect.json",
@@ -4973,56 +5153,6 @@
     }
   ],
   "links": [
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "translate.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "translate_js",
-      "target": "openbench_translate_fs"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "translate.js",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "translate_js",
-      "target": "openbench_translate_path"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "translate.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "translate_js",
-      "target": "openbench_translate_file"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "translate.js",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "translate_js",
-      "target": "openbench_translate_content"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "translate.js",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "translate_js",
-      "target": "openbench_translate_replacements"
-    },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
@@ -7155,6 +7285,16 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "handler_ticketintegrationtestsuite",
+      "target": "handler_ticketintegrationtestsuite_teardownsuite"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
       "source_location": "L62",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -7285,6 +7425,16 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L794",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "handler_ticketintegrationtestsuite",
+      "target": "handler_ticketintegrationtestsuite_testidempotency_validationerrorrequiresfreshkeyforcorrectedpayload"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
       "source_location": "L746",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -7350,6 +7500,16 @@
       "confidence_score": 1.0,
       "source": "handler_ticketintegrationtestsuite",
       "target": "handler_ticketintegrationtestsuite_testpostgresstorage_deleteexpired"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L1011",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "handler_ticketintegrationtestsuite",
+      "target": "handler_ticketintegrationtestsuite_testpostgresstorage_requestpathdoesnotsynchronouslydeleteexpiredkeys"
     },
     {
       "relation": "method",
@@ -7448,6 +7608,28 @@
       "weight": 1.0,
       "source": "handler_ticketintegrationtestsuite_testpostgresstorage_deleteexpired",
       "target": "database_idempotency_storage_newpostgresstorage"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L1012",
+      "weight": 1.0,
+      "source": "handler_ticketintegrationtestsuite_testpostgresstorage_requestpathdoesnotsynchronouslydeleteexpiredkeys",
+      "target": "database_idempotency_storage_newpostgresstorage"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "apps/backend/internal/handler/ticket_handler_integration_test.go",
+      "source_location": "L1012",
+      "weight": 1.0,
+      "source": "handler_ticketintegrationtestsuite_testpostgresstorage_requestpathdoesnotsynchronouslydeleteexpiredkeys",
+      "target": "database_idempotency_storage_withcleanupinterval"
     },
     {
       "relation": "calls",
@@ -8489,6 +8671,26 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "apps_backend_internal_database_idempotency_storage_go",
+      "target": "database_storageoption"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/database/idempotency_storage.go",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "apps_backend_internal_database_idempotency_storage_go",
+      "target": "database_idempotency_storage_withcleanupinterval"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/database/idempotency_storage.go",
       "source_location": "L19",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -8567,6 +8769,18 @@
     },
     {
       "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/database/idempotency_storage.go",
+      "source_location": "L32",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "database_idempotency_storage_newpostgresstorage",
+      "target": "database_postgresstorage_deleteexpired"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/backend/internal/database/idempotency_storage.go",
       "source_location": "L61",
@@ -8713,6 +8927,17 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "apps/backend/internal/middleware/idempotency_test.go",
+      "source_location": "L161",
+      "weight": 1.0,
+      "source": "middleware_idempotency_test_testhashidempotencyrequestchangesaftervalidationcorrection",
+      "target": "middleware_idempotency_hashidempotencyrequest"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "apps/backend/internal/middleware/idempotency_test.go",
       "source_location": "L127",
       "weight": 1.0,
       "source": "middleware_idempotency_test_testvalidatescopedidempotencykey",
@@ -8747,6 +8972,16 @@
       "confidence_score": 1.0,
       "source": "apps_backend_internal_middleware_idempotency_test_go",
       "target": "middleware_idempotency_test_testhashidempotencyrequest"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/backend/internal/middleware/idempotency_test.go",
+      "source_location": "L155",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "apps_backend_internal_middleware_idempotency_test_go",
+      "target": "middleware_idempotency_test_testhashidempotencyrequestchangesaftervalidationcorrection"
     },
     {
       "relation": "contains",
@@ -9244,9 +9479,9 @@
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "readme_md",
-      "target": "openbench_readme_openbench_phonefix_admin",
-      "confidence_score": 1.0
+      "target": "openbench_readme_openbench_phonefix_admin"
     },
     {
       "relation": "contains",
@@ -9254,9 +9489,9 @@
       "source_file": "README.md",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_openbench_phonefix_admin",
-      "target": "openbench_readme_project_architecture",
-      "confidence_score": 1.0
+      "target": "openbench_readme_project_architecture"
     },
     {
       "relation": "contains",
@@ -9264,9 +9499,9 @@
       "source_file": "README.md",
       "source_location": "L29",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_openbench_phonefix_admin",
-      "target": "openbench_readme_core_features",
-      "confidence_score": 1.0
+      "target": "openbench_readme_core_features"
     },
     {
       "relation": "contains",
@@ -9274,9 +9509,9 @@
       "source_file": "README.md",
       "source_location": "L40",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_openbench_phonefix_admin",
-      "target": "openbench_readme_tech_stack",
-      "confidence_score": 1.0
+      "target": "openbench_readme_tech_stack"
     },
     {
       "relation": "contains",
@@ -9284,9 +9519,9 @@
       "source_file": "README.md",
       "source_location": "L50",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_openbench_phonefix_admin",
-      "target": "openbench_readme_getting_started",
-      "confidence_score": 1.0
+      "target": "openbench_readme_getting_started"
     },
     {
       "relation": "contains",
@@ -9294,9 +9529,9 @@
       "source_file": "README.md",
       "source_location": "L93",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_openbench_phonefix_admin",
-      "target": "openbench_readme_project_graph",
-      "confidence_score": 1.0
+      "target": "openbench_readme_project_graph"
     },
     {
       "relation": "contains",
@@ -9304,9 +9539,9 @@
       "source_file": "README.md",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_project_architecture",
-      "target": "openbench_readme_codeblock_1",
-      "confidence_score": 1.0
+      "target": "openbench_readme_codeblock_1"
     },
     {
       "relation": "contains",
@@ -9314,9 +9549,9 @@
       "source_file": "README.md",
       "source_location": "L52",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_getting_started",
-      "target": "openbench_readme_prerequisites",
-      "confidence_score": 1.0
+      "target": "openbench_readme_prerequisites"
     },
     {
       "relation": "contains",
@@ -9324,9 +9559,9 @@
       "source_file": "README.md",
       "source_location": "L59",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_getting_started",
-      "target": "openbench_readme_running_locally",
-      "confidence_score": 1.0
+      "target": "openbench_readme_running_locally"
     },
     {
       "relation": "contains",
@@ -9334,9 +9569,9 @@
       "source_file": "README.md",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_getting_started",
-      "target": "openbench_readme_makefile_targets",
-      "confidence_score": 1.0
+      "target": "openbench_readme_makefile_targets"
     },
     {
       "relation": "contains",
@@ -9344,9 +9579,9 @@
       "source_file": "README.md",
       "source_location": "L61",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_running_locally",
-      "target": "openbench_readme_codeblock_2",
-      "confidence_score": 1.0
+      "target": "openbench_readme_codeblock_2"
     },
     {
       "relation": "contains",
@@ -9354,9 +9589,9 @@
       "source_file": "README.md",
       "source_location": "L97",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_readme_project_graph",
-      "target": "openbench_readme_codeblock_3",
-      "confidence_score": 1.0
+      "target": "openbench_readme_codeblock_3"
     },
     {
       "relation": "contains",
@@ -9364,9 +9599,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "agents_md",
-      "target": "openbench_agents_repository_guidelines",
-      "confidence_score": 1.0
+      "target": "openbench_agents_repository_guidelines"
     },
     {
       "relation": "contains",
@@ -9374,9 +9609,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_project_structure_module_organization",
-      "confidence_score": 1.0
+      "target": "openbench_agents_project_structure_module_organization"
     },
     {
       "relation": "contains",
@@ -9384,9 +9619,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_build_test_and_development_commands",
-      "confidence_score": 1.0
+      "target": "openbench_agents_build_test_and_development_commands"
     },
     {
       "relation": "contains",
@@ -9394,9 +9629,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L29",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_coding_style_naming_conventions",
-      "confidence_score": 1.0
+      "target": "openbench_agents_coding_style_naming_conventions"
     },
     {
       "relation": "contains",
@@ -9404,9 +9639,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L35",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_testing_guidelines",
-      "confidence_score": 1.0
+      "target": "openbench_agents_testing_guidelines"
     },
     {
       "relation": "contains",
@@ -9414,9 +9649,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L41",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_commit_pull_request_guidelines",
-      "confidence_score": 1.0
+      "target": "openbench_agents_commit_pull_request_guidelines"
     },
     {
       "relation": "contains",
@@ -9424,9 +9659,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_security_configuration_tips",
-      "confidence_score": 1.0
+      "target": "openbench_agents_security_configuration_tips"
     },
     {
       "relation": "contains",
@@ -9434,9 +9669,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L51",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_runner_notes",
-      "confidence_score": 1.0
+      "target": "openbench_agents_runner_notes"
     },
     {
       "relation": "contains",
@@ -9444,9 +9679,9 @@
       "source_file": "AGENTS.md",
       "source_location": "L56",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_graphify",
-      "confidence_score": 1.0
+      "target": "openbench_agents_graphify"
     },
     {
       "relation": "contains",
@@ -9454,259 +9689,139 @@
       "source_file": "AGENTS.md",
       "source_location": "L66",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "openbench_agents_repository_guidelines",
-      "target": "openbench_agents_deployment_schema_migrations",
-      "confidence_score": 1.0
+      "target": "openbench_agents_deployment_schema_migrations"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "manual_test_guide_md",
-      "target": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "issue_md",
+      "target": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L7",
+      "source_file": "issue.md",
+      "source_location": "L51",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
-      "target": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "issue_md",
+      "target": "openbench_issue_done"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L29",
+      "source_file": "issue.md",
+      "source_location": "L55",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
-      "target": "openbench_manual_test_guide_2_skenario_pengujian",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "issue_md",
+      "target": "openbench_issue_code_review_pr_17_fixes"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L10",
+      "source_file": "issue.md",
+      "source_location": "L3",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "target": "openbench_manual_test_guide_codeblock_1",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows",
+      "target": "openbench_issue_strengths"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L14",
+      "source_file": "issue.md",
+      "source_location": "L11",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "target": "openbench_manual_test_guide_codeblock_2",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows",
+      "target": "openbench_issue_issues"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L18",
+      "source_file": "issue.md",
+      "source_location": "L39",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "target": "openbench_manual_test_guide_codeblock_3",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows",
+      "target": "openbench_issue_recommendations"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L22",
-      "weight": 1.0,
-      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
-      "target": "openbench_manual_test_guide_codeblock_4",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L31",
-      "weight": 1.0,
-      "source": "openbench_manual_test_guide_2_skenario_pengujian",
-      "target": "openbench_manual_test_guide_skenario_a_verifikasi_header_idempotensi_pada_mutasi_tiket",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
+      "source_file": "issue.md",
       "source_location": "L45",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_2_skenario_pengujian",
-      "target": "openbench_manual_test_guide_skenario_b_verifikasi_regenerasi_kunci_idempotensi",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_idempotency_and_loading_aware_ticket_flows",
+      "target": "openbench_issue_assessment"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L58",
+      "source_file": "issue.md",
+      "source_location": "L13",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_2_skenario_pengujian",
-      "target": "openbench_manual_test_guide_skenario_c_uji_coba_loading_states_penonaktifan_tombol_simulasi_jaringan_lambat",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_issues",
+      "target": "openbench_issue_critical_must_fix"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L81",
+      "source_file": "issue.md",
+      "source_location": "L21",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_2_skenario_pengujian",
-      "target": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_issues",
+      "target": "openbench_issue_important_should_fix"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L87",
+      "source_file": "issue.md",
+      "source_location": "L29",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
-      "target": "openbench_manual_test_guide_codeblock_5",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_issues",
+      "target": "openbench_issue_minor_nice_to_have"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_guide.md",
-      "source_location": "L96",
+      "source_file": "issue.md",
+      "source_location": "L57",
       "weight": 1.0,
-      "source": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
-      "target": "openbench_manual_test_guide_codeblock_6",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_fixes",
+      "target": "openbench_issue_critical"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L1",
+      "source_file": "issue.md",
+      "source_location": "L60",
       "weight": 1.0,
-      "source": "manual_test_report_md",
-      "target": "openbench_manual_test_report_manual_test_report",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_fixes",
+      "target": "openbench_issue_important"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L6",
+      "source_file": "issue.md",
+      "source_location": "L64",
       "weight": 1.0,
-      "source": "openbench_manual_test_report_manual_test_report",
-      "target": "openbench_manual_test_report_scope",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L14",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_manual_test_report",
-      "target": "openbench_manual_test_report_summary",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L23",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_manual_test_report",
-      "target": "openbench_manual_test_report_results",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L59",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_manual_test_report",
-      "target": "openbench_manual_test_report_issues_found",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L63",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_manual_test_report",
-      "target": "openbench_manual_test_report_notes",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L24",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_1_create_ticket",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L30",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_2_idempotency_key_regeneration",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L35",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_3_duplicate_request_handling",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L41",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_4_loading_state",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L47",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_5_quick_action",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "manual_test_report.md",
-      "source_location": "L53",
-      "weight": 1.0,
-      "source": "openbench_manual_test_report_results",
-      "target": "openbench_manual_test_report_6_delete_cancel_flow",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "openbench_issue_code_review_pr_17_fixes",
+      "target": "openbench_issue_minor"
     },
     {
       "relation": "contains",
@@ -9714,9 +9829,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "agents_skills_common_ui_ux_pro_max_skill_md",
-      "target": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_ui_ux_pro_max"
     },
     {
       "relation": "contains",
@@ -9724,9 +9839,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_prerequisites",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_prerequisites"
     },
     {
       "relation": "contains",
@@ -9734,9 +9849,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L36",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_how_to_use_this_skill"
     },
     {
       "relation": "contains",
@@ -9744,9 +9859,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L122",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_search_reference",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_search_reference"
     },
     {
       "relation": "contains",
@@ -9754,9 +9869,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L156",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_example_workflow",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_example_workflow"
     },
     {
       "relation": "contains",
@@ -9764,9 +9879,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L194",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_output_formats",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_output_formats"
     },
     {
       "relation": "contains",
@@ -9774,9 +9889,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L208",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_tips_for_better_results",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_tips_for_better_results"
     },
     {
       "relation": "contains",
@@ -9784,9 +9899,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L219",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_common_rules_for_professional_ui",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_common_rules_for_professional_ui"
     },
     {
       "relation": "contains",
@@ -9794,9 +9909,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L259",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_ui_ux_pro_max",
-      "target": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_pre_delivery_checklist"
     },
     {
       "relation": "contains",
@@ -9804,9 +9919,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_prerequisites",
-      "target": "ui_ux_pro_max_skill_codeblock_1",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_1"
     },
     {
       "relation": "contains",
@@ -9814,9 +9929,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_prerequisites",
-      "target": "ui_ux_pro_max_skill_codeblock_2",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_2"
     },
     {
       "relation": "contains",
@@ -9824,9 +9939,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_prerequisites",
-      "target": "ui_ux_pro_max_skill_codeblock_3",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_3"
     },
     {
       "relation": "contains",
@@ -9834,9 +9949,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L30",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_prerequisites",
-      "target": "ui_ux_pro_max_skill_codeblock_4",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_4"
     },
     {
       "relation": "contains",
@@ -9844,9 +9959,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L40",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "target": "ui_ux_pro_max_skill_step_1_analyze_user_requirements",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_1_analyze_user_requirements"
     },
     {
       "relation": "contains",
@@ -9854,9 +9969,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L48",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "target": "ui_ux_pro_max_skill_step_2_generate_design_system_required",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_2_generate_design_system_required"
     },
     {
       "relation": "contains",
@@ -9864,9 +9979,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L67",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "target": "ui_ux_pro_max_skill_step_2b_persist_design_system_master_overrides_pattern",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_2b_persist_design_system_master_overrides_pattern"
     },
     {
       "relation": "contains",
@@ -9874,9 +9989,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L92",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "target": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed"
     },
     {
       "relation": "contains",
@@ -9884,9 +9999,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L110",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_how_to_use_this_skill",
-      "target": "ui_ux_pro_max_skill_step_4_stack_guidelines_default_html_tailwind",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_4_stack_guidelines_default_html_tailwind"
     },
     {
       "relation": "contains",
@@ -9894,9 +10009,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L52",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_2_generate_design_system_required",
-      "target": "ui_ux_pro_max_skill_codeblock_5",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_5"
     },
     {
       "relation": "contains",
@@ -9904,9 +10019,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L63",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_2_generate_design_system_required",
-      "target": "ui_ux_pro_max_skill_codeblock_6",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_6"
     },
     {
       "relation": "contains",
@@ -9914,9 +10029,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L71",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_2b_persist_design_system_master_overrides_pattern",
-      "target": "ui_ux_pro_max_skill_codeblock_7",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_7"
     },
     {
       "relation": "contains",
@@ -9924,9 +10039,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L80",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_2b_persist_design_system_master_overrides_pattern",
-      "target": "ui_ux_pro_max_skill_codeblock_8",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_8"
     },
     {
       "relation": "contains",
@@ -9934,9 +10049,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L96",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed",
-      "target": "ui_ux_pro_max_skill_codeblock_9",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_9"
     },
     {
       "relation": "contains",
@@ -9944,9 +10059,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L114",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_4_stack_guidelines_default_html_tailwind",
-      "target": "ui_ux_pro_max_skill_codeblock_10",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_10"
     },
     {
       "relation": "contains",
@@ -9954,9 +10069,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L124",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_search_reference",
-      "target": "ui_ux_pro_max_skill_available_domains",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_available_domains"
     },
     {
       "relation": "contains",
@@ -9964,9 +10079,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L139",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_search_reference",
-      "target": "ui_ux_pro_max_skill_available_stacks",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_available_stacks"
     },
     {
       "relation": "contains",
@@ -9974,9 +10089,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L160",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_example_workflow",
-      "target": "ui_ux_pro_max_skill_step_1_analyze_requirements",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_1_analyze_requirements"
     },
     {
       "relation": "contains",
@@ -9984,9 +10099,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L166",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_example_workflow",
-      "target": "ui_ux_pro_max_skill_step_2_generate_design_system_required_166",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_2_generate_design_system_required_166"
     },
     {
       "relation": "contains",
@@ -9994,9 +10109,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_example_workflow",
-      "target": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed_174",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed_174"
     },
     {
       "relation": "contains",
@@ -10004,9 +10119,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L184",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_example_workflow",
-      "target": "ui_ux_pro_max_skill_step_4_stack_guidelines",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_step_4_stack_guidelines"
     },
     {
       "relation": "contains",
@@ -10014,9 +10129,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L168",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_2_generate_design_system_required_166",
-      "target": "ui_ux_pro_max_skill_codeblock_11",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_11"
     },
     {
       "relation": "contains",
@@ -10024,9 +10139,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L176",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_3_supplement_with_detailed_searches_as_needed_174",
-      "target": "ui_ux_pro_max_skill_codeblock_12",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_12"
     },
     {
       "relation": "contains",
@@ -10034,9 +10149,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L186",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_step_4_stack_guidelines",
-      "target": "ui_ux_pro_max_skill_codeblock_13",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_13"
     },
     {
       "relation": "contains",
@@ -10044,9 +10159,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L198",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_output_formats",
-      "target": "ui_ux_pro_max_skill_codeblock_14",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_codeblock_14"
     },
     {
       "relation": "contains",
@@ -10054,9 +10169,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L223",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_common_rules_for_professional_ui",
-      "target": "ui_ux_pro_max_skill_icons_visual_elements",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_icons_visual_elements"
     },
     {
       "relation": "contains",
@@ -10064,9 +10179,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L232",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_common_rules_for_professional_ui",
-      "target": "ui_ux_pro_max_skill_interaction_cursor",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_interaction_cursor"
     },
     {
       "relation": "contains",
@@ -10074,9 +10189,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L240",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_common_rules_for_professional_ui",
-      "target": "ui_ux_pro_max_skill_light_dark_mode_contrast",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_light_dark_mode_contrast"
     },
     {
       "relation": "contains",
@@ -10084,9 +10199,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L249",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_common_rules_for_professional_ui",
-      "target": "ui_ux_pro_max_skill_layout_spacing",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_layout_spacing"
     },
     {
       "relation": "contains",
@@ -10094,9 +10209,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L263",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "target": "ui_ux_pro_max_skill_visual_quality",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_visual_quality"
     },
     {
       "relation": "contains",
@@ -10104,9 +10219,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L270",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "target": "ui_ux_pro_max_skill_interaction",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_interaction"
     },
     {
       "relation": "contains",
@@ -10114,9 +10229,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L276",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "target": "ui_ux_pro_max_skill_light_dark_mode",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_light_dark_mode"
     },
     {
       "relation": "contains",
@@ -10124,9 +10239,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L282",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "target": "ui_ux_pro_max_skill_layout",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_layout"
     },
     {
       "relation": "contains",
@@ -10134,9 +10249,9 @@
       "source_file": ".agents/skills/common/ui-ux-pro-max/SKILL.md",
       "source_location": "L288",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ui_ux_pro_max_skill_pre_delivery_checklist",
-      "target": "ui_ux_pro_max_skill_accessibility",
-      "confidence_score": 1.0
+      "target": "ui_ux_pro_max_skill_accessibility"
     },
     {
       "relation": "contains",
@@ -10144,9 +10259,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "agents_skills_common_copy_writing_skill_md",
-      "target": "copy_writing_skill_web_app_copywriting",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_web_app_copywriting"
     },
     {
       "relation": "contains",
@@ -10154,9 +10269,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_overview",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_overview"
     },
     {
       "relation": "contains",
@@ -10164,9 +10279,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_when_to_use",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_when_to_use"
     },
     {
       "relation": "contains",
@@ -10174,9 +10289,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_core_principles",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_core_principles"
     },
     {
       "relation": "contains",
@@ -10184,9 +10299,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L26",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_quick_reference",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_quick_reference"
     },
     {
       "relation": "contains",
@@ -10194,9 +10309,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L35",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_common_mistakes_red_flags",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_common_mistakes_red_flags"
     },
     {
       "relation": "contains",
@@ -10204,9 +10319,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L52",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_implementation_examples",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_implementation_examples"
     },
     {
       "relation": "contains",
@@ -10214,9 +10329,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L66",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_web_app_copywriting",
-      "target": "copy_writing_skill_writing_process",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_writing_process"
     },
     {
       "relation": "contains",
@@ -10224,9 +10339,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L54",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_implementation_examples",
-      "target": "copy_writing_skill_empty_states",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_empty_states"
     },
     {
       "relation": "contains",
@@ -10234,9 +10349,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L58",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_implementation_examples",
-      "target": "copy_writing_skill_error_messages",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_error_messages"
     },
     {
       "relation": "contains",
@@ -10244,9 +10359,9 @@
       "source_file": ".agents/skills/common/copy-writing/SKILL.md",
       "source_location": "L62",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "copy_writing_skill_implementation_examples",
-      "target": "copy_writing_skill_buttons_and_actions",
-      "confidence_score": 1.0
+      "target": "copy_writing_skill_buttons_and_actions"
     },
     {
       "relation": "contains",
@@ -10254,9 +10369,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "agents_skills_common_git_commit_skill_md",
-      "target": "git_commit_skill_git_commit_skill",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_git_commit_skill"
     },
     {
       "relation": "contains",
@@ -10264,9 +10379,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_git_commit_skill",
-      "target": "git_commit_skill_critical_rule_never_use_git_add",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_critical_rule_never_use_git_add"
     },
     {
       "relation": "contains",
@@ -10274,9 +10389,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_git_commit_skill",
-      "target": "git_commit_skill_workflow",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_workflow"
     },
     {
       "relation": "contains",
@@ -10284,9 +10399,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_workflow",
-      "target": "git_commit_skill_1_check_for_gitignore",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_1_check_for_gitignore"
     },
     {
       "relation": "contains",
@@ -10294,9 +10409,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_workflow",
-      "target": "git_commit_skill_2_analyze_the_context",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_2_analyze_the_context"
     },
     {
       "relation": "contains",
@@ -10304,9 +10419,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L24",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_workflow",
-      "target": "git_commit_skill_3_stage_files_selectively",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_3_stage_files_selectively"
     },
     {
       "relation": "contains",
@@ -10314,9 +10429,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L28",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_workflow",
-      "target": "git_commit_skill_4_commit_with_a_standardized_message",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_4_commit_with_a_standardized_message"
     },
     {
       "relation": "contains",
@@ -10324,9 +10439,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L53",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_workflow",
-      "target": "git_commit_skill_example",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_example"
     },
     {
       "relation": "contains",
@@ -10334,9 +10449,9 @@
       "source_file": ".agents/skills/common/git-commit/SKILL.md",
       "source_location": "L32",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "git_commit_skill_4_commit_with_a_standardized_message",
-      "target": "git_commit_skill_codeblock_1",
-      "confidence_score": 1.0
+      "target": "git_commit_skill_codeblock_1"
     },
     {
       "relation": "contains",
@@ -10344,9 +10459,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "agents_rules_antigravity_rtk_rules_md",
-      "target": "rules_antigravity_rtk_rules_rtk_rust_token_killer_google_antigravity",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_rtk_rust_token_killer_google_antigravity"
     },
     {
       "relation": "contains",
@@ -10354,9 +10469,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "rules_antigravity_rtk_rules_rtk_rust_token_killer_google_antigravity",
-      "target": "rules_antigravity_rtk_rules_rule",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_rule"
     },
     {
       "relation": "contains",
@@ -10364,9 +10479,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "rules_antigravity_rtk_rules_rtk_rust_token_killer_google_antigravity",
-      "target": "rules_antigravity_rtk_rules_meta_commands",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_meta_commands"
     },
     {
       "relation": "contains",
@@ -10374,9 +10489,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L34",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "rules_antigravity_rtk_rules_rtk_rust_token_killer_google_antigravity",
-      "target": "rules_antigravity_rtk_rules_why",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_why"
     },
     {
       "relation": "contains",
@@ -10384,9 +10499,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "rules_antigravity_rtk_rules_rule",
-      "target": "rules_antigravity_rtk_rules_codeblock_1",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_codeblock_1"
     },
     {
       "relation": "contains",
@@ -10394,9 +10509,9 @@
       "source_file": ".agents/rules/antigravity-rtk-rules.md",
       "source_location": "L27",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "rules_antigravity_rtk_rules_meta_commands",
-      "target": "rules_antigravity_rtk_rules_codeblock_2",
-      "confidence_score": 1.0
+      "target": "rules_antigravity_rtk_rules_codeblock_2"
     },
     {
       "relation": "contains",
@@ -10404,9 +10519,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "apps_frontend_readme_md",
-      "target": "frontend_readme_sv",
-      "confidence_score": 1.0
+      "target": "frontend_readme_sv"
     },
     {
       "relation": "contains",
@@ -10414,9 +10529,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_sv",
-      "target": "frontend_readme_creating_a_project",
-      "confidence_score": 1.0
+      "target": "frontend_readme_creating_a_project"
     },
     {
       "relation": "contains",
@@ -10424,9 +10539,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L21",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_sv",
-      "target": "frontend_readme_developing",
-      "confidence_score": 1.0
+      "target": "frontend_readme_developing"
     },
     {
       "relation": "contains",
@@ -10434,9 +10549,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L32",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_sv",
-      "target": "frontend_readme_building",
-      "confidence_score": 1.0
+      "target": "frontend_readme_building"
     },
     {
       "relation": "contains",
@@ -10444,9 +10559,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_creating_a_project",
-      "target": "frontend_readme_codeblock_1",
-      "confidence_score": 1.0
+      "target": "frontend_readme_codeblock_1"
     },
     {
       "relation": "contains",
@@ -10454,9 +10569,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_creating_a_project",
-      "target": "frontend_readme_codeblock_2",
-      "confidence_score": 1.0
+      "target": "frontend_readme_codeblock_2"
     },
     {
       "relation": "contains",
@@ -10464,9 +10579,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_developing",
-      "target": "frontend_readme_codeblock_3",
-      "confidence_score": 1.0
+      "target": "frontend_readme_codeblock_3"
     },
     {
       "relation": "contains",
@@ -10474,9 +10589,9 @@
       "source_file": "apps/frontend/README.md",
       "source_location": "L36",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "frontend_readme_building",
-      "target": "frontend_readme_codeblock_4",
-      "confidence_score": 1.0
+      "target": "frontend_readme_codeblock_4"
     },
     {
       "relation": "contains",
@@ -10484,9 +10599,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_md",
-      "target": "docs_prd_prd_phone_repair_management_system",
-      "confidence_score": 1.0
+      "target": "docs_prd_prd_phone_repair_management_system"
     },
     {
       "relation": "contains",
@@ -10494,9 +10609,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_prd_phone_repair_management_system",
-      "target": "docs_prd_1_project_overview",
-      "confidence_score": 1.0
+      "target": "docs_prd_1_project_overview"
     },
     {
       "relation": "contains",
@@ -10504,9 +10619,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_prd_phone_repair_management_system",
-      "target": "docs_prd_2_user_roles_permissions",
-      "confidence_score": 1.0
+      "target": "docs_prd_2_user_roles_permissions"
     },
     {
       "relation": "contains",
@@ -10514,9 +10629,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_prd_phone_repair_management_system",
-      "target": "docs_prd_3_functional_requirements",
-      "confidence_score": 1.0
+      "target": "docs_prd_3_functional_requirements"
     },
     {
       "relation": "contains",
@@ -10524,9 +10639,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L63",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_prd_phone_repair_management_system",
-      "target": "docs_prd_4_technical_architecture",
-      "confidence_score": 1.0
+      "target": "docs_prd_4_technical_architecture"
     },
     {
       "relation": "contains",
@@ -10534,9 +10649,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L88",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_prd_phone_repair_management_system",
-      "target": "docs_prd_5_data_model_schema",
-      "confidence_score": 1.0
+      "target": "docs_prd_5_data_model_schema"
     },
     {
       "relation": "contains",
@@ -10544,9 +10659,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_3_functional_requirements",
-      "target": "docs_prd_3_1_repair_ticket_intake_form",
-      "confidence_score": 1.0
+      "target": "docs_prd_3_1_repair_ticket_intake_form"
     },
     {
       "relation": "contains",
@@ -10554,9 +10669,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L26",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_3_functional_requirements",
-      "target": "docs_prd_3_2_main_repair_admin_dashboard",
-      "confidence_score": 1.0
+      "target": "docs_prd_3_2_main_repair_admin_dashboard"
     },
     {
       "relation": "contains",
@@ -10564,9 +10679,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L37",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_3_functional_requirements",
-      "target": "docs_prd_3_3_status_workflows",
-      "confidence_score": 1.0
+      "target": "docs_prd_3_3_status_workflows"
     },
     {
       "relation": "contains",
@@ -10574,9 +10689,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L65",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_4_technical_architecture",
-      "target": "docs_prd_4_1_frontend_svelte",
-      "confidence_score": 1.0
+      "target": "docs_prd_4_1_frontend_svelte"
     },
     {
       "relation": "contains",
@@ -10584,9 +10699,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L73",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_4_technical_architecture",
-      "target": "docs_prd_4_2_backend_go_fiber",
-      "confidence_score": 1.0
+      "target": "docs_prd_4_2_backend_go_fiber"
     },
     {
       "relation": "contains",
@@ -10594,9 +10709,9 @@
       "source_file": "docs/PRD.md",
       "source_location": "L82",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_4_technical_architecture",
-      "target": "docs_prd_4_3_testing",
-      "confidence_score": 1.0
+      "target": "docs_prd_4_3_testing"
     },
     {
       "relation": "contains",
@@ -10604,9 +10719,309 @@
       "source_file": "docs/PRD.md",
       "source_location": "L90",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_prd_5_data_model_schema",
-      "target": "docs_prd_5_1_tickets_table",
-      "confidence_score": 1.0
+      "target": "docs_prd_5_1_tickets_table"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "translate.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "translate_js",
+      "target": "openbench_translate_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "translate.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "translate_js",
+      "target": "openbench_translate_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "translate.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "translate_js",
+      "target": "openbench_translate_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "translate.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "translate_js",
+      "target": "openbench_translate_content"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "translate.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "translate_js",
+      "target": "openbench_translate_replacements"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "manual_test_guide_md",
+      "target": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
+      "target": "openbench_manual_test_guide_1_prasyarat_pengujian"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_panduan_pengujian_manual_idempotensi_loading_states",
+      "target": "openbench_manual_test_guide_2_skenario_pengujian"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
+      "target": "openbench_manual_test_guide_codeblock_1"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
+      "target": "openbench_manual_test_guide_codeblock_2"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
+      "target": "openbench_manual_test_guide_codeblock_3"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L22",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_1_prasyarat_pengujian",
+      "target": "openbench_manual_test_guide_codeblock_4"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L31",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_2_skenario_pengujian",
+      "target": "openbench_manual_test_guide_skenario_a_verifikasi_header_idempotensi_pada_mutasi_tiket"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L45",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_2_skenario_pengujian",
+      "target": "openbench_manual_test_guide_skenario_b_verifikasi_regenerasi_kunci_idempotensi"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L58",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_2_skenario_pengujian",
+      "target": "openbench_manual_test_guide_skenario_c_uji_coba_loading_states_penonaktifan_tombol_simulasi_jaringan_lambat"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L81",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_2_skenario_pengujian",
+      "target": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L87",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
+      "target": "openbench_manual_test_guide_codeblock_5"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_guide.md",
+      "source_location": "L96",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_guide_skenario_d_deteksi_konflik_payload_dengan_kunci_sama_backend_verification",
+      "target": "openbench_manual_test_guide_codeblock_6"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "manual_test_report_md",
+      "target": "openbench_manual_test_report_manual_test_report"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_manual_test_report",
+      "target": "openbench_manual_test_report_scope"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_manual_test_report",
+      "target": "openbench_manual_test_report_summary"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L23",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_manual_test_report",
+      "target": "openbench_manual_test_report_results"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_manual_test_report",
+      "target": "openbench_manual_test_report_issues_found"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_manual_test_report",
+      "target": "openbench_manual_test_report_notes"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_1_create_ticket"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L30",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_2_idempotency_key_regeneration"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L35",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_3_duplicate_request_handling"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L41",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_4_loading_state"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L47",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_5_quick_action"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "manual_test_report.md",
+      "source_location": "L53",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openbench_manual_test_report_results",
+      "target": "openbench_manual_test_report_6_delete_cancel_flow"
     },
     {
       "relation": "contains",
@@ -11224,5 +11639,5 @@
       "source_file": "docs/PRD.md"
     }
   ],
-  "built_at_commit": "423bcdbabb197533f0c4470fdf676b4ad0a5eede"
+  "built_at_commit": "9246912c51a84a5b677098adc4394659df92f719"
 }

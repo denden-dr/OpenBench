@@ -1,16 +1,16 @@
 # Graph Report - OpenBench  (2026-05-25)
 
 ## Corpus Check
-- 61 files · ~94,975 words
+- 59 files · ~94,677 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 522 nodes · 611 edges · 46 communities (34 shown, 12 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 72 edges (avg confidence: 0.82)
+- 542 nodes · 634 edges · 46 communities (36 shown, 10 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 75 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `423bcdba`
+- Built from commit: `9246912c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -58,7 +58,7 @@
 - [[_COMMUNITY_Community 45|Community 45]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `TicketIntegrationTestSuite` - 24 edges
+1. `TicketIntegrationTestSuite` - 27 edges
 2. `str` - 16 edges
 3. `Ticket` - 12 edges
 4. `DesignSystemGenerator` - 11 edges
@@ -67,7 +67,7 @@
 7. `_search_csv()` - 9 edges
 8. `generate_design_system()` - 9 edges
 9. `main()` - 9 edges
-10. `ui-ux-pro-max` - 9 edges
+10. `NewPostgresStorage()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Repository Guidelines` --references--> `RTK (Rust Token Killer)`  [EXTRACTED]
@@ -86,7 +86,7 @@
 - **Phone Board Microsoldering Workflow** — microsoldering_repair_scene, smartphone_logic_board, soldering_iron, precision_tweezers, a15_bionic_chip [INFERRED 0.92]
 - **Repair Status Workflow Stages** — prd_ticket_status_service_in, prd_ticket_status_on_process, prd_ticket_status_fixed, prd_ticket_status_picked_up [EXTRACTED 1.00]
 
-## Communities (46 total, 12 thin omitted)
+## Communities (46 total, 10 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.09
@@ -100,13 +100,17 @@ Nodes (29): dependencies, lucide-svelte, @supabase/supabase-js, devDependencies,
 Cohesion: 0.08
 Nodes (7): MockTicketRepository, MockTicketRepository_Create_Call, MockTicketRepository_Delete_Call, MockTicketRepository_Expecter, MockTicketRepository_GetByID_Call, MockTicketRepository_List_Call, MockTicketRepository_Update_Call
 
+### Community 3 - "Community 3"
+Cohesion: 0.06
+Nodes (5): NewPostgresStorage(), WithCleanupInterval(), PostgresStorage, StorageOption, TicketIntegrationTestSuite
+
 ### Community 4 - "Community 4"
 Cohesion: 0.09
 Nodes (27): Backend Layered Architecture, Conventional Commits, Expand/Contract Migration Strategy, Graphify Knowledge Graph, Repository Guidelines, Mockery Mocks, Single-Instance Deployment, Testcontainers/PostgreSQL (+19 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.10
-Nodes (18): main(), NewTicketHandler(), TicketHandler, hashIdempotencyRequest(), NewTicketIdempotency(), ScopeTicketIdempotencyKey(), TestHashIdempotencyRequest(), TestTicketIdempotencyConcretePath() (+10 more)
+Nodes (19): main(), NewTicketHandler(), TicketHandler, hashIdempotencyRequest(), NewTicketIdempotency(), ScopeTicketIdempotencyKey(), TestHashIdempotencyRequest(), TestHashIdempotencyRequestChangesAfterValidationCorrection() (+11 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.13
@@ -196,6 +200,10 @@ Nodes (10): Build, Test, and Development Commands, Coding Style & Naming Convent
 Cohesion: 0.20
 Nodes (9): 1. Check for `.gitignore`, 2. Analyze the Context, 3. Stage Files Selectively, 4. Commit with a Standardized Message, code:block1 (<type>[optional scope]: <description>), 🚫 CRITICAL RULE: NEVER USE `git add .`, Example, Git Commit Skill (+1 more)
 
+### Community 43 - "Community 43"
+Cohesion: 0.14
+Nodes (13): Assessment, Code Review: PR 17 Fixes, Code Review: PR 17 - Idempotency and Loading-Aware Ticket Flows, Critical, Critical (Must Fix), DONE, Important, Important (Should Fix) (+5 more)
+
 ### Community 44 - "Community 44"
 Cohesion: 0.22
 Nodes (8): Building, code:sh (# create a new project), code:sh (# recreate this project), code:sh (npm run dev), code:sh (npm run build), Creating a project, Developing, sv
@@ -205,23 +213,23 @@ Cohesion: 0.29
 Nodes (6): code:bash (rtk git status), code:bash (rtk gain              # Show token savings), Meta Commands, RTK - Rust Token Killer (Google Antigravity), Rule, Why
 
 ## Knowledge Gaps
-- **192 isolated node(s):** `fs`, `path`, `file`, `content`, `replacements` (+187 more)
+- **203 isolated node(s):** `bool`, `extends`, `rewriteRelativeImportExtensions`, `allowJs`, `checkJs` (+198 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ScopeTicketIdempotencyKey()` connect `Community 5` to `Community 6`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Why does `TicketIntegrationTestSuite` connect `Community 3` to `Community 8`, `Community 5`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Why does `main()` connect `Community 5` to `Community 8`, `Community 3`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `str` (e.g. with `.tokenize()` and `_search_csv()`) actually correct?**
   _`str` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `fs`, `path`, `file` to the rest of the system?**
-  _218 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?**
+  _229 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.08771929824561403 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
