@@ -12,6 +12,7 @@ var (
 	ErrDuplicate           = errors.New("resource already exists")
 	ErrForeignKeyViolation = errors.New("foreign key violation")
 	ErrDatabaseUnavailable = errors.New("database is unavailable")
+	ErrConflict            = errors.New("resource state conflict")
 )
 
 // MapDatabaseError translates raw sql/pgx database errors into standard repository errors
