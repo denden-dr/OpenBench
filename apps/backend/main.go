@@ -31,6 +31,10 @@ func main() {
 	ticketService := service.NewTicketService(ticketRepo)
 	ticketHandler := handler.NewTicketHandler(ticketService)
 
+	warrantyClaimRepo := repository.NewWarrantyClaimRepository(db)
+	warrantyClaimService := service.NewWarrantyClaimService(warrantyClaimRepo, ticketRepo)
+	warrantyClaimHandler := handler.NewWarrantyClaimHandler(warrantyClaimService)
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
@@ -57,6 +61,12 @@ func main() {
 	tickets.Get("/:id", ticketHandler.GetByID)
 	tickets.Patch("/:id", ticketHandler.Update)
 	tickets.Delete("/:id", ticketHandler.Delete)
+
+	warrantyClaims := api.Group("/warranty-claims")
+	warrantyClaims.Post("/", warrantyClaimHandler.Create)
+	warrantyClaims.Get("/", warrantyClaimHandler.List)
+	warrantyClaims.Post("/:id/approve", warrantyClaimHandler.Approve)
+	warrantyClaims.Post("/:id/void", warrantyClaimHandler.Void)
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		if err := db.PingContext(c.Context()); err != nil {
