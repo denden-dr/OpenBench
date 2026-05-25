@@ -12,10 +12,12 @@ type TicketStatus string
 type TicketPaymentStatus string
 
 const (
-	StatusServiceIn TicketStatus = "service_in"
-	StatusOnProcess TicketStatus = "on_process"
-	StatusFixed     TicketStatus = "fixed"
-	StatusPickedUp  TicketStatus = "picked_up"
+	StatusServiceIn           TicketStatus = "service_in"
+	StatusOnProcess           TicketStatus = "on_process"
+	StatusWaitingConfirmation TicketStatus = "waiting_confirmation"
+	StatusCancelled           TicketStatus = "cancelled"
+	StatusFixed               TicketStatus = "fixed"
+	StatusPickedUp            TicketStatus = "picked_up"
 
 	PaymentUnpaid TicketPaymentStatus = "unpaid"
 	PaymentPaid   TicketPaymentStatus = "paid"

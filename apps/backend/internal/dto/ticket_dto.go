@@ -27,7 +27,7 @@ type UpdateTicketRequest struct {
 	AdditionalDescription *string          `json:"additional_description"`
 	Accessories           *string          `json:"accessories"`
 	Price                 *decimal.Decimal `json:"price" validate:"omitempty"`
-	Status                *string          `json:"status" validate:"omitempty,oneof=service_in on_process fixed picked_up"`
+	Status                *string          `json:"status" validate:"omitempty,oneof=service_in on_process waiting_confirmation cancelled fixed picked_up"`
 	PaymentStatus         *string          `json:"payment_status" validate:"omitempty,oneof=unpaid paid"`
 	WarrantyDays          *int             `json:"warranty_days" validate:"omitempty"`
 	ExitDate              *time.Time       `json:"exit_date" validate:"omitempty"`
