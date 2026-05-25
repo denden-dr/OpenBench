@@ -14,6 +14,8 @@
     Loader2,
     AlertTriangle,
     PhoneCall,
+    ShieldCheck,
+    RefreshCw,
   } from "lucide-svelte";
 
   interface Ticket {
@@ -32,6 +34,8 @@
     entry_date: string;
     exit_date?: string;
     warranty_expiry_date?: string;
+    is_warranty?: boolean;
+    parent_ticket_id?: string;
   }
 
   // Svelte 5 Runes state
@@ -365,7 +369,13 @@
     }),
   );
 
-  function getStatusLabel(status: string) {
+  function getStatusLabel(status: string, isWarranty: boolean = false) {
+    if (isWarranty && status === 'on_process') {
+      return 'Klaim Diproses';
+    }
+    if (isWarranty && status === 'cancelled') {
+      return 'Klaim Void';
+    }
     switch (status) {
       case "service_in":
         return "Masuk";
@@ -384,7 +394,13 @@
     }
   }
 
-  function getStatusBadgeClass(status: string) {
+  function getStatusBadgeClass(status: string, isWarranty: boolean = false) {
+    if (isWarranty && status === 'on_process') {
+      return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50';
+    }
+    if (isWarranty && status === 'cancelled') {
+      return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50';
+    }
     switch (status) {
       case "service_in":
         return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
@@ -420,6 +436,18 @@
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function checkWarrantyExpiry(exitDateStr: string | undefined, warrantyDays: number) {
+    if (!exitDateStr) return null;
+    const exitDate = new Date(exitDateStr);
+    const expiryDate = new Date(exitDate.getTime() + warrantyDays * 24 * 60 * 60 * 1000);
+    const today = new Date();
+    const remainingDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    return {
+      isValid: remainingDays >= 0,
+      remainingDays: remainingDays >= 0 ? remainingDays : 0
+    };
   }
 </script>
 
@@ -587,17 +615,26 @@
       </select>
     </div>
 
-    <!-- Create Button -->
-    <button
-      onclick={() => {
-        regenerateCreateIdempotencyKey();
-        showCreateModal = true;
-      }}
-      class="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow active:scale-95 inline-flex items-center justify-center gap-2"
-    >
-      <Plus size={16} />
-      New Repair
-    </button>
+    <!-- Actions -->
+    <div class="flex items-center gap-2 w-full md:w-auto">
+      <a
+        href="/warranty"
+        class="w-full md:w-auto px-6 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-all inline-flex items-center justify-center gap-2"
+      >
+        <ShieldCheck size={16} class="text-indigo-600" />
+        Klaim Garansi
+      </a>
+      <button
+        onclick={() => {
+          regenerateCreateIdempotencyKey();
+          showCreateModal = true;
+        }}
+        class="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow active:scale-95 inline-flex items-center justify-center gap-2"
+      >
+        <Plus size={16} />
+        New Repair
+      </button>
+    </div>
   </div>
 
   <!-- Tickets Content -->
@@ -656,14 +693,29 @@
               >
                 <td class="py-4 px-6">
                   <div
-                    class="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors"
+                    class="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors flex items-center gap-1.5"
                   >
                     {ticket.brand}
+                    {#if ticket.is_warranty}
+                      <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30">
+                        <RefreshCw size={10} />
+                        Klaim Garansi
+                      </span>
+                    {/if}
                   </div>
                   <div
-                    class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+                    class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5"
                   >
-                    {ticket.model}
+                    <span>{ticket.model}</span>
+                    {#if !ticket.is_warranty && ticket.status === 'picked_up'}
+                      {@const warranty = checkWarrantyExpiry(ticket.exit_date, ticket.warranty_days)}
+                      {#if warranty && warranty.isValid}
+                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30">
+                          <ShieldCheck size={10} />
+                          Garansi Aktif ({warranty.remainingDays} H)
+                        </span>
+                      {/if}
+                    {/if}
                   </div>
                 </td>
                 <td class="py-4 px-6">
@@ -686,9 +738,10 @@
                   <span
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {getStatusBadgeClass(
                       ticket.status,
+                      Boolean(ticket.is_warranty),
                     )}"
                   >
-                    {getStatusLabel(ticket.status)}
+                    {getStatusLabel(ticket.status, Boolean(ticket.is_warranty))}
                   </span>
                 </td>
                 <td
@@ -1016,9 +1069,10 @@
             <span
               class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {getStatusBadgeClass(
                 editForm.status,
+                Boolean(selectedTicket.is_warranty),
               )}"
             >
-              {getStatusLabel(editForm.status)}
+              {getStatusLabel(editForm.status, Boolean(selectedTicket.is_warranty))}
             </span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
