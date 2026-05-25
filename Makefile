@@ -31,6 +31,12 @@ migrate-create:
 mock-backend:
 	cd apps/backend && go run github.com/vektra/mockery/v2
 
+backend-tidy:
+	cd apps/backend && go mod tidy
+
+backend-fmt:
+	cd apps/backend && go fmt ./... && goimports -w ./...
+
 test-backend-unit:
 	cd apps/backend && go test ./... -v
 
@@ -43,6 +49,9 @@ run-db: compose-up
 
 run-backend:
 	cd apps/backend && go run main.go
+
+run-frontend-mock:
+	cd apps/frontend && npm run dev:mock
 
 run-frontend:
 	cd apps/frontend && npm run dev
