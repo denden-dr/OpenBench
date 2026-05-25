@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
@@ -11,6 +15,7 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
@@ -42,6 +47,11 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: cfg.CORSAllowOrigins,
+		AllowMethods: "GET,POST,PATCH,DELETE,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization,Idempotency-Key",
+	}))
 
 	// Idempotency Middleware
 	// Fiber's default idempotency lock is in-memory. This is acceptable while
@@ -49,8 +59,8 @@ func main() {
 	// moving to multi-instance or rolling deployments.
 	idempotencyStore := database.NewPostgresStorage(db)
 	defer idempotencyStore.Close()
-	app.Use(middleware.ScopeTicketIdempotencyKey(idempotencyStore))
-	app.Use(middleware.NewTicketIdempotency(idempotencyStore))
+	app.Use(middleware.ScopeIdempotencyKey(idempotencyStore))
+	app.Use(middleware.NewIdempotency(idempotencyStore))
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -85,8 +95,23 @@ func main() {
 		})
 	})
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		<-ctx.Done()
+		slog.Info("Shutdown signal received")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := app.ShutdownWithContext(shutdownCtx); err != nil {
+			slog.Error("Server shutdown failed", "error", err)
+		}
+	}()
+
 	slog.Info("Server starting", "port", cfg.Port)
-	if err := app.Listen(":" + cfg.Port); err != nil {
+	if err := app.Listen(":" + cfg.Port); err != nil && ctx.Err() == nil {
 		slog.Error("Server failed to start", "error", err)
 		os.Exit(1)
 	}

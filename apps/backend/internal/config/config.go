@@ -10,8 +10,9 @@ import (
 )
 
 type Config struct {
-	Port     string
-	Database DatabaseConfig
+	Port             string
+	CORSAllowOrigins string
+	Database         DatabaseConfig
 }
 
 type DatabaseConfig struct {
@@ -32,8 +33,9 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:     getEnv("PORT", "3000"),
-		Database: loadDatabaseConfig(dbURL),
+		Port:             getEnv("PORT", "3000"),
+		CORSAllowOrigins: getEnv("CORS_ALLOW_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
+		Database:         loadDatabaseConfig(dbURL),
 	}
 }
 
