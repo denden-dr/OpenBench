@@ -3,7 +3,7 @@ package dto
 import "time"
 
 type CreateWarrantyClaimRequest struct {
-	TicketID              string `json:"ticket_id" validate:"required"`
+	TicketID              string `json:"ticket_id" validate:"required,uuid"`
 	Issue                 string `json:"issue" validate:"required"`
 	AdditionalDescription string `json:"additional_description"`
 }
