@@ -130,6 +130,13 @@ func (s *ticketService) DeleteTicket(ctx context.Context, id string) error {
 }
 
 func (s *ticketService) mapToResponse(ticket *model.Ticket) *dto.TicketResponse {
+	return MapTicketToResponse(ticket)
+}
+
+func MapTicketToResponse(ticket *model.Ticket) *dto.TicketResponse {
+	if ticket == nil {
+		return nil
+	}
 	return &dto.TicketResponse{
 		ID:                    ticket.ID,
 		CustomerName:          ticket.CustomerName,
@@ -146,5 +153,7 @@ func (s *ticketService) mapToResponse(ticket *model.Ticket) *dto.TicketResponse 
 		EntryDate:             ticket.EntryDate,
 		ExitDate:              ticket.ExitDate,
 		WarrantyExpiryDate:    ticket.WarrantyExpiryDate(),
+		IsWarranty:            ticket.IsWarranty,
+		ParentTicketID:        ticket.ParentTicketID,
 	}
 }
