@@ -39,6 +39,15 @@ func main() {
 	app.Use(logger.New())
 	app.Use(recover.New())
 
+	// Idempotency Middleware
+	// Fiber's default idempotency lock is in-memory. This is acceptable while
+	// OpenBench runs as a single backend instance. Use a DB-backed lock before
+	// moving to multi-instance or rolling deployments.
+	idempotencyStore := database.NewPostgresStorage(db)
+	defer idempotencyStore.Close()
+	app.Use(middleware.ScopeTicketIdempotencyKey(idempotencyStore))
+	app.Use(middleware.NewTicketIdempotency(idempotencyStore))
+
 	// Routes
 	api := app.Group("/api/v1")
 

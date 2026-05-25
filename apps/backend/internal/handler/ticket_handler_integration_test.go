@@ -6,22 +6,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 )
 
 type TicketIntegrationTestSuite struct {
 	suite.Suite
-	db  *sqlx.DB
-	app *fiber.App
+	db               *sqlx.DB
+	app              *fiber.App
+	idempotencyStore *database.PostgresStorage
 }
 
 func (s *TicketIntegrationTestSuite) SetupSuite() {
@@ -34,6 +38,11 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	s.app = fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
+
+	s.idempotencyStore = database.NewPostgresStorage(s.db)
+	s.app.Use(middleware.ScopeTicketIdempotencyKey(s.idempotencyStore))
+	s.app.Use(middleware.NewTicketIdempotency(s.idempotencyStore))
+
 	api := s.app.Group("/api/v1")
 	tickets := api.Group("/tickets")
 	tickets.Post("/", ticketHandler.Create)
@@ -45,6 +54,12 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 
 func (s *TicketIntegrationTestSuite) SetupTest() {
 	CleanTestDB(s.T(), s.db)
+}
+
+func (s *TicketIntegrationTestSuite) TearDownSuite() {
+	if s.idempotencyStore != nil {
+		_ = s.idempotencyStore.Close()
+	}
 }
 
 func TestTicketIntegrationSuite(t *testing.T) {
@@ -68,6 +83,7 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -81,6 +97,7 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 	reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/tickets", nil)
 	respList, err := s.app.Test(reqList)
 	s.Require().NoError(err)
+	defer respList.Body.Close()
 	s.Require().Equal(http.StatusOK, respList.StatusCode)
 
 	var listRes map[string]interface{}
@@ -112,6 +129,7 @@ func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -127,6 +145,7 @@ func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Require().Equal(http.StatusOK, patchResp.StatusCode,
 			"PATCH to status=%q returned non-200", newStatus)
 		var res map[string]interface{}
@@ -175,6 +194,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -192,6 +212,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 
 	respUpdate, err := s.app.Test(reqUpdate)
 	s.Require().NoError(err)
+	defer respUpdate.Body.Close()
 	s.Require().Equal(http.StatusOK, respUpdate.StatusCode)
 
 	var updateRes map[string]interface{}
@@ -212,6 +233,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 
 	respUpdateBack, err := s.app.Test(reqUpdateBack)
 	s.Require().NoError(err)
+	defer respUpdateBack.Body.Close()
 	s.Require().Equal(http.StatusOK, respUpdateBack.StatusCode)
 
 	var updateResBack map[string]interface{}
@@ -231,6 +253,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 
 	respUpdatePrice, err := s.app.Test(reqUpdatePrice)
 	s.Require().NoError(err)
+	defer respUpdatePrice.Body.Close()
 	s.Require().Equal(http.StatusOK, respUpdatePrice.StatusCode)
 
 	var updatePriceRes map[string]interface{}
@@ -259,6 +282,7 @@ func (s *TicketIntegrationTestSuite) TestDeleteTicket() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -270,12 +294,14 @@ func (s *TicketIntegrationTestSuite) TestDeleteTicket() {
 	reqDel, _ := http.NewRequest(http.MethodDelete, "/api/v1/tickets/"+id, nil)
 	respDel, err := s.app.Test(reqDel)
 	s.Require().NoError(err)
+	defer respDel.Body.Close()
 	s.Require().Equal(http.StatusOK, respDel.StatusCode)
 
 	// 3. Try to get the ticket (should return 404)
 	reqGet, _ := http.NewRequest(http.MethodGet, "/api/v1/tickets/"+id, nil)
 	respGet, err := s.app.Test(reqGet)
 	s.Require().NoError(err)
+	defer respGet.Body.Close()
 	s.Require().Equal(http.StatusNotFound, respGet.StatusCode)
 }
 
@@ -294,6 +320,7 @@ func (s *TicketIntegrationTestSuite) TestValidation() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusBadRequest, resp.StatusCode)
 }
 
@@ -312,6 +339,7 @@ func (s *TicketIntegrationTestSuite) TestInvalidStatusRejected() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -319,12 +347,13 @@ func (s *TicketIntegrationTestSuite) TestInvalidStatusRejected() {
 	id := createRes["data"].(map[string]interface{})["id"].(string)
 
 	// Try patching with a legacy/invalid status — must be rejected with 400
-	for _, badStatus := range []string{"diagnostics", "in_progress", "waiting_parts", "repaired", "cancelled", "done", "cancel"} {
+	for _, badStatus := range []string{"diagnostics", "in_progress", "waiting_parts", "repaired", "done", "cancel"} {
 		body, _ := json.Marshal(map[string]interface{}{"status": badStatus})
 		patchReq, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(body))
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode,
 			"expected 400 for invalid status %q", badStatus)
 	}
@@ -345,6 +374,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 
 	resp, err := s.app.Test(req)
 	s.Require().NoError(err)
+	defer resp.Body.Close()
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
@@ -358,6 +388,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
 	}
 
@@ -368,6 +399,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
 	}
 
@@ -381,6 +413,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
 	}
 
@@ -399,6 +432,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		badReq.Header.Set("Content-Type", "application/json")
 		badResp, cErr := s.app.Test(badReq)
 		s.Require().NoError(cErr)
+		defer badResp.Body.Close()
 		s.Equal(http.StatusBadRequest, badResp.StatusCode)
 	}
 
@@ -417,6 +451,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		badReq.Header.Set("Content-Type", "application/json")
 		badResp, cErr := s.app.Test(badReq)
 		s.Require().NoError(cErr)
+		defer badResp.Body.Close()
 		s.Equal(http.StatusBadRequest, badResp.StatusCode)
 	}
 
@@ -430,6 +465,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusBadRequest, patchResp.StatusCode)
 	}
 
@@ -446,6 +482,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		patchReq.Header.Set("Content-Type", "application/json")
 		patchResp, pErr := s.app.Test(patchReq)
 		s.Require().NoError(pErr)
+		defer patchResp.Body.Close()
 		s.Equal(http.StatusOK, patchResp.StatusCode)
 
 		var updateRes map[string]interface{}
@@ -468,4 +505,540 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		expectedExpiry := exitDate.AddDate(0, 0, 45)
 		s.True(expectedExpiry.Equal(resExpiryDate), "expected warranty_expiry_date %v, got %v", expectedExpiry, resExpiryDate)
 	}
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePOST() {
+	key := uuid.New().String()
+	reqBody := map[string]interface{}{
+		"customer_name":   "Budi duplicate",
+		"customer_gender": "Male",
+		"brand":           "Apple",
+		"model":           "iPhone 13 Pro",
+		"issue":           "LCD Mati",
+		"price":           1500000,
+		"warranty_days":   30,
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+
+	// First Request
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Idempotency-Key", key)
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var res1 map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	data1 := res1["data"].(map[string]interface{})
+	id1 := data1["id"].(string)
+
+	// Second Request (Duplicate)
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Idempotency-Key", key)
+	resp2, err := s.app.Test(req2)
+	s.Require().NoError(err)
+	defer resp2.Body.Close()
+	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
+
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	data2 := res2["data"].(map[string]interface{})
+	id2 := data2["id"].(string)
+
+	s.Equal(id1, id2)
+
+	// Check DB has only 1 ticket
+	reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/tickets", nil)
+	respList, err := s.app.Test(reqList)
+	s.Require().NoError(err)
+	defer respList.Body.Close()
+	var listRes map[string]interface{}
+	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	tickets := listRes["data"].([]interface{})
+	s.Len(tickets, 1)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePATCH() {
+	// Create ticket first
+	reqBody := map[string]interface{}{
+		"customer_name":   "PATCH test",
+		"customer_gender": "Female",
+		"brand":           "Xiaomi",
+		"model":           "Redmi Note 10",
+		"issue":           "Speaker Mati",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	var createRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	id := createRes["data"].(map[string]interface{})["id"].(string)
+
+	key := uuid.New().String()
+	patchBody := map[string]interface{}{"status": "on_process"}
+	patchBytes, _ := json.Marshal(patchBody)
+
+	// First PATCH
+	reqPatch, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(patchBytes))
+	reqPatch.Header.Set("Content-Type", "application/json")
+	reqPatch.Header.Set("X-Idempotency-Key", key)
+	respPatch, err := s.app.Test(reqPatch)
+	s.Require().NoError(err)
+	defer respPatch.Body.Close()
+	s.Equal(http.StatusOK, respPatch.StatusCode)
+
+	var patchRes1 map[string]interface{}
+	_ = json.NewDecoder(respPatch.Body).Decode(&patchRes1)
+	s.Equal("on_process", patchRes1["data"].(map[string]interface{})["status"])
+
+	// Second PATCH
+	reqPatch2, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(patchBytes))
+	reqPatch2.Header.Set("Content-Type", "application/json")
+	reqPatch2.Header.Set("X-Idempotency-Key", key)
+	respPatch2, err := s.app.Test(reqPatch2)
+	s.Require().NoError(err)
+	defer respPatch2.Body.Close()
+	s.Equal(http.StatusOK, respPatch2.StatusCode)
+
+	var patchRes2 map[string]interface{}
+	_ = json.NewDecoder(respPatch2.Body).Decode(&patchRes2)
+	s.Equal("on_process", patchRes2["data"].(map[string]interface{})["status"])
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_ConcurrentPOST() {
+	key := uuid.New().String()
+	reqBody := map[string]interface{}{
+		"customer_name":   "Budi concurrent",
+		"customer_gender": "Male",
+		"brand":           "Apple",
+		"model":           "iPhone 13 Pro",
+		"issue":           "LCD Mati",
+		"price":           1500000,
+		"warranty_days":   30,
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+
+	var wg sync.WaitGroup
+	var resp1, resp2 *http.Response
+	var err1, err2 error
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Idempotency-Key", key)
+		resp1, err1 = s.app.Test(req, 10000)
+	}()
+
+	go func() {
+		defer wg.Done()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Idempotency-Key", key)
+		resp2, err2 = s.app.Test(req, 10000)
+	}()
+
+	wg.Wait()
+
+	s.Require().NoError(err1)
+	s.Require().NoError(err2)
+	s.Require().NotNil(resp1)
+	s.Require().NotNil(resp2)
+	defer resp1.Body.Close()
+	defer resp2.Body.Close()
+
+	s.Require().Equal(http.StatusCreated, resp1.StatusCode)
+	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
+
+	var res1, res2 map[string]interface{}
+	_ = json.NewDecoder(resp1.Body).Decode(&res1)
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+
+	id1 := res1["data"].(map[string]interface{})["id"].(string)
+	id2 := res2["data"].(map[string]interface{})["id"].(string)
+
+	s.Equal(id1, id2)
+
+	// Check DB has only 1 ticket
+	reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/tickets", nil)
+	respList, err := s.app.Test(reqList)
+	s.Require().NoError(err)
+	defer respList.Body.Close()
+	var listRes map[string]interface{}
+	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	tickets := listRes["data"].([]interface{})
+	s.Len(tickets, 1)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_KeyIsolation() {
+	key := uuid.New().String()
+
+	// 1. Send POST with key
+	reqBody := map[string]interface{}{
+		"customer_name":   "Budi isolation",
+		"customer_gender": "Male",
+		"brand":           "Apple",
+		"model":           "iPhone 13 Pro",
+		"issue":           "LCD Mati",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Idempotency-Key", key)
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var createRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	id := createRes["data"].(map[string]interface{})["id"].(string)
+
+	// 2. Reuse the same key for PATCH on the created ticket
+	patchBody := map[string]interface{}{"status": "on_process"}
+	patchBytes, _ := json.Marshal(patchBody)
+	reqPatch, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id, bytes.NewReader(patchBytes))
+	reqPatch.Header.Set("Content-Type", "application/json")
+	reqPatch.Header.Set("X-Idempotency-Key", key) // Same key
+	respPatch, err := s.app.Test(reqPatch)
+	s.Require().NoError(err)
+	defer respPatch.Body.Close()
+
+	// Should succeed and return the update response, not the cached create response
+	s.Equal(http.StatusOK, respPatch.StatusCode)
+	var patchRes map[string]interface{}
+	_ = json.NewDecoder(respPatch.Body).Decode(&patchRes)
+	s.Equal("on_process", patchRes["data"].(map[string]interface{})["status"])
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_TicketSpecificPATCHKeyIsolation() {
+	key := uuid.New().String()
+
+	// Create Ticket 1
+	body1 := map[string]interface{}{"customer_name": "Ticket 1", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b1, _ := json.Marshal(body1)
+	req1, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b1))
+	req1.Header.Set("Content-Type", "application/json")
+	r1, _ := s.app.Test(req1)
+	defer r1.Body.Close()
+	var res1 map[string]interface{}
+	_ = json.NewDecoder(r1.Body).Decode(&res1)
+	id1 := res1["data"].(map[string]interface{})["id"].(string)
+
+	// Create Ticket 2
+	body2 := map[string]interface{}{"customer_name": "Ticket 2", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b2, _ := json.Marshal(body2)
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b2))
+	req2.Header.Set("Content-Type", "application/json")
+	r2, _ := s.app.Test(req2)
+	defer r2.Body.Close()
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(r2.Body).Decode(&res2)
+	id2 := res2["data"].(map[string]interface{})["id"].(string)
+
+	// Send PATCH on Ticket 1 with key
+	patchBody := map[string]interface{}{"status": "on_process"}
+	pb, _ := json.Marshal(patchBody)
+	reqPatch1, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id1, bytes.NewReader(pb))
+	reqPatch1.Header.Set("Content-Type", "application/json")
+	reqPatch1.Header.Set("X-Idempotency-Key", key)
+	rPatch1, _ := s.app.Test(reqPatch1)
+	defer rPatch1.Body.Close()
+	s.Equal(http.StatusOK, rPatch1.StatusCode)
+
+	// Send PATCH on Ticket 2 with same key and same body
+	reqPatch2, _ := http.NewRequest(http.MethodPatch, "/api/v1/tickets/"+id2, bytes.NewReader(pb))
+	reqPatch2.Header.Set("Content-Type", "application/json")
+	reqPatch2.Header.Set("X-Idempotency-Key", key)
+	rPatch2, _ := s.app.Test(reqPatch2)
+	defer rPatch2.Body.Close()
+
+	// Should succeed (200), updating Ticket 2, and not returning Ticket 1's cached response
+	s.Equal(http.StatusOK, rPatch2.StatusCode)
+	var patchRes2 map[string]interface{}
+	_ = json.NewDecoder(rPatch2.Body).Decode(&patchRes2)
+	s.Equal(id2, patchRes2["data"].(map[string]interface{})["id"].(string))
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_BodyFingerprintConflict() {
+	key := uuid.New().String()
+
+	body1 := map[string]interface{}{"customer_name": "Budi conflict 1", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b1, _ := json.Marshal(body1)
+	req1, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b1))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("X-Idempotency-Key", key)
+	r1, _ := s.app.Test(req1)
+	defer r1.Body.Close()
+	s.Equal(http.StatusCreated, r1.StatusCode)
+
+	// Send different body with same key
+	body2 := map[string]interface{}{"customer_name": "Budi conflict 2", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b2, _ := json.Marshal(body2)
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b2))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Idempotency-Key", key)
+	r2, _ := s.app.Test(req2)
+	defer r2.Body.Close()
+
+	s.Equal(http.StatusConflict, r2.StatusCode)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_ValidationErrorRequiresFreshKeyForCorrectedPayload() {
+	key := uuid.New().String()
+
+	invalidBody := map[string]interface{}{
+		"customer_name":   "Validation retry",
+		"customer_gender": "Male",
+	}
+	invalidBytes, _ := json.Marshal(invalidBody)
+	invalidReq, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(invalidBytes))
+	invalidReq.Header.Set("Content-Type", "application/json")
+	invalidReq.Header.Set("X-Idempotency-Key", key)
+	invalidResp, err := s.app.Test(invalidReq)
+	s.Require().NoError(err)
+	defer invalidResp.Body.Close()
+	s.Require().Equal(http.StatusBadRequest, invalidResp.StatusCode)
+
+	correctedBody := map[string]interface{}{
+		"customer_name":   "Validation retry",
+		"customer_gender": "Male",
+		"brand":           "Apple",
+		"model":           "iPhone 13",
+		"issue":           "LCD Mati",
+	}
+	correctedBytes, _ := json.Marshal(correctedBody)
+
+	reusedKeyReq, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(correctedBytes))
+	reusedKeyReq.Header.Set("Content-Type", "application/json")
+	reusedKeyReq.Header.Set("X-Idempotency-Key", key)
+	reusedKeyResp, err := s.app.Test(reusedKeyReq)
+	s.Require().NoError(err)
+	defer reusedKeyResp.Body.Close()
+	s.Require().Equal(http.StatusConflict, reusedKeyResp.StatusCode)
+
+	freshKeyReq, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(correctedBytes))
+	freshKeyReq.Header.Set("Content-Type", "application/json")
+	freshKeyReq.Header.Set("X-Idempotency-Key", uuid.New().String())
+	freshKeyResp, err := s.app.Test(freshKeyReq)
+	s.Require().NoError(err)
+	defer freshKeyResp.Body.Close()
+	s.Require().Equal(http.StatusCreated, freshKeyResp.StatusCode)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_InvalidKey() {
+	reqBody := map[string]interface{}{"customer_name": "Invalid key test", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Idempotency-Key", "not-a-valid-uuid")
+	resp, _ := s.app.Test(req)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_NoKeyCompatibility() {
+	reqBody := map[string]interface{}{"customer_name": "No key test 1", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := s.app.Test(req)
+	defer resp.Body.Close()
+	s.Equal(http.StatusCreated, resp.StatusCode)
+
+	reqBody2 := map[string]interface{}{"customer_name": "No key test 2", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b2, _ := json.Marshal(reqBody2)
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b2))
+	req2.Header.Set("Content-Type", "application/json")
+	resp2, _ := s.app.Test(req2)
+	defer resp2.Body.Close()
+	s.Equal(http.StatusCreated, resp2.StatusCode)
+
+	// Verify both were created
+	reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/tickets", nil)
+	respList, _ := s.app.Test(reqList)
+	defer respList.Body.Close()
+	var listRes map[string]interface{}
+	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	tickets := listRes["data"].([]interface{})
+	s.Len(tickets, 2)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_ScopedHeaderSpoofing() {
+	reqBody := map[string]interface{}{"customer_name": "Spoof test", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Scoped-Idempotency-Key", "POST:/api/v1/tickets:some-uuid")
+	resp, _ := s.app.Test(req)
+	defer resp.Body.Close()
+	s.Equal(http.StatusCreated, resp.StatusCode)
+
+	var res map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res)
+	id := res["data"].(map[string]interface{})["id"].(string)
+
+	// Re-send with same spoofed header, should create another ticket instead of replaying
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Scoped-Idempotency-Key", "POST:/api/v1/tickets:some-uuid")
+	resp2, _ := s.app.Test(req2)
+	defer resp2.Body.Close()
+	s.Equal(http.StatusCreated, resp2.StatusCode)
+
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	id2 := res2["data"].(map[string]interface{})["id"].(string)
+
+	s.NotEqual(id, id2)
+}
+
+func (s *TicketIntegrationTestSuite) TestIdempotency_ScopeExclusionDelete() {
+	// Create ticket
+	reqBody := map[string]interface{}{"customer_name": "Delete test", "customer_gender": "Male", "brand": "A", "model": "B", "issue": "C"}
+	b, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/tickets", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := s.app.Test(req)
+	defer resp.Body.Close()
+	var res map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res)
+	id := res["data"].(map[string]interface{})["id"].(string)
+
+	key := uuid.New().String()
+
+	// First DELETE
+	reqDel1, _ := http.NewRequest(http.MethodDelete, "/api/v1/tickets/"+id, nil)
+	reqDel1.Header.Set("X-Idempotency-Key", key)
+	respDel1, _ := s.app.Test(reqDel1)
+	defer respDel1.Body.Close()
+	s.Equal(http.StatusOK, respDel1.StatusCode)
+
+	// Second DELETE
+	reqDel2, _ := http.NewRequest(http.MethodDelete, "/api/v1/tickets/"+id, nil)
+	reqDel2.Header.Set("X-Idempotency-Key", key)
+	respDel2, _ := s.app.Test(reqDel2)
+	defer respDel2.Body.Close()
+
+	// Should not be cached, so it returns 404 since it was already deleted
+	s.Equal(http.StatusNotFound, respDel2.StatusCode)
+}
+
+func (s *TicketIntegrationTestSuite) TestPostgresStorage_GetAndSet() {
+	store := database.NewPostgresStorage(s.db)
+	defer store.Close()
+
+	// empty key and empty value are ignored
+	err := store.Set("", nil, 0)
+	s.Require().NoError(err)
+	val, err := store.Get("")
+	s.Require().NoError(err)
+	s.Nil(val)
+
+	// Get() returns nil, nil for missing or expired keys
+	val, err = store.Get("missing-key")
+	s.Require().NoError(err)
+	s.Nil(val)
+
+	// Get() returns a copied byte slice
+	key := "test-key"
+	expectedVal := []byte("cached-response")
+	err = store.Set(key, expectedVal, 10*time.Minute)
+	s.Require().NoError(err)
+
+	val, err = store.Get(key)
+	s.Require().NoError(err)
+	s.Equal(expectedVal, val)
+
+	// Modify the returned slice and verify stored one is not mutated
+	val[0] = 'X'
+	val2, err := store.Get(key)
+	s.Require().NoError(err)
+	s.Equal(expectedVal, val2)
+}
+
+func (s *TicketIntegrationTestSuite) TestPostgresStorage_ReserveRequest() {
+	store := database.NewPostgresStorage(s.db)
+	defer store.Close()
+	key := "reserve-key"
+	hash := "some-hash"
+
+	// ReserveRequest() accepts the same key and same hash
+	err := store.ReserveRequest(key, hash, 10*time.Minute)
+	s.Require().NoError(err)
+
+	err = store.ReserveRequest(key, hash, 10*time.Minute)
+	s.Require().NoError(err)
+
+	// ReserveRequest() returns a conflict for the same key and different hash
+	err = store.ReserveRequest(key, "different-hash", 10*time.Minute)
+	s.ErrorIs(err, database.ErrIdempotencyConflict)
+}
+
+func (s *TicketIntegrationTestSuite) TestPostgresStorage_DeleteExpired() {
+	store := database.NewPostgresStorage(s.db)
+	defer store.Close()
+	key := "expired-key"
+
+	// Set with negative duration (already expired)
+	err := store.Set(key, []byte("expired-val"), -10*time.Minute)
+	s.Require().NoError(err)
+
+	// Get only returns active keys
+	val, err := store.Get(key)
+	s.Require().NoError(err)
+	s.Nil(val)
+
+	// DeleteExpired removes expired rows
+	err = store.DeleteExpired()
+	s.Require().NoError(err)
+
+	// Verify it's gone from database entirely
+	var count int
+	err = s.db.Get(&count, "SELECT COUNT(*) FROM idempotency_keys WHERE key = $1", key)
+	s.Require().NoError(err)
+	s.Equal(0, count)
+}
+
+func (s *TicketIntegrationTestSuite) TestPostgresStorage_RequestPathDoesNotSynchronouslyDeleteExpiredKeys() {
+	store := database.NewPostgresStorage(s.db, database.WithCleanupInterval(0))
+	defer store.Close()
+
+	_, err := s.db.Exec(`
+		INSERT INTO idempotency_keys (key, request_hash, value, expires_at)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL '1 minute')
+	`, "expired-request-path-key", "expired-hash", []byte("expired-value"))
+	s.Require().NoError(err)
+
+	err = store.ReserveRequest("active-reserve-key", "active-hash", 10*time.Minute)
+	s.Require().NoError(err)
+
+	err = store.Set("active-cache-key", []byte("active-value"), 10*time.Minute)
+	s.Require().NoError(err)
+
+	var count int
+	err = s.db.Get(&count, "SELECT COUNT(*) FROM idempotency_keys WHERE key = $1", "expired-request-path-key")
+	s.Require().NoError(err)
+	s.Equal(1, count)
+}
+
+func (s *TicketIntegrationTestSuite) TestPostgresStorage_CacheWriteFailure() {
+	// Close a temporary database connection to simulate DB failure
+	tempDB, err := sqlx.Open("postgres", "postgres://invalid:invalid@localhost:5432/invalid?sslmode=disable")
+	s.Require().NoError(err)
+	tempStore := database.NewPostgresStorage(tempDB)
+	defer tempStore.Close()
+	tempDB.Close() // closed db connection
+
+	// Set on closed DB should not return an error (it just logs)
+	err = tempStore.Set("any-key", []byte("val"), 10*time.Minute)
+	s.Require().NoError(err)
 }

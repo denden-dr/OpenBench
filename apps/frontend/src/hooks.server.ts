@@ -1,6 +1,15 @@
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	if (process.env.MOCK_API === 'true') {
+		const { handleMockRequest } = await import('$lib/mocks/handlers');
+		const response = await handleMockRequest(event);
+		if (response) {
+			return response;
+		}
+		return resolve(event);
+	}
+
 	if (event.url.pathname === '/api' || event.url.pathname.startsWith('/api/')) {
 		const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
 		const targetUrl = new URL(event.url.pathname + event.url.search, backendUrl);
