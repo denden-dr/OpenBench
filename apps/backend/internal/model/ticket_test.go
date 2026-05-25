@@ -218,6 +218,25 @@ func TestValidateTicketUpdate(t *testing.T) {
 	})
 }
 
+func TestTicketPrepareForCreate_VoidWarrantyDays(t *testing.T) {
+	t.Run("applies default warranty days then can be reset to zero", func(t *testing.T) {
+		ticket := Ticket{
+			Price:        decimal.NewFromInt(0),
+			WarrantyDays: 0,
+			Status:       StatusCancelled,
+		}
+
+		err := ticket.PrepareForCreate()
+		require.NoError(t, err)
+		// PrepareForCreate sets 0 → DefaultWarrantyDays
+		assert.Equal(t, DefaultWarrantyDays, ticket.WarrantyDays)
+
+		// Void claim path: reset to 0 after PrepareForCreate
+		ticket.WarrantyDays = 0
+		assert.Equal(t, 0, ticket.WarrantyDays)
+	})
+}
+
 func TestTicketErrorsAreStable(t *testing.T) {
 	assert.True(t, errors.Is(ErrNegativePrice, ErrNegativePrice))
 	assert.True(t, errors.Is(ErrPickedUpRequiresPaid, ErrPickedUpRequiresPaid))

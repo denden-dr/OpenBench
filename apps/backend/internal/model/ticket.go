@@ -38,6 +38,8 @@ type Ticket struct {
 	WarrantyDays          int                 `db:"warranty_days" json:"warranty_days"`
 	EntryDate             time.Time           `db:"entry_date" json:"entry_date"`
 	ExitDate              *time.Time          `db:"exit_date" json:"exit_date"`
+	IsWarranty            bool                `db:"is_warranty" json:"is_warranty"`
+	ParentTicketID        *string             `db:"parent_ticket_id" json:"parent_ticket_id"`
 }
 
 type TicketUpdate struct {
