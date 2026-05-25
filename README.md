@@ -1,52 +1,101 @@
 # OpenBench (PhoneFix Admin)
 
-A clean, high-performance web application designed as a single-user administrative tool for a phone repair business. It simplifies device tracking, mirroring your Google Sheet workflow directly.
+A single-user administrative dashboard for a phone repair business. Track the full intake-to-pickup lifecycle of customer devices with status workflow, payment tracking, and warranty management.
 
-## Project Overview
+## Project Architecture
 
-OpenBench Admin provides a unified workspace for the shop owner to manage the entire intake, repair, payment, and warranty lifecycle of customer devices in one dashboard.
+```
+apps/
+├── backend/          Go + Fiber REST API
+│   ├── main.go       Entry point, DI wiring, route registration
+│   ├── migrations/   PostgreSQL schema migrations (golang-migrate)
+│   ├── mocks/        Generated Mockery mocks
+│   └── internal/
+│       ├── config/       Env-based configuration
+│       ├── database/     DB connection + idempotency storage
+│       ├── dto/          Request/response types
+│       ├── handler/      HTTP handlers
+│       ├── middleware/   Error handler + idempotency middleware
+│       ├── model/        Domain model & validation
+│       ├── repository/   SQL queries via sqlx
+│       └── service/      Business logic & lifecycle invariants
+└── frontend/         Svelte 5 + SvelteKit (adapter-node)
+    └── src/
+        ├── routes/       +page.svelte, +layout.svelte
+        ├── lib/          Components, stores, mocks
+        └── hooks/        API proxy hooks
+```
 
-### Core Features
+## Core Features
 
-*   **Intake Form**: Quickly log repairs with customer details, device specifications (Brand/Model), accessories left (SIM, Case, etc.), price estimation, and warranty duration.
-*   **Simple Status Workflow**: Track jobs through four linear stages:
-    1.  **In for Service** (`service_in`): Newly dropped-off devices.
-    2.  **On Process** (`on_process`): Devices actively being repaired.
-    3.  **Fixed** (`fixed`): Repair complete, waiting for customer collection.
-    4.  **Picked Up** (`picked_up`): Device retrieved. This logs the exit date, marks the payment as paid, and calculates the warranty expiry date.
-*   **KPI Summary Cards**: Live counts of tickets at each stage and today's total revenue.
-*   **Instant Search & Filters**: Search tickets by customer name, brand, model, or issue.
+- **Ticket Intake**: Log repairs with customer details, device specs, accessories, pricing, and warranty duration (default 30 days).
+- **Status Workflow**: Six stages — `service_in` → `on_process` → `waiting_confirmation` → `fixed` → `picked_up`, plus `cancelled`.
+- **Payment Lifecycle**: Moving to `picked_up` auto-records `exit_date`, sets `payment_status=paid`, and computes `warranty_expiry_date` (exit + warranty days).
+- **Lifecycle Invariants**: Backend enforces rules — picked_up requires exit_date + paid; non-picked_up cannot have exit_date.
+- **Idempotency**: Postgres-backed `X-Idempotency-Key` middleware prevents duplicate mutations. Different payload with same key returns `409 Conflict`.
+- **Dashboard Stats**: KPI cards for revenue, active repairs, today's completions, unpaid repairs.
+- **Search & Filters**: Filter tickets by customer name, brand, model, or issue.
+- **Mock API Mode**: Run frontend without backend via `npm run dev:mock`.
 
 ## Tech Stack
 
-*   **Frontend**: Built with **Svelte 5** (Runes mode) and SvelteKit for rapid, reactive UI rendering. Tailwind CSS provides clean, premium aesthetics.
-*   **Backend API**: High-performance RESTful API powered by **Go Fiber**.
-*   **Database**: **PostgreSQL** (via `sqlx`) to persist ticket entries.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Svelte 5 (Runes), SvelteKit, Tailwind CSS v4, Lucide icons |
+| Backend | Go, Fiber v2, sqlx, shopspring/decimal |
+| Database | PostgreSQL 16 |
+| Testing | Go testing, testify, Mockery, Testcontainers |
+| Container | Docker/Podman + Compose |
 
 ## Getting Started
 
 ### Prerequisites
-- Docker (for database/Supabase containers)
-- Go (v1.22+)
-- Node.js (v20+)
+
+- Go 1.22+
+- Node.js 20+
+- Docker or Podman
+- [golang-migrate](https://github.com/golang-migrate/migrate) CLI
 
 ### Running Locally
 
-1. **Start the database**:
-   ```bash
-   make db-up
-   ```
-2. **Apply migrations**:
-   ```bash
-   make migrate-up
-   ```
-3. **Run the Go backend**:
-   ```bash
-   make run-backend
-   ```
-4. **Run SvelteKit frontend**:
-   ```bash
-   cd apps/frontend
-   npm run dev
-   ```
-   Open `http://localhost:5173` to access the admin dashboard.
+```bash
+# 1. Start database + services
+make compose-up
+
+# 2. Apply migrations
+make migrate-up
+
+# 3. Run backend on :3000
+make run-backend
+
+# 4. Run frontend on :5173
+make run-frontend
+```
+
+Open http://localhost:5173.
+
+### Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `compose-up` / `compose-down` | Start/stop local stack |
+| `compose-test-up` / `compose-test-down` | Test container stack |
+| `migrate-up` / `migrate-down` | Run/rollback DB migrations |
+| `migrate-create NAME=foo` | Create new migration |
+| `run-backend` | Start Go API server |
+| `run-frontend` | Start SvelteKit dev server (proxies `/api` to backend) |
+| `run-frontend-mock` | Start frontend with mock API (no backend needed) |
+| `mock-backend` | Regenerate Mockery mocks |
+| `test-backend-unit` | Run unit tests |
+| `test-backend-integration` | Run integration tests (Testcontainers) |
+| `backend-tidy` / `backend-fmt` | Tidy and format Go code |
+
+## Project Graph
+
+The repository maintains a knowledge graph at `graphify-out/`. After code changes:
+
+```bash
+graphify update .
+```
+
+Open `graphify-out/graph.html` in a browser for an interactive visualization of the codebase architecture.
