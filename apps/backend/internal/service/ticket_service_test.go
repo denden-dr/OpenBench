@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -10,10 +11,27 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	mockrepo "github.com/denden-dr/openbench/apps/backend/mocks/repository"
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+type stubResult struct{}
+
+func (s *stubResult) LastInsertId() (int64, error) { return 0, nil }
+func (s *stubResult) RowsAffected() (int64, error) { return 1, nil }
+
+type stubTx struct {
+	committed  bool
+	rolledBack bool
+}
+
+func (s *stubTx) Commit() error                                                               { s.committed = true; return nil }
+func (s *stubTx) Rollback() error                                                             { s.rolledBack = true; return nil }
+func (s *stubTx) GetContext(context.Context, interface{}, string, ...interface{}) error       { return nil }
+func (s *stubTx) ExecContext(context.Context, string, ...interface{}) (sql.Result, error)     { return &stubResult{}, nil }
+func (s *stubTx) QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row          { panic("stubTx.QueryRowxContext should not be called — repository methods are mocked") }
 
 func TestTicketService_CreateTicket(t *testing.T) {
 	tests := []struct {
@@ -282,12 +300,14 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				CustomerName: &newName,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:           "ticket-123",
 					CustomerName: "Budi",
 					Status:       "service_in",
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.CustomerName == "Budi Baru"
 				})).Return(nil).Once()
 			},
@@ -330,7 +350,9 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				CustomerName: &newName,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-not-found").Return(nil, repository.ErrNotFound).Once()
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-not-found").Return(nil, repository.ErrNotFound).Once()
 			},
 			expectedError: ErrTicketNotFound,
 		},
@@ -341,7 +363,9 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				CustomerName: &newName,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-error").Return(nil, errors.New("db error")).Once()
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-error").Return(nil, errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},
@@ -352,14 +376,16 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				Status: &pickedUp,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					CustomerName:  "Budi",
 					Status:        "service_in",
 					PaymentStatus: "unpaid",
 					WarrantyDays:  30,
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "picked_up" && t.PaymentStatus == "paid" && t.ExitDate != nil
 				})).Return(nil).Once()
 			},
@@ -379,7 +405,9 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				PaymentStatus: &unpaid,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					Status:        "service_in",
 					PaymentStatus: "unpaid",
@@ -396,14 +424,16 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				now := time.Now()
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					Status:        "picked_up",
 					PaymentStatus: "paid",
 					WarrantyDays:  30,
 					ExitDate:      &now,
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "fixed" && t.ExitDate == nil
 				})).Return(nil).Once()
 			},
@@ -421,11 +451,13 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				CustomerName: &newName,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:           "ticket-123",
 					CustomerName: "Budi",
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("update db error")).Once()
+				m.On("UpdateTx", mock.Anything, tx, mock.Anything).Return(errors.New("update db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},
@@ -437,14 +469,16 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				now := time.Now().Add(-24 * time.Hour)
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					Status:        "picked_up",
 					PaymentStatus: "paid",
 					WarrantyDays:  30,
 					ExitDate:      &now,
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "picked_up" && t.WarrantyDays == 60
 				})).Return(nil).Once()
 			},
@@ -463,14 +497,16 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				now := time.Now().Add(-24 * time.Hour)
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					Status:        "picked_up",
 					PaymentStatus: "paid",
 					WarrantyDays:  30,
 					ExitDate:      &now,
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "picked_up" && t.ExitDate.Equal(customExitDate)
 				})).Return(nil).Once()
 			},
@@ -489,7 +525,9 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				ExitDate: &customExitDate,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:     "ticket-123",
 					Status: "service_in",
 				}, nil).Once()
@@ -503,11 +541,13 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				CustomerName: &newName,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:           "ticket-123",
 					CustomerName: "Budi",
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.Anything).Return(repository.ErrNotFound).Once()
+				m.On("UpdateTx", mock.Anything, tx, mock.Anything).Return(repository.ErrNotFound).Once()
 			},
 			expectedError: ErrTicketNotFound,
 		},
@@ -518,12 +558,14 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				Status: &statusWaiting,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:           "ticket-123",
 					CustomerName: "Budi",
 					Status:       "on_process",
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "waiting_confirmation"
 				})).Return(nil).Once()
 			},
@@ -539,12 +581,14 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				Status: &statusCancelled,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
+				tx := &stubTx{}
+				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
+				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:           "ticket-123",
 					CustomerName: "Budi",
 					Status:       "waiting_confirmation",
 				}, nil).Once()
-				m.On("Update", mock.Anything, mock.MatchedBy(func(t *model.Ticket) bool {
+				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
 					return t.Status == "cancelled"
 				})).Return(nil).Once()
 			},
