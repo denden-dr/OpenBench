@@ -11,8 +11,30 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (event.url.pathname === '/api' || event.url.pathname.startsWith('/api/')) {
-		const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-		const targetUrl = new URL(event.url.pathname + event.url.search, backendUrl);
+		const isProduction = process.env.NODE_ENV === 'production';
+		const backendUrl = process.env.BACKEND_URL;
+		
+		if (isProduction && !backendUrl) {
+			return new Response(JSON.stringify({ success: false, error: 'Server configuration error: BACKEND_URL missing' }), {
+				status: 500,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		const actualBackendUrl = backendUrl || 'http://localhost:3000';
+
+		// CSRF Prevention for proxy routes
+		if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(event.request.method)) {
+			const origin = event.request.headers.get('origin');
+			if (origin && new URL(origin).origin !== event.url.origin) {
+				return new Response(JSON.stringify({ success: false, error: 'CSRF Forbidden' }), {
+					status: 403,
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+		}
+
+		const targetUrl = new URL(event.url.pathname + event.url.search, actualBackendUrl);
 		
 		const headers = new Headers(event.request.headers);
 		headers.delete('host');
