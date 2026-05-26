@@ -21,4 +21,5 @@ var (
 	ErrPickedUpRequiresPaid          = NewModelError(3, "picked up ticket must be paid")
 	ErrPickedUpRequiresExitDate      = NewModelError(4, "picked up ticket must have an exit date")
 	ErrNonPickedUpCannotHaveExitDate = NewModelError(5, "non-picked up ticket cannot have exit date")
+	ErrInvalidStatusTransition       = NewModelError(6, "invalid ticket status transition")
 )

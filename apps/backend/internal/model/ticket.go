@@ -23,9 +23,32 @@ const (
 	PaymentPaid   TicketPaymentStatus = "paid"
 )
 
+var validTransitions = map[TicketStatus][]TicketStatus{
+	StatusServiceIn: {
+		StatusOnProcess,
+		StatusCancelled,
+	},
+	StatusOnProcess: {
+		StatusWaitingConfirmation,
+		StatusFixed,
+		StatusCancelled,
+	},
+	StatusWaitingConfirmation: {
+		StatusOnProcess,
+		StatusCancelled,
+	},
+	StatusFixed: {
+		StatusPickedUp,
+		StatusCancelled,
+	},
+	StatusCancelled: {},
+	StatusPickedUp:  {},
+}
+
 type Ticket struct {
 	ID                    string              `db:"id" json:"id"`
 	CustomerName          string              `db:"customer_name" json:"customer_name"`
+	CustomerPhone         string              `db:"customer_phone" json:"customer_phone"`
 	CustomerGender        string              `db:"customer_gender" json:"customer_gender"`
 	Brand                 string              `db:"brand" json:"brand"`
 	Model                 string              `db:"model" json:"model"`
@@ -44,6 +67,7 @@ type Ticket struct {
 
 type TicketUpdate struct {
 	CustomerName          *string
+	CustomerPhone         *string
 	CustomerGender        *string
 	Brand                 *string
 	Model                 *string
@@ -74,7 +98,6 @@ func (t *Ticket) PrepareForCreate() error {
 	if err := t.validateWarrantyDays(); err != nil {
 		return err
 	}
-	t.applyDefaultWarrantyDays()
 
 	if t.Status == "" {
 		t.Status = StatusServiceIn
@@ -95,7 +118,9 @@ func (t *Ticket) ApplyUpdate(update TicketUpdate) error {
 		return err
 	}
 
-	t.applyStatusAndPaymentChanges(update.Status, update.PaymentStatus, update.ExitDate)
+	if err := t.applyStatusAndPaymentChanges(update.Status, update.PaymentStatus, update.ExitDate); err != nil {
+		return err
+	}
 
 	return t.validateLifecycleInvariants()
 }
@@ -111,6 +136,9 @@ func (t *Ticket) WarrantyExpiryDate() *time.Time {
 func (t *Ticket) applyBasicFields(update TicketUpdate) {
 	if update.CustomerName != nil {
 		t.CustomerName = *update.CustomerName
+	}
+	if update.CustomerPhone != nil {
+		t.CustomerPhone = *update.CustomerPhone
 	}
 	if update.CustomerGender != nil {
 		t.CustomerGender = *update.CustomerGender
@@ -153,11 +181,28 @@ func (t *Ticket) applyWarranty(warrantyDays *int) error {
 	t.WarrantyDays = *warrantyDays
 	return nil
 }
-func (t *Ticket) applyStatusAndPaymentChanges(status *string, paymentStatus *string, exitDate *time.Time) {
+func (t *Ticket) applyStatusAndPaymentChanges(status *string, paymentStatus *string, exitDate *time.Time) error {
 	oldStatus := t.Status
 
 	if status != nil {
-		t.Status = TicketStatus(*status)
+		newStatus := TicketStatus(*status)
+		if oldStatus != newStatus {
+			allowed, ok := validTransitions[oldStatus]
+			if !ok {
+				return ErrInvalidStatusTransition
+			}
+			isValid := false
+			for _, st := range allowed {
+				if st == newStatus {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				return ErrInvalidStatusTransition
+			}
+			t.Status = newStatus
+		}
 	}
 
 	if paymentStatus != nil {
@@ -174,6 +219,7 @@ func (t *Ticket) applyStatusAndPaymentChanges(status *string, paymentStatus *str
 	} else if status != nil && t.Status != StatusPickedUp && oldStatus == StatusPickedUp {
 		t.ExitDate = nil
 	}
+	return nil
 }
 
 func (t *Ticket) validateLifecycleInvariants() error {
@@ -207,13 +253,10 @@ func (t *Ticket) validateWarrantyDays() error {
 	return nil
 }
 
-func (t *Ticket) applyDefaultWarrantyDays() {
-	if t.WarrantyDays <= 0 {
-		t.WarrantyDays = DefaultWarrantyDays
-	}
-}
-
 func optionalText(value *string) *string {
+	if value == nil {
+		return nil
+	}
 	if *value == "" {
 		return nil
 	}
