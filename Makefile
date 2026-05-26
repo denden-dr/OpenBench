@@ -29,7 +29,7 @@ migrate-create:
 	migrate create -ext sql -dir apps/backend/migrations -seq $(NAME)
 
 mock-backend:
-	cd apps/backend && go run github.com/vektra/mockery/v2
+	cd apps/backend && mockery
 
 backend-tidy:
 	cd apps/backend && go mod tidy
@@ -43,23 +43,27 @@ test-backend-unit:
 test-backend-integration:
 	cd apps/backend && go test -tags=integration ./... -v
 
-.PHONY: run-db run-backend run-frontend up down
+BACKEND_PID := /tmp/openbench-backend.pid
+FRONTEND_PID := /tmp/openbench-frontend.pid
 
-run-db: compose-up
+.PHONY: run-backend run-frontend up down start stop
 
 run-backend:
-	cd apps/backend && go run main.go
+	cd apps/backend && go run main.go & echo $$! > $(BACKEND_PID) && wait
 
 run-frontend-mock:
 	cd apps/frontend && npm run dev:mock
 
 run-frontend:
-	cd apps/frontend && npm run dev
+	cd apps/frontend && npm run dev & echo $$! > $(FRONTEND_PID) && wait
 
-up: run-db
+up start:
+	$(MAKE) compose-up
 	$(MAKE) -j 2 run-backend run-frontend
 
-down: compose-down
-	@echo "Stopping backend and frontend processes..."
-	@pkill -f "go run main.go" || true
-	@pkill -f "vite dev" || true
+down stop:
+	@echo "Stopping all services..."
+	$(COMPOSE_TOOL) down 2>/dev/null || true
+	@if [ -f $(BACKEND_PID) ]; then kill $$(cat $(BACKEND_PID)) 2>/dev/null && rm $(BACKEND_PID) || true; fi
+	@if [ -f $(FRONTEND_PID) ]; then kill $$(cat $(FRONTEND_PID)) 2>/dev/null && rm $(FRONTEND_PID) || true; fi
+	@echo "All services stopped"

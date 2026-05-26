@@ -9,6 +9,7 @@ import (
 
 type TicketRepository interface {
 	Create(ctx context.Context, ticket *model.Ticket) error
+	CreateTx(ctx context.Context, tx *sqlx.Tx, ticket *model.Ticket) error
 	GetByID(ctx context.Context, id string) (*model.Ticket, error)
 	Update(ctx context.Context, ticket *model.Ticket) error
 	List(ctx context.Context) ([]model.Ticket, error)
@@ -24,24 +25,57 @@ func NewTicketRepository(db *sqlx.DB) TicketRepository {
 }
 
 func (r *sqlTicketRepository) Create(ctx context.Context, ticket *model.Ticket) error {
+	return r.CreateTx(ctx, nil, ticket)
+}
+
+func (r *sqlTicketRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, ticket *model.Ticket) error {
+	status := ticket.Status
+	if status == "" {
+		status = "service_in"
+	}
+	paymentStatus := ticket.PaymentStatus
+	if paymentStatus == "" {
+		paymentStatus = "unpaid"
+	}
 	query := `
-		INSERT INTO tickets (customer_name, customer_gender, brand, model, issue, additional_description, accessories, price, status, payment_status, warranty_days)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO tickets (customer_name, customer_gender, brand, model, issue, additional_description, accessories, price, status, payment_status, warranty_days, is_warranty, parent_ticket_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id, entry_date, status, payment_status
 	`
-	err := r.db.QueryRowxContext(ctx, query,
-		ticket.CustomerName,
-		ticket.CustomerGender,
-		ticket.Brand,
-		ticket.Model,
-		ticket.Issue,
-		ticket.AdditionalDescription,
-		ticket.Accessories,
-		ticket.Price,
-		"service_in", // Default initial status
-		"unpaid",     // Default initial payment status
-		ticket.WarrantyDays,
-	).Scan(&ticket.ID, &ticket.EntryDate, &ticket.Status, &ticket.PaymentStatus)
+	var err error
+	if tx != nil {
+		err = tx.QueryRowxContext(ctx, query,
+			ticket.CustomerName,
+			ticket.CustomerGender,
+			ticket.Brand,
+			ticket.Model,
+			ticket.Issue,
+			ticket.AdditionalDescription,
+			ticket.Accessories,
+			ticket.Price,
+			status,
+			paymentStatus,
+			ticket.WarrantyDays,
+			ticket.IsWarranty,
+			ticket.ParentTicketID,
+		).Scan(&ticket.ID, &ticket.EntryDate, &ticket.Status, &ticket.PaymentStatus)
+	} else {
+		err = r.db.QueryRowxContext(ctx, query,
+			ticket.CustomerName,
+			ticket.CustomerGender,
+			ticket.Brand,
+			ticket.Model,
+			ticket.Issue,
+			ticket.AdditionalDescription,
+			ticket.Accessories,
+			ticket.Price,
+			status,
+			paymentStatus,
+			ticket.WarrantyDays,
+			ticket.IsWarranty,
+			ticket.ParentTicketID,
+		).Scan(&ticket.ID, &ticket.EntryDate, &ticket.Status, &ticket.PaymentStatus)
+	}
 	return MapDatabaseError(err)
 }
 
@@ -50,7 +84,7 @@ func (r *sqlTicketRepository) GetByID(ctx context.Context, id string) (*model.Ti
 	query := `
 		SELECT id, customer_name, customer_gender, brand, model, issue,
 		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date
+		       warranty_days, entry_date, exit_date, is_warranty, parent_ticket_id
 		FROM tickets
 		WHERE id = $1
 	`
@@ -66,8 +100,9 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 		UPDATE tickets
 		SET customer_name = $1, customer_gender = $2, brand = $3, model = $4, issue = $5,
 		    additional_description = $6, accessories = $7, price = $8, status = $9,
-		    payment_status = $10, warranty_days = $11, exit_date = $12
-		WHERE id = $13
+		    payment_status = $10, warranty_days = $11, exit_date = $12,
+		    is_warranty = $13, parent_ticket_id = $14
+		WHERE id = $15
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		ticket.CustomerName,
@@ -82,6 +117,8 @@ func (r *sqlTicketRepository) Update(ctx context.Context, ticket *model.Ticket) 
 		ticket.PaymentStatus,
 		ticket.WarrantyDays,
 		ticket.ExitDate,
+		ticket.IsWarranty,
+		ticket.ParentTicketID,
 		ticket.ID,
 	)
 	if err != nil {
@@ -102,7 +139,7 @@ func (r *sqlTicketRepository) List(ctx context.Context) ([]model.Ticket, error) 
 	query := `
 		SELECT id, customer_name, customer_gender, brand, model, issue,
 		       additional_description, accessories, price, status, payment_status,
-		       warranty_days, entry_date, exit_date
+		       warranty_days, entry_date, exit_date, is_warranty, parent_ticket_id
 		FROM tickets
 		ORDER BY entry_date DESC
 	`

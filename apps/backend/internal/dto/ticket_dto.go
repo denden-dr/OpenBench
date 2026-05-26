@@ -49,4 +49,6 @@ type TicketResponse struct {
 	EntryDate             time.Time       `json:"entry_date"`
 	ExitDate              *time.Time      `json:"exit_date"`
 	WarrantyExpiryDate    *time.Time      `json:"warranty_expiry_date"`
+	IsWarranty            bool            `json:"is_warranty"`
+	ParentTicketID        *string         `json:"parent_ticket_id"`
 }

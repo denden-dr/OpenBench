@@ -11,3 +11,4 @@ packages:
       outpkg: "repository"
     interfaces:
       TicketRepository:
+      WarrantyClaimRepository:

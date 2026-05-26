@@ -50,6 +50,12 @@ var (
 	ErrDuplicate           = NewAppError(409, "resource already exists")
 	ErrDatabaseUnavailable = NewAppError(503, "database is currently unavailable")
 	ErrInternal            = NewAppError(500, "internal server error")
+
+	ErrWarrantyClaimNotFound   = NewAppError(404, "warranty claim not found")
+	ErrTicketNotPickedUp       = NewAppError(400, "ticket has not been picked up by customer")
+	ErrWarrantyExpired         = NewAppError(400, "warranty period has expired")
+	ErrClaimAlreadyDecided     = NewAppError(400, "warranty claim has already been approved or voided")
+	ErrDuplicateWarrantyClaim  = NewAppError(409, "ticket already has an open warranty claim")
 )
 
 // MapModelError maps model business rule errors to service AppErrors
@@ -85,6 +91,8 @@ func MapRepositoryError(err error) error {
 		return ErrTicketNotFound
 	case errors.Is(err, repository.ErrDuplicate):
 		return ErrDuplicate
+	case errors.Is(err, repository.ErrConflict):
+		return ErrClaimAlreadyDecided
 	case errors.Is(err, repository.ErrDatabaseUnavailable):
 		return &AppError{Code: 503, Message: "database is currently unavailable", Err: err}
 	default:

@@ -1,16 +1,16 @@
 # Graph Report - OpenBench  (2026-05-25)
 
 ## Corpus Check
-- 59 files · ~94,677 words
+- 74 files · ~113,712 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 542 nodes · 634 edges · 46 communities (36 shown, 10 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 75 edges (avg confidence: 0.82)
+- 766 nodes · 939 edges · 52 communities (40 shown, 12 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9246912c`
+- Built from commit: `7743dd60`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -56,18 +56,24 @@
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 51|Community 51]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `TicketIntegrationTestSuite` - 27 edges
-2. `str` - 16 edges
-3. `Ticket` - 12 edges
-4. `DesignSystemGenerator` - 11 edges
-5. `compilerOptions` - 11 edges
-6. `Repository Guidelines` - 10 edges
-7. `_search_csv()` - 9 edges
-8. `generate_design_system()` - 9 edges
-9. `main()` - 9 edges
-10. `NewPostgresStorage()` - 9 edges
+2. `WarrantyClaimIntegrationTestSuite` - 17 edges
+3. `str` - 16 edges
+4. `MapDatabaseError()` - 15 edges
+5. `main()` - 12 edges
+6. `Ticket` - 12 edges
+7. `MapRepositoryError()` - 12 edges
+8. `DesignSystemGenerator` - 11 edges
+9. `compilerOptions` - 11 edges
+10. `Repository Guidelines` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Repository Guidelines` --references--> `RTK (Rust Token Killer)`  [EXTRACTED]
@@ -86,19 +92,19 @@
 - **Phone Board Microsoldering Workflow** — microsoldering_repair_scene, smartphone_logic_board, soldering_iron, precision_tweezers, a15_bionic_chip [INFERRED 0.92]
 - **Repair Status Workflow Stages** — prd_ticket_status_service_in, prd_ticket_status_on_process, prd_ticket_status_fixed, prd_ticket_status_picked_up [EXTRACTED 1.00]
 
-## Communities (46 total, 10 thin omitted)
+## Communities (52 total, 12 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.09
-Nodes (29): bool, DesignSystemGenerator, _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system() (+21 more)
+Cohesion: 0.06
+Nodes (44): bool, BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words, Build BM25 index from documents, Score all documents against query, Load CSV and return list of dicts (+36 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (29): dependencies, lucide-svelte, @supabase/supabase-js, devDependencies, svelte, svelte-check, @sveltejs/adapter-node, @sveltejs/kit (+21 more)
+Cohesion: 0.05
+Nodes (36): dependencies, lucide-svelte, @supabase/supabase-js, devDependencies, svelte, svelte-check, @sveltejs/adapter-node, @sveltejs/kit (+28 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.08
-Nodes (7): MockTicketRepository, MockTicketRepository_Create_Call, MockTicketRepository_Delete_Call, MockTicketRepository_Expecter, MockTicketRepository_GetByID_Call, MockTicketRepository_List_Call, MockTicketRepository_Update_Call
+Cohesion: 0.07
+Nodes (8): MockTicketRepository, MockTicketRepository_Create_Call, MockTicketRepository_CreateTx_Call, MockTicketRepository_Delete_Call, MockTicketRepository_Expecter, MockTicketRepository_GetByID_Call, MockTicketRepository_List_Call, MockTicketRepository_Update_Call
 
 ### Community 3 - "Community 3"
 Cohesion: 0.06
@@ -109,20 +115,20 @@ Cohesion: 0.09
 Nodes (27): Backend Layered Architecture, Conventional Commits, Expand/Contract Migration Strategy, Graphify Knowledge Graph, Repository Guidelines, Mockery Mocks, Single-Instance Deployment, Testcontainers/PostgreSQL (+19 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.10
-Nodes (19): main(), NewTicketHandler(), TicketHandler, hashIdempotencyRequest(), NewTicketIdempotency(), ScopeTicketIdempotencyKey(), TestHashIdempotencyRequest(), TestHashIdempotencyRequestChangesAfterValidationCorrection() (+11 more)
+Cohesion: 0.06
+Nodes (27): main(), SetupTestDB(), NewTicketHandler(), TicketHandler, NewWarrantyClaimHandler(), WarrantyClaimHandler, hashIdempotencyRequest(), NewTicketIdempotency() (+19 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.13
-Nodes (9): TestTicketErrorsAreStable(), TestValidateTicketUpdate(), ValidateTicketUpdate(), AppError, MapModelError(), MapRepositoryError(), TestMapModelError(), TestMapRepositoryError() (+1 more)
+Cohesion: 0.12
+Nodes (11): TestTicketErrorsAreStable(), TestValidateTicketUpdate(), ValidateTicketUpdate(), AppError, MapModelError(), MapRepositoryError(), TestMapModelError(), TestMapRepositoryError() (+3 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.15
-Nodes (15): BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words, Build BM25 index from documents, Score all documents against query, Load CSV and return list of dicts, Core search function using BM25 (+7 more)
+Cohesion: 0.07
+Nodes (8): MockWarrantyClaimRepository, MockWarrantyClaimRepository_BeginTx_Call, MockWarrantyClaimRepository_Create_Call, MockWarrantyClaimRepository_Expecter, MockWarrantyClaimRepository_GetByID_Call, MockWarrantyClaimRepository_GetOpenClaimByTicketID_Call, MockWarrantyClaimRepository_List_Call, MockWarrantyClaimRepository_UpdateTx_Call
 
 ### Community 8 - "Community 8"
 Cohesion: 0.16
-Nodes (15): Config, DefaultDatabaseConfig(), getEnv(), getEnvDuration(), getEnvInt(), Load(), loadDatabaseConfig(), DatabaseConfig (+7 more)
+Nodes (14): Config, DefaultDatabaseConfig(), getEnv(), getEnvDuration(), getEnvInt(), Load(), loadDatabaseConfig(), DatabaseConfig (+6 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.20
@@ -137,20 +143,20 @@ Cohesion: 0.15
 Nodes (12): compilerOptions, allowJs, checkJs, esModuleInterop, forceConsistentCasingInFileNames, moduleResolution, resolveJsonModule, rewriteRelativeImportExtensions (+4 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.23
-Nodes (4): MapDatabaseError(), TestMapDatabaseError(), sqlTicketRepository, TicketRepository
+Cohesion: 0.15
+Nodes (5): MapDatabaseError(), TestMapDatabaseError(), sqlTicketRepository, sqlWarrantyClaimRepository, TicketRepository
 
 ### Community 13 - "Community 13"
 Cohesion: 0.29
 Nodes (7): Electronics Repair Workstation, Fine Tweezers, Hot Air Rework Station, Inspection Microscope, Logic Board, Precision Screwdriver Set, Repair Mat
 
 ### Community 14 - "Community 14"
-Cohesion: 0.06
-Nodes (31): Accessibility, Available Domains, Available Stacks, code:bash (python3 --version || python --version), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa w), code:bash (# Get UX guidelines for animation and accessibility), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "layout respo), code:bash (# ASCII box (default) - best for terminal display) (+23 more)
+Cohesion: 0.05
+Nodes (43): Accessibility, Available Domains, Available Stacks, code:bash (python3 --version || python --version), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" -), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa w), code:bash (# Get UX guidelines for animation and accessibility), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "layout respo) (+35 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.48
-Nodes (4): handleMockRequest(), mockTickets, setMockTickets(), handle()
+Cohesion: 0.36
+Nodes (7): handleMockRequest(), MockClaim, mockTickets, mockWarrantyClaims, setMockTickets(), setMockWarrantyClaims(), handle()
 
 ### Community 16 - "Community 16"
 Cohesion: 0.33
@@ -188,10 +194,6 @@ Nodes (12): code:block1 (apps/), code:bash (# 1. Start database + services), cod
 Cohesion: 0.17
 Nodes (11): Buttons and Actions, Common Mistakes & Red Flags, Core Principles, Empty States, Error Messages, Implementation Examples, Overview, Quick Reference (+3 more)
 
-### Community 40 - "Community 40"
-Cohesion: 0.17
-Nodes (12): code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" -), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<product_typ), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa w), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --d), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --d), code:bash (python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" -), How to Use This Skill, Step 1: Analyze User Requirements (+4 more)
-
 ### Community 41 - "Community 41"
 Cohesion: 0.18
 Nodes (10): Build, Test, and Development Commands, Coding Style & Naming Conventions, Commit & Pull Request Guidelines, Deployment & Schema Migrations, graphify, Project Structure & Module Organization, Repository Guidelines, Runner Notes (+2 more)
@@ -201,8 +203,8 @@ Cohesion: 0.20
 Nodes (9): 1. Check for `.gitignore`, 2. Analyze the Context, 3. Stage Files Selectively, 4. Commit with a Standardized Message, code:block1 (<type>[optional scope]: <description>), 🚫 CRITICAL RULE: NEVER USE `git add .`, Example, Git Commit Skill (+1 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.14
-Nodes (13): Assessment, Code Review: PR 17 Fixes, Code Review: PR 17 - Idempotency and Loading-Aware Ticket Flows, Critical, Critical (Must Fix), DONE, Important, Important (Should Fix) (+5 more)
+Cohesion: 0.08
+Nodes (28): 1. Race condition: pengecekan status klaim melewati isolasi transaksi, 1. Void/cancelled warranty tickets mendapat 30-day warranty, 2. Logika insert tiket duplikat di warranty claim repo, 2. Validation test false positive, 3. Bentuk response tidak konsisten pada Approve/Void vs List/Create, 3. N+1 query di `ListClaims` untuk ticket enrichment, 4. Dead code di `UpdateTx` — non-transactional path tidak pernah dipakai, 4. Tabel antrian klaim warranty hanya menampilkan waktu, bukan tanggal (+20 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.22
@@ -212,25 +214,45 @@ Nodes (8): Building, code:sh (# create a new project), code:sh (# recreate this 
 Cohesion: 0.29
 Nodes (6): code:bash (rtk git status), code:bash (rtk gain              # Show token savings), Meta Commands, RTK - Rust Token Killer (Google Antigravity), Rule, Why
 
+### Community 46 - "Community 46"
+Cohesion: 0.06
+Nodes (33): Backend Warranty Claims Implementation Plan, Backend Warranty Claims Implementation Plan (Decoupled Queue), code:sql (ALTER TABLE tickets ADD COLUMN is_warranty BOOLEAN NOT NULL ), code:go (package repository), code:bash (git add apps/backend/internal/model/warranty_claim.go apps/b), code:go (IsWarranty            *bool            `json:"is_warranty" v), code:go (IsWarranty            bool            `json:"is_warranty"`), code:go (package dto) (+25 more)
+
+### Community 47 - "Community 47"
+Cohesion: 0.09
+Nodes (24): code:typescript (export interface MockClaim {), code:html ({getStatusLabel(ticket.status, Boolean(ticket.is_warranty))}), code:html (<a), code:html ({#if ticket.is_warranty}), code:bash (git add apps/frontend/src/routes/+page.svelte), code:typescript (// Matches /api/v1/warranty-claims), code:bash (git add apps/frontend/src/lib/mocks/mockData.ts apps/fronten), code:html (<script lang="ts">) (+16 more)
+
+### Community 48 - "Community 48"
+Cohesion: 0.12
+Nodes (20): 1. Overview & Business Logic, 2. Technical Architecture, 3. Frontend UI Flow (Svelte 5), 4. Sequence Diagram, A. Database Schema, A. Dedicated `/warranty` Page Layout, B. Backend Go Models (`apps/backend/internal/model`), B. Backend Go Models (`apps/backend/internal/model/warranty_claim.go`) (+12 more)
+
+### Community 49 - "Community 49"
+Cohesion: 0.40
+Nodes (4): ClaimCreationResult, CreateWarrantyClaimRequest, VoidWarrantyClaimRequest, WarrantyClaimResponse
+
+### Community 51 - "Community 51"
+Cohesion: 0.17
+Nodes (11): 1. Arsitektur Alur Kerja Baru, 2. Perubahan Database & Migrasi, 3. Implementasi Kode Backend (Go Fiber), 4. Implementasi Frontend (Svelte 5 & SvelteKit), 5. Pengujian & Verifikasi, 6. Tindakan Lanjut Temuan Code Review (issue.md), A. Model (`apps/backend/internal/model/`), B. Repository (`apps/backend/internal/repository/`) (+3 more)
+
 ## Knowledge Gaps
-- **203 isolated node(s):** `bool`, `extends`, `rewriteRelativeImportExtensions`, `allowJs`, `checkJs` (+198 more)
+- **279 isolated node(s):** `bool`, `extends`, `rewriteRelativeImportExtensions`, `allowJs`, `checkJs` (+274 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ScopeTicketIdempotencyKey()` connect `Community 5` to `Community 6`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `TicketIntegrationTestSuite` connect `Community 3` to `Community 8`, `Community 5`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Why does `main()` connect `Community 5` to `Community 8`, `Community 3`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `TicketIntegrationTestSuite` connect `Community 3` to `Community 8`, `Community 5`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `str` (e.g. with `.tokenize()` and `_search_csv()`) actually correct?**
   _`str` has 3 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 14 inferred relationships involving `MapDatabaseError()` (e.g. with `.Is()` and `TestMapDatabaseError()`) actually correct?**
+  _`MapDatabaseError()` has 14 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 11 inferred relationships involving `main()` (e.g. with `Load()` and `NewDB()`) actually correct?**
+  _`main()` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?**
-  _229 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.08771929824561403 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
+  _305 weakly-connected nodes found - possible documentation gaps or missing edges._
