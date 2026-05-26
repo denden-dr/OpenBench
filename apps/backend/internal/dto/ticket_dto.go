@@ -8,6 +8,7 @@ import (
 
 type CreateTicketRequest struct {
 	CustomerName          string          `json:"customer_name" validate:"required"`
+	CustomerPhone         string          `json:"customer_phone" validate:"omitempty,max=20"`
 	CustomerGender        string          `json:"customer_gender" validate:"required,oneof=Male Female Other"`
 	Brand                 string          `json:"brand" validate:"required"`
 	Model                 string          `json:"model" validate:"required"`
@@ -15,11 +16,12 @@ type CreateTicketRequest struct {
 	AdditionalDescription string          `json:"additional_description"`
 	Accessories           string          `json:"accessories"`
 	Price                 decimal.Decimal `json:"price"`
-	WarrantyDays          int             `json:"warranty_days"`
+	WarrantyDays          *int            `json:"warranty_days"`
 }
 
 type UpdateTicketRequest struct {
 	CustomerName          *string          `json:"customer_name" validate:"omitempty"`
+	CustomerPhone         *string          `json:"customer_phone" validate:"omitempty,max=20"`
 	CustomerGender        *string          `json:"customer_gender" validate:"omitempty,oneof=Male Female Other"`
 	Brand                 *string          `json:"brand" validate:"omitempty"`
 	Model                 *string          `json:"model" validate:"omitempty"`
@@ -36,6 +38,7 @@ type UpdateTicketRequest struct {
 type TicketResponse struct {
 	ID                    string          `json:"id"`
 	CustomerName          string          `json:"customer_name"`
+	CustomerPhone         string          `json:"customer_phone"`
 	CustomerGender        string          `json:"customer_gender"`
 	Brand                 string          `json:"brand"`
 	Model                 string          `json:"model"`
