@@ -1,8 +1,9 @@
 export let mockTickets = [
     {
-        id: 'TCK-001',
+        id: 'f7e2f418-d713-49b6-b9fe-28e630b1282a',
         customer_name: 'Budi Santoso',
         customer_gender: 'Male',
+        customer_phone: '081234567890',
         brand: 'Apple',
         model: 'iPhone 13',
         issue: 'Layar Retak',
@@ -13,9 +14,10 @@ export let mockTickets = [
         entry_date: new Date(Date.now() - 86400000).toISOString()
     },
     {
-        id: 'TCK-002',
+        id: 'c3a8b9c1-4d5e-6f7a-8b9c-0d1e2f3a4b5c',
         customer_name: 'Siti Aminah',
         customer_gender: 'Female',
+        customer_phone: '081234567891',
         brand: 'Samsung',
         model: 'Galaxy S22',
         issue: 'Baterai Drop',
@@ -26,9 +28,10 @@ export let mockTickets = [
         entry_date: new Date().toISOString()
     },
     {
-        id: 'TCK-003',
+        id: '9d8e7f6a-5b4c-3d2e-1f0a-9b8c7d6e5f4a',
         customer_name: 'Andi Wijaya',
         customer_gender: 'Male',
+        customer_phone: '081234567892',
         brand: 'Xiaomi',
         model: 'Redmi Note 10',
         issue: 'Mati Total',
@@ -40,9 +43,10 @@ export let mockTickets = [
         entry_date: new Date().toISOString()
     },
     {
-        id: 'TCK-004',
+        id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
         customer_name: 'Denden Rahman',
         customer_gender: 'Male',
+        customer_phone: '081234567893',
         brand: 'Apple',
         model: 'iPhone 15 Pro',
         issue: 'Kerusakan LCD',
@@ -54,9 +58,10 @@ export let mockTickets = [
         exit_date: new Date(Date.now() - 9 * 86400000).toISOString()
     },
     {
-        id: 'TCK-005',
+        id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
         customer_name: 'Eka Wijaya',
         customer_gender: 'Female',
+        customer_phone: '081234567894',
         brand: 'Xiaomi',
         model: 'Mi 11 Ultra',
         issue: 'Kamera Error',

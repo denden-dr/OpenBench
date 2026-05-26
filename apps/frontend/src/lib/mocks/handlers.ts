@@ -14,7 +14,7 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         if (method === 'POST') {
             const data = await request.json();
             const newTicket = {
-                id: 'TCK-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0'),
+                id: crypto.randomUUID(),
                 ...data,
                 status: 'service_in',
                 payment_status: 'unpaid',
@@ -216,6 +216,67 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
                 ticket: spawnedTicket
             }
         });
+    }
+
+    // 1. Matches /api/v1/public/tickets/[id]
+    const publicTicketMatch = path.match(/^\/api\/v1\/public\/tickets\/([^/]+)$/);
+    if (publicTicketMatch && method === 'GET') {
+        const id = publicTicketMatch[1];
+        if (id.length !== 36) {
+            return json({ success: false, error: 'Invalid ticket ID format. Only full UUID is supported.' }, { status: 400 });
+        }
+        const ticket = mockTickets.find(t => t.id.toLowerCase() === id.toLowerCase());
+        if (!ticket) {
+            return json({ success: false, error: 'Tiket tidak ditemukan' }, { status: 404 });
+        }
+        const maskName = (name: string) => name.split(' ').map(n => n[0] + '*'.repeat(Math.max(0, n.length - 1))).join(' ');
+        const maskPhone = (phone: string) => phone ? phone.slice(0, 4) + '*'.repeat(Math.max(0, phone.length - 6)) + phone.slice(-2) : '';
+
+        return json({
+            success: true,
+            data: {
+                id: ticket.id,
+                customer_name_masked: maskName(ticket.customer_name),
+                customer_phone_masked: maskPhone((ticket as any).customer_phone || ''),
+                brand: ticket.brand,
+                model: ticket.model,
+                issue: ticket.issue,
+                additional_description: (ticket as any).additional_description || null,
+                accessories: (ticket as any).accessories || null,
+                price: ticket.price,
+                payment_status: ticket.payment_status,
+                status: ticket.status,
+                entry_date: ticket.entry_date,
+                exit_date: (ticket as any).exit_date || null,
+                warranty_days: ticket.warranty_days || 0
+            }
+        });
+    }
+
+    // 2. Matches /api/v1/public/track
+    if (path === '/api/v1/public/track' && method === 'POST') {
+        const data = await request.json();
+        const { short_id, phone } = data;
+        if (!short_id || !phone) {
+            return json({ success: false, error: 'ID Tiket dan Nomor Telepon wajib diisi' }, { status: 400 });
+        }
+        const ticket = mockTickets.find(t => {
+            const query = short_id.toLowerCase();
+            const target = t.id.toLowerCase();
+            let idMatch = false;
+            if (query.length === 8) {
+                idMatch = target.startsWith(query);
+            } else if (query.length === 36) {
+                idMatch = target === query;
+            }
+            const cleanPhoneT = ((t as any).customer_phone || '').replace(/\D/g, '');
+            const cleanPhoneInput = phone.replace(/\D/g, '');
+            return idMatch && cleanPhoneT === cleanPhoneInput;
+        });
+        if (!ticket) {
+            return json({ success: false, error: 'Tiket tidak ditemukan atau nomor HP salah' }, { status: 404 });
+        }
+        return json({ success: true, ticket_id: ticket.id });
     }
 
     return null;
