@@ -33,6 +33,10 @@ func (s *stubTx) GetContext(context.Context, interface{}, string, ...interface{}
 func (s *stubTx) ExecContext(context.Context, string, ...interface{}) (sql.Result, error)     { return &stubResult{}, nil }
 func (s *stubTx) QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row          { panic("stubTx.QueryRowxContext should not be called — repository methods are mocked") }
 
+func ptrInt(v int) *int {
+	return &v
+}
+
 func TestTicketService_CreateTicket(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -45,16 +49,18 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "success with all fields",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "Budi",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Apple",
 				Model:          "iPhone 13",
 				Issue:          "LCD Mati",
 				Price:          decimal.NewFromInt(1500000),
-				WarrantyDays:   30,
+				WarrantyDays:   ptrInt(30),
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				m.On("Create", mock.Anything, mock.MatchedBy(func(ticket *model.Ticket) bool {
 					return ticket.CustomerName == "Budi" &&
+						ticket.CustomerPhone == "08123456789" &&
 						ticket.CustomerGender == "Male" &&
 						ticket.Brand == "Apple" &&
 						ticket.Model == "iPhone 13" &&
@@ -73,6 +79,7 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			expectedAssert: func(t *testing.T, res *dto.TicketResponse) {
 				assert.Equal(t, "ticket-123", res.ID)
 				assert.Equal(t, "Budi", res.CustomerName)
+				assert.Equal(t, "08123456789", res.CustomerPhone)
 				assert.Equal(t, "service_in", res.Status)
 				assert.Equal(t, "unpaid", res.PaymentStatus)
 			},
@@ -81,16 +88,17 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "success with default warranty days",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "Andi",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Samsung",
 				Model:          "Galaxy S21",
 				Issue:          "Baterai kembung",
 				Price:          decimal.NewFromInt(500000),
-				WarrantyDays:   0,
+				WarrantyDays:   nil,
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				m.On("Create", mock.Anything, mock.MatchedBy(func(ticket *model.Ticket) bool {
-					return ticket.WarrantyDays == 30
+					return ticket.WarrantyDays == 30 && ticket.CustomerPhone == "08123456789"
 				})).Run(func(args mock.Arguments) {
 					ticket := args.Get(1).(*model.Ticket)
 					ticket.ID = "ticket-456"
@@ -105,12 +113,13 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "negative price error",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "Budi",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Apple",
 				Model:          "iPhone 13",
 				Issue:          "LCD Mati",
 				Price:          decimal.NewFromInt(-1),
-				WarrantyDays:   30,
+				WarrantyDays:   ptrInt(30),
 			},
 			setupMock:     func(m *mockrepo.MockTicketRepository) {},
 			expectedError: ErrNegativePrice,
@@ -119,12 +128,13 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "negative warranty error",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "Budi",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Apple",
 				Model:          "iPhone 13",
 				Issue:          "LCD Mati",
 				Price:          decimal.NewFromInt(1500000),
-				WarrantyDays:   -5,
+				WarrantyDays:   ptrInt(-5),
 			},
 			setupMock:     func(m *mockrepo.MockTicketRepository) {},
 			expectedError: ErrNegativeWarranty,
@@ -133,12 +143,13 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "validation failure - empty customer name",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Apple",
 				Model:          "iPhone 13",
 				Issue:          "LCD Mati",
 				Price:          decimal.NewFromInt(1500000),
-				WarrantyDays:   30,
+				WarrantyDays:   ptrInt(30),
 			},
 			setupMock:     func(m *mockrepo.MockTicketRepository) {},
 			expectedError: errors.New("validation failed"),
@@ -147,12 +158,13 @@ func TestTicketService_CreateTicket(t *testing.T) {
 			name: "repository error",
 			req: &dto.CreateTicketRequest{
 				CustomerName:   "Budi",
+				CustomerPhone:  "08123456789",
 				CustomerGender: "Male",
 				Brand:          "Apple",
 				Model:          "iPhone 13",
 				Issue:          "LCD Mati",
 				Price:          decimal.NewFromInt(1500000),
-				WarrantyDays:   30,
+				WarrantyDays:   ptrInt(30),
 			},
 			setupMock: func(m *mockrepo.MockTicketRepository) {
 				m.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error")).Once()
@@ -381,7 +393,7 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
 					CustomerName:  "Budi",
-					Status:        "service_in",
+					Status:        "fixed",
 					PaymentStatus: "unpaid",
 					WarrantyDays:  30,
 				}, nil).Once()
@@ -409,7 +421,7 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
 				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:            "ticket-123",
-					Status:        "service_in",
+					Status:        "fixed",
 					PaymentStatus: "unpaid",
 					WarrantyDays:  30,
 				}, nil).Once()
@@ -417,7 +429,7 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 			expectedError: ErrInvalidPaymentStatus,
 		},
 		{
-			name: "success transition out of picked_up clears dates",
+			name: "error transition out of picked_up blocked",
 			id:   "ticket-123",
 			req: &dto.UpdateTicketRequest{
 				Status: &fixed,
@@ -433,16 +445,8 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 					WarrantyDays:  30,
 					ExitDate:      &now,
 				}, nil).Once()
-				m.On("UpdateTx", mock.Anything, tx, mock.MatchedBy(func(t *model.Ticket) bool {
-					return t.Status == "fixed" && t.ExitDate == nil
-				})).Return(nil).Once()
 			},
-			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.TicketResponse) {
-				assert.Equal(t, "fixed", res.Status)
-				assert.Nil(t, res.ExitDate)
-				assert.Nil(t, res.WarrantyExpiryDate)
-			},
+			expectedError: ErrInvalidStatusTransition,
 		},
 		{
 			name: "repository update error",
@@ -529,7 +533,7 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 				m.On("BeginTx", mock.Anything).Return(tx, nil).Once()
 				m.On("GetByIDForUpdateTx", mock.Anything, tx, "ticket-123").Return(&model.Ticket{
 					ID:     "ticket-123",
-					Status: "service_in",
+					Status: "on_process",
 				}, nil).Once()
 			},
 			expectedError: ErrNonPickedUpWithExitDate,
@@ -764,3 +768,157 @@ func TestTicketService_DeleteTicket(t *testing.T) {
 		})
 	}
 }
+
+func TestTicketService_GetPublicTicket(t *testing.T) {
+	entryDate := time.Now()
+	t1 := model.Ticket{
+		ID:             "abcdef12-3456-7890-abcd-ef1234567890",
+		CustomerName:   "Budi Anto",
+		CustomerPhone:  "081234567890",
+		CustomerGender: "Male",
+		Brand:          "Apple",
+		Model:          "iPhone 13",
+		Issue:          "LCD Mati",
+		Status:         "service_in",
+		PaymentStatus:  "unpaid",
+		WarrantyDays:   30,
+		EntryDate:      entryDate,
+	}
+
+	tests := []struct {
+		name          string
+		id            string
+		setupMock     func(m *mockrepo.MockTicketRepository)
+		expectedError error
+		expectedRes   *dto.PublicTicketResponse
+	}{
+		{
+			name: "success get by full UUID",
+			id:   "abcdef12-3456-7890-abcd-ef1234567890",
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByID", mock.Anything, "abcdef12-3456-7890-abcd-ef1234567890").Return(&t1, nil).Once()
+			},
+			expectedError: nil,
+			expectedRes: &dto.PublicTicketResponse{
+				ID:                  "abcdef12-3456-7890-abcd-ef1234567890",
+				CustomerNameMasked:  "B*** A***",
+				CustomerPhoneMasked: "0812******90",
+				Brand:               "Apple",
+				Model:               "iPhone 13",
+				Issue:               "LCD Mati",
+				Status:              "service_in",
+				EntryDate:           entryDate,
+			},
+		},
+		{
+			name: "fail get by short ID",
+			id:   "abcdef12",
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByID", mock.Anything, "abcdef12").Return(nil, repository.ErrNotFound).Once()
+			},
+			expectedError: ErrTicketNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(mockrepo.MockTicketRepository)
+			tt.setupMock(mockRepo)
+
+			s := NewTicketService(mockRepo)
+			res, err := s.GetPublicTicket(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedRes.ID, res.ID)
+				assert.Equal(t, tt.expectedRes.CustomerNameMasked, res.CustomerNameMasked)
+				assert.Equal(t, tt.expectedRes.CustomerPhoneMasked, res.CustomerPhoneMasked)
+				assert.Equal(t, tt.expectedRes.Brand, res.Brand)
+			}
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestTicketService_TrackPublicTicket(t *testing.T) {
+	t1 := model.Ticket{
+		ID:            "abcdef12-3456-7890-abcd-ef1234567890",
+		CustomerPhone: "+62 812-3456-7890",
+	}
+
+	tests := []struct {
+		name          string
+		req           *dto.PublicTrackRequest
+		setupMock     func(m *mockrepo.MockTicketRepository)
+		expectedError error
+		expectedID    string
+	}{
+		{
+			name: "success track match",
+			req: &dto.PublicTrackRequest{
+				ShortID: "abcdef12",
+				Phone:   "081234567890",
+			},
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByShortID", mock.Anything, "abcdef12").Return([]model.Ticket{t1}, nil).Once()
+			},
+			expectedError: nil,
+			expectedID:    "abcdef12-3456-7890-abcd-ef1234567890",
+		},
+		{
+			name: "track failed - phone mismatch",
+			req: &dto.PublicTrackRequest{
+				ShortID: "abcdef12",
+				Phone:   "081299999999",
+			},
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("GetByShortID", mock.Anything, "abcdef12").Return([]model.Ticket{t1}, nil).Once()
+			},
+			expectedError: ErrTicketNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(mockrepo.MockTicketRepository)
+			tt.setupMock(mockRepo)
+
+			s := NewTicketService(mockRepo)
+			id, err := s.TrackPublicTicket(context.Background(), tt.req)
+
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+				assert.Empty(t, id)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, id)
+			}
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestNormalizePhone(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected string
+	}{
+		{"", ""},
+		{"+62 812-3456-789", "08123456789"},
+		{"628123456789", "08123456789"},
+		{"08123456789", "08123456789"},
+		{"  0812 3456  ", "08123456"},
+		{"abc-123", "123"},
+	}
+
+	for _, tc := range cases {
+		result := normalizePhone(tc.input)
+		if result != tc.expected {
+			t.Errorf("normalizePhone(%q) = %q; expected %q", tc.input, result, tc.expected)
+		}
+	}
+}
+

@@ -305,15 +305,17 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 						Status:   model.ClaimApproved,
 					},
 				}, nil).Once()
-				mTicket.On("GetByID", mock.Anything, "ticket-1").Return(&model.Ticket{
-					ID:           "ticket-1",
-					CustomerName: "Budi",
-					Brand:        "Apple",
-				}, nil).Once()
-				mTicket.On("GetByID", mock.Anything, "ticket-2").Return(&model.Ticket{
-					ID:           "ticket-2",
-					CustomerName: "Andi",
-					Brand:        "Samsung",
+				mTicket.On("GetByIDs", mock.Anything, []string{"ticket-1", "ticket-2"}).Return([]model.Ticket{
+					{
+						ID:           "ticket-1",
+						CustomerName: "Budi",
+						Brand:        "Apple",
+					},
+					{
+						ID:           "ticket-2",
+						CustomerName: "Andi",
+						Brand:        "Samsung",
+					},
 				}, nil).Once()
 			},
 			expectedError: nil,
@@ -339,9 +341,11 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 						Status:   model.ClaimWaitingInspection,
 					},
 				}, nil).Once()
-				mTicket.On("GetByID", mock.Anything, "ticket-1").Return(&model.Ticket{
-					ID:           "ticket-1",
-					CustomerName: "Budi",
+				mTicket.On("GetByIDs", mock.Anything, []string{"ticket-1"}).Return([]model.Ticket{
+					{
+						ID:           "ticket-1",
+						CustomerName: "Budi",
+					},
 				}, nil).Once()
 			},
 			expectedError: nil,
@@ -381,7 +385,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 						Status:   model.ClaimWaitingInspection,
 					},
 				}, nil).Once()
-				mTicket.On("GetByID", mock.Anything, "ticket-1").Return(nil, errors.New("db error")).Once()
+				mTicket.On("GetByIDs", mock.Anything, []string{"ticket-1"}).Return(nil, errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},
@@ -415,6 +419,148 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 
 			mockClaimRepo.AssertExpectations(t)
 			mockTicketRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestWarrantyClaimService_ApproveClaim(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            string
+		setupMock     func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository, mTx *mockrepo.MockTransaction)
+		expectedError error
+	}{
+		{
+			name: "success approve claim",
+			id:   "claim-123",
+			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository, mTx *mockrepo.MockTransaction) {
+				mClaim.On("BeginTx", mock.Anything).Return(mTx, nil).Once()
+				claim := &model.WarrantyClaim{
+					ID:       "claim-123",
+					TicketID: "ticket-123",
+					Issue:    "LCD rusak",
+					Status:   model.ClaimWaitingInspection,
+				}
+				mClaim.On("GetByIDForUpdateTx", mock.Anything, mTx, "claim-123").Return(claim, nil).Once()
+				ticket := &model.Ticket{
+					ID:           "ticket-123",
+					CustomerName: "Budi",
+					Brand:        "Apple",
+					Model:        "iPhone",
+				}
+				mTicket.On("GetByIDForUpdateTx", mock.Anything, mTx, "ticket-123").Return(ticket, nil).Once()
+				mTicket.On("CreateTx", mock.Anything, mTx, mock.MatchedBy(func(t *model.Ticket) bool {
+					return t.ParentTicketID != nil && *t.ParentTicketID == "ticket-123" && t.IsWarranty
+				})).Return(nil).Once()
+				mClaim.On("UpdateTx", mock.Anything, mTx, mock.Anything).Return(nil).Once()
+				mTx.On("Commit").Return(nil).Once()
+				mTx.On("Rollback").Return(nil).Maybe()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "claim already decided",
+			id:   "claim-123",
+			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository, mTx *mockrepo.MockTransaction) {
+				mClaim.On("BeginTx", mock.Anything).Return(mTx, nil).Once()
+				claim := &model.WarrantyClaim{
+					ID:     "claim-123",
+					Status: model.ClaimApproved,
+				}
+				mClaim.On("GetByIDForUpdateTx", mock.Anything, mTx, "claim-123").Return(claim, nil).Once()
+				mTx.On("Rollback").Return(nil).Once()
+			},
+			expectedError: ErrClaimAlreadyDecided,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClaimRepo := new(mockrepo.MockWarrantyClaimRepository)
+			mockTicketRepo := new(mockrepo.MockTicketRepository)
+			mockTx := new(mockrepo.MockTransaction)
+			tt.setupMock(mockClaimRepo, mockTicketRepo, mockTx)
+
+			s := NewWarrantyClaimService(mockClaimRepo, mockTicketRepo)
+			res, err := s.ApproveClaim(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.expectedError)
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+
+			mockClaimRepo.AssertExpectations(t)
+			mockTicketRepo.AssertExpectations(t)
+			mockTx.AssertExpectations(t)
+		})
+	}
+}
+
+func TestWarrantyClaimService_VoidClaim(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            string
+		req           *dto.VoidWarrantyClaimRequest
+		setupMock     func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository, mTx *mockrepo.MockTransaction)
+		expectedError error
+	}{
+		{
+			name: "success void claim",
+			id:   "claim-123",
+			req:  &dto.VoidWarrantyClaimRequest{VoidReason: "Physical damage"},
+			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository, mTx *mockrepo.MockTransaction) {
+				mClaim.On("BeginTx", mock.Anything).Return(mTx, nil).Once()
+				claim := &model.WarrantyClaim{
+					ID:       "claim-123",
+					TicketID: "ticket-123",
+					Issue:    "LCD rusak",
+					Status:   model.ClaimWaitingInspection,
+				}
+				mClaim.On("GetByIDForUpdateTx", mock.Anything, mTx, "claim-123").Return(claim, nil).Once()
+				ticket := &model.Ticket{
+					ID:           "ticket-123",
+					CustomerName: "Budi",
+					Brand:        "Apple",
+					Model:        "iPhone",
+				}
+				mTicket.On("GetByIDForUpdateTx", mock.Anything, mTx, "ticket-123").Return(ticket, nil).Once()
+				mTicket.On("CreateTx", mock.Anything, mTx, mock.MatchedBy(func(t *model.Ticket) bool {
+					return t.ParentTicketID != nil && *t.ParentTicketID == "ticket-123" && t.IsWarranty && t.Status == model.StatusCancelled
+				})).Return(nil).Once()
+				mClaim.On("UpdateTx", mock.Anything, mTx, mock.Anything).Return(nil).Once()
+				mTx.On("Commit").Return(nil).Once()
+				mTx.On("Rollback").Return(nil).Maybe()
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClaimRepo := new(mockrepo.MockWarrantyClaimRepository)
+			mockTicketRepo := new(mockrepo.MockTicketRepository)
+			mockTx := new(mockrepo.MockTransaction)
+			tt.setupMock(mockClaimRepo, mockTicketRepo, mockTx)
+
+			s := NewWarrantyClaimService(mockClaimRepo, mockTicketRepo)
+			res, err := s.VoidClaim(context.Background(), tt.id, tt.req)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.expectedError)
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+
+			mockClaimRepo.AssertExpectations(t)
+			mockTicketRepo.AssertExpectations(t)
+			mockTx.AssertExpectations(t)
 		})
 	}
 }
