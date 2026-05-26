@@ -23,7 +23,7 @@ migrate-up:
 	migrate -path apps/backend/migrations -database "$(DB_URL)" up
 
 migrate-down:
-	migrate -path apps/backend/migrations -database "$(DB_URL)" down
+	migrate -path apps/backend/migrations -database "$(DB_URL)" down $(or $(STEPS),1)
 
 migrate-create:
 	migrate create -ext sql -dir apps/backend/migrations -seq $(NAME)
