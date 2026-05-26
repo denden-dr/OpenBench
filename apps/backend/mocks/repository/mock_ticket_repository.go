@@ -343,6 +343,124 @@ func (_c *MockTicketRepository_GetByIDForUpdateTx_Call) RunAndReturn(run func(co
 	return _c
 }
 
+// GetByIDs provides a mock function with given fields: ctx, ids
+func (_m *MockTicketRepository) GetByIDs(ctx context.Context, ids []string) ([]model.Ticket, error) {
+	ret := _m.Called(ctx, ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDs")
+	}
+
+	var r0 []model.Ticket
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]model.Ticket, error)); ok {
+		return rf(ctx, ids)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []string) []model.Ticket); ok {
+		r0 = rf(ctx, ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.Ticket)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(ctx, ids)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTicketRepository_GetByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByIDs'
+type MockTicketRepository_GetByIDs_Call struct {
+	*mock.Call
+}
+
+// GetByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ids []string
+func (_e *MockTicketRepository_Expecter) GetByIDs(ctx interface{}, ids interface{}) *MockTicketRepository_GetByIDs_Call {
+	return &MockTicketRepository_GetByIDs_Call{Call: _e.mock.On("GetByIDs", ctx, ids)}
+}
+
+func (_c *MockTicketRepository_GetByIDs_Call) Run(run func(ctx context.Context, ids []string)) *MockTicketRepository_GetByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]string))
+	})
+	return _c
+}
+
+func (_c *MockTicketRepository_GetByIDs_Call) Return(_a0 []model.Ticket, _a1 error) *MockTicketRepository_GetByIDs_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTicketRepository_GetByIDs_Call) RunAndReturn(run func(context.Context, []string) ([]model.Ticket, error)) *MockTicketRepository_GetByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByShortID provides a mock function with given fields: ctx, shortID
+func (_m *MockTicketRepository) GetByShortID(ctx context.Context, shortID string) ([]model.Ticket, error) {
+	ret := _m.Called(ctx, shortID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByShortID")
+	}
+
+	var r0 []model.Ticket
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]model.Ticket, error)); ok {
+		return rf(ctx, shortID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []model.Ticket); ok {
+		r0 = rf(ctx, shortID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.Ticket)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, shortID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTicketRepository_GetByShortID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByShortID'
+type MockTicketRepository_GetByShortID_Call struct {
+	*mock.Call
+}
+
+// GetByShortID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - shortID string
+func (_e *MockTicketRepository_Expecter) GetByShortID(ctx interface{}, shortID interface{}) *MockTicketRepository_GetByShortID_Call {
+	return &MockTicketRepository_GetByShortID_Call{Call: _e.mock.On("GetByShortID", ctx, shortID)}
+}
+
+func (_c *MockTicketRepository_GetByShortID_Call) Run(run func(ctx context.Context, shortID string)) *MockTicketRepository_GetByShortID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTicketRepository_GetByShortID_Call) Return(_a0 []model.Ticket, _a1 error) *MockTicketRepository_GetByShortID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTicketRepository_GetByShortID_Call) RunAndReturn(run func(context.Context, string) ([]model.Ticket, error)) *MockTicketRepository_GetByShortID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function with given fields: ctx
 func (_m *MockTicketRepository) List(ctx context.Context) ([]model.Ticket, error) {
 	ret := _m.Called(ctx)
