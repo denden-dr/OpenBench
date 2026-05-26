@@ -9,12 +9,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Compile-time check that *sqlx.Tx satisfies Transaction.
+var _ Transaction = (*sqlx.Tx)(nil)
+
+
 type WarrantyClaimRepository interface {
-	BeginTx(ctx context.Context) (*sqlx.Tx, error)
+	BeginTx(ctx context.Context) (Transaction, error)
 	Create(ctx context.Context, claim *model.WarrantyClaim) error
 	GetByID(ctx context.Context, id string) (*model.WarrantyClaim, error)
+	GetByIDForUpdateTx(ctx context.Context, tx Transaction, id string) (*model.WarrantyClaim, error)
 	List(ctx context.Context, status string) ([]*model.WarrantyClaim, error)
-	UpdateTx(ctx context.Context, tx *sqlx.Tx, claim *model.WarrantyClaim) error
+	UpdateTx(ctx context.Context, tx Transaction, claim *model.WarrantyClaim) error
 	GetOpenClaimByTicketID(ctx context.Context, ticketID string) (*model.WarrantyClaim, error)
 }
 
@@ -26,7 +31,7 @@ func NewWarrantyClaimRepository(db *sqlx.DB) WarrantyClaimRepository {
 	return &sqlWarrantyClaimRepository{db: db}
 }
 
-func (r *sqlWarrantyClaimRepository) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
+func (r *sqlWarrantyClaimRepository) BeginTx(ctx context.Context) (Transaction, error) {
 	return r.db.BeginTxx(ctx, nil)
 }
 
@@ -56,6 +61,21 @@ func (r *sqlWarrantyClaimRepository) GetByID(ctx context.Context, id string) (*m
 		WHERE id = $1
 	`
 	err := r.db.GetContext(ctx, &claim, query, id)
+	if err != nil {
+		return nil, MapDatabaseError(err)
+	}
+	return &claim, nil
+}
+
+func (r *sqlWarrantyClaimRepository) GetByIDForUpdateTx(ctx context.Context, tx Transaction, id string) (*model.WarrantyClaim, error) {
+	var claim model.WarrantyClaim
+	query := `
+		SELECT id, ticket_id, claim_ticket_id, issue, additional_description, status, void_reason, inspected_at, created_at, updated_at
+		FROM warranty_claims
+		WHERE id = $1
+		FOR UPDATE
+	`
+	err := tx.GetContext(ctx, &claim, query, id)
 	if err != nil {
 		return nil, MapDatabaseError(err)
 	}
@@ -105,29 +125,25 @@ func (r *sqlWarrantyClaimRepository) GetOpenClaimByTicketID(ctx context.Context,
 	return &claim, nil
 }
 
-func (r *sqlWarrantyClaimRepository) UpdateTx(ctx context.Context, tx *sqlx.Tx, claim *model.WarrantyClaim) error {
+func (r *sqlWarrantyClaimRepository) UpdateTx(ctx context.Context, tx Transaction, claim *model.WarrantyClaim) error {
 	query := `
 		UPDATE warranty_claims
 		SET claim_ticket_id = $1, status = $2, void_reason = $3, inspected_at = $4, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $5 AND status = 'waiting_inspection'
+		RETURNING updated_at
 	`
-	result, err := tx.ExecContext(ctx, query,
+	err := tx.QueryRowxContext(ctx, query,
 		claim.ClaimTicketID,
 		claim.Status,
 		claim.VoidReason,
 		claim.InspectedAt,
 		claim.ID,
-	)
+	).Scan(&claim.UpdatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrConflict
+		}
 		return MapDatabaseError(err)
-	}
-	
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return MapDatabaseError(err)
-	}
-	if rowsAffected == 0 {
-		return ErrConflict
 	}
 	return nil
 }

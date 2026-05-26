@@ -23,6 +23,34 @@ func TestTicketPrepareForCreate(t *testing.T) {
 		assert.Equal(t, DefaultWarrantyDays, ticket.WarrantyDays)
 	})
 
+	t.Run("applies default status and payment status if empty", func(t *testing.T) {
+		ticket := Ticket{
+			Price:        decimal.NewFromInt(100000),
+			WarrantyDays: 30,
+		}
+
+		err := ticket.PrepareForCreate()
+
+		require.NoError(t, err)
+		assert.Equal(t, StatusServiceIn, ticket.Status)
+		assert.Equal(t, PaymentUnpaid, ticket.PaymentStatus)
+	})
+
+	t.Run("retains existing status and payment status if provided", func(t *testing.T) {
+		ticket := Ticket{
+			Price:         decimal.NewFromInt(100000),
+			WarrantyDays:  30,
+			Status:        StatusOnProcess,
+			PaymentStatus: PaymentPaid,
+		}
+
+		err := ticket.PrepareForCreate()
+
+		require.NoError(t, err)
+		assert.Equal(t, StatusOnProcess, ticket.Status)
+		assert.Equal(t, PaymentPaid, ticket.PaymentStatus)
+	})
+
 	t.Run("rejects negative price", func(t *testing.T) {
 		ticket := Ticket{
 			Price:        decimal.NewFromInt(-1),

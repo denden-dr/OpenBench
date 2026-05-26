@@ -75,6 +75,13 @@ func (t *Ticket) PrepareForCreate() error {
 		return err
 	}
 	t.applyDefaultWarrantyDays()
+
+	if t.Status == "" {
+		t.Status = StatusServiceIn
+	}
+	if t.PaymentStatus == "" {
+		t.PaymentStatus = PaymentUnpaid
+	}
 	return nil
 }
 

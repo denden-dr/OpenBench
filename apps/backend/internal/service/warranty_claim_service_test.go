@@ -31,13 +31,13 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "success with additional description",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID:              "ticket-123",
+				TicketID:              "11111111-1111-1111-1111-111111111111",
 				Issue:                 "Layar flicker",
 				AdditionalDescription: "Flicker di bagian bawah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
-					ID:           "ticket-123",
+				mTicket.On("GetByID", mock.Anything, "11111111-1111-1111-1111-111111111111").Return(&model.Ticket{
+					ID:           "11111111-1111-1111-1111-111111111111",
 					CustomerName: "Budi",
 					Brand:        "Apple",
 					Model:        "iPhone 13",
@@ -47,9 +47,9 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 					WarrantyDays: 30,
 					ExitDate:     &futureExitDate,
 				}, nil).Once()
-				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "ticket-123").Return(nil, nil).Once()
+				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "11111111-1111-1111-1111-111111111111").Return(nil, nil).Once()
 				mClaim.On("Create", mock.Anything, mock.MatchedBy(func(claim *model.WarrantyClaim) bool {
-					return claim.TicketID == "ticket-123" &&
+					return claim.TicketID == "11111111-1111-1111-1111-111111111111" &&
 						claim.Issue == "Layar flicker" &&
 						claim.AdditionalDescription != nil &&
 						*claim.AdditionalDescription == "Flicker di bagian bawah" &&
@@ -64,7 +64,7 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 			expectedError: nil,
 			expectedAssert: func(t *testing.T, res *dto.WarrantyClaimResponse) {
 				assert.Equal(t, "claim-123", res.ID)
-				assert.Equal(t, "ticket-123", res.TicketID)
+				assert.Equal(t, "11111111-1111-1111-1111-111111111111", res.TicketID)
 				assert.Equal(t, "waiting_inspection", res.Status)
 				assert.Equal(t, "Layar flicker", res.Issue)
 				assert.NotNil(t, res.AdditionalDescription)
@@ -76,19 +76,19 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "success without additional description",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-456",
+				TicketID: "22222222-2222-2222-2222-222222222222",
 				Issue:    "Baterai drop",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-456").Return(&model.Ticket{
-					ID:           "ticket-456",
+				mTicket.On("GetByID", mock.Anything, "22222222-2222-2222-2222-222222222222").Return(&model.Ticket{
+					ID:           "22222222-2222-2222-2222-222222222222",
 					CustomerName: "Andi",
 					Brand:        "Samsung",
 					Status:       model.StatusPickedUp,
 					WarrantyDays: 30,
 					ExitDate:     &futureExitDate,
 				}, nil).Once()
-				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "ticket-456").Return(nil, nil).Once()
+				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "22222222-2222-2222-2222-222222222222").Return(nil, nil).Once()
 				mClaim.On("Create", mock.Anything, mock.MatchedBy(func(claim *model.WarrantyClaim) bool {
 					return claim.AdditionalDescription == nil
 				})).Run(func(args mock.Arguments) {
@@ -101,7 +101,7 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 			expectedError: nil,
 			expectedAssert: func(t *testing.T, res *dto.WarrantyClaimResponse) {
 				assert.Equal(t, "claim-456", res.ID)
-				assert.Equal(t, "ticket-456", res.TicketID)
+				assert.Equal(t, "22222222-2222-2222-2222-222222222222", res.TicketID)
 				assert.Equal(t, "Baterai drop", res.Issue)
 				assert.Nil(t, res.AdditionalDescription)
 			},
@@ -109,12 +109,12 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "ticket not picked up",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-not-picked",
+				TicketID: "33333333-3333-3333-3333-333333333333",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-not-picked").Return(&model.Ticket{
-					ID:           "ticket-not-picked",
+				mTicket.On("GetByID", mock.Anything, "33333333-3333-3333-3333-333333333333").Return(&model.Ticket{
+					ID:           "33333333-3333-3333-3333-333333333333",
 					CustomerName: "Budi",
 					Status:       model.StatusServiceIn,
 					WarrantyDays: 30,
@@ -126,12 +126,12 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "warranty expired",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-expired",
+				TicketID: "44444444-4444-4444-4444-444444444444",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-expired").Return(&model.Ticket{
-					ID:           "ticket-expired",
+				mTicket.On("GetByID", mock.Anything, "44444444-4444-4444-4444-444444444444").Return(&model.Ticket{
+					ID:           "44444444-4444-4444-4444-444444444444",
 					CustomerName: "Budi",
 					Status:       model.StatusPickedUp,
 					WarrantyDays: 30,
@@ -143,40 +143,40 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "ticket not found",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-not-found",
+				TicketID: "55555555-5555-5555-5555-555555555555",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-not-found").Return(nil, repository.ErrNotFound).Once()
+				mTicket.On("GetByID", mock.Anything, "55555555-5555-5555-5555-555555555555").Return(nil, repository.ErrNotFound).Once()
 			},
 			expectedError: ErrTicketNotFound,
 		},
 		{
 			name: "repository error on ticket get",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-error",
+				TicketID: "66666666-6666-6666-6666-666666666666",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-error").Return(nil, errors.New("db error")).Once()
+				mTicket.On("GetByID", mock.Anything, "66666666-6666-6666-6666-666666666666").Return(nil, errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},
 		{
 			name: "repository error on claim create",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-123",
+				TicketID: "11111111-1111-1111-1111-111111111111",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-123").Return(&model.Ticket{
-					ID:           "ticket-123",
+				mTicket.On("GetByID", mock.Anything, "11111111-1111-1111-1111-111111111111").Return(&model.Ticket{
+					ID:           "11111111-1111-1111-1111-111111111111",
 					CustomerName: "Budi",
 					Status:       model.StatusPickedUp,
 					WarrantyDays: 30,
 					ExitDate:     &futureExitDate,
 				}, nil).Once()
-				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "ticket-123").Return(nil, nil).Once()
+				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "11111111-1111-1111-1111-111111111111").Return(nil, nil).Once()
 				mClaim.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
@@ -192,22 +192,32 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 			expectedContains: "TicketID",
 		},
 		{
-			name: "duplicate open claim rejected",
+			name: "validation failure - invalid ticket uuid",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-dup",
+				TicketID: "invalid-uuid-format",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-dup").Return(&model.Ticket{
-					ID:           "ticket-dup",
+			},
+			expectedContains: "TicketID",
+		},
+		{
+			name: "duplicate open claim rejected",
+			req: &dto.CreateWarrantyClaimRequest{
+				TicketID: "77777777-7777-7777-7777-777777777777",
+				Issue:    "Masalah",
+			},
+			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
+				mTicket.On("GetByID", mock.Anything, "77777777-7777-7777-7777-777777777777").Return(&model.Ticket{
+					ID:           "77777777-7777-7777-7777-777777777777",
 					CustomerName: "Budi",
 					Status:       model.StatusPickedUp,
 					WarrantyDays: 30,
 					ExitDate:     &futureExitDate,
 				}, nil).Once()
-				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "ticket-dup").Return(&model.WarrantyClaim{
+				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "77777777-7777-7777-7777-777777777777").Return(&model.WarrantyClaim{
 					ID:       "existing-claim",
-					TicketID: "ticket-dup",
+					TicketID: "77777777-7777-7777-7777-777777777777",
 					Status:   model.ClaimWaitingInspection,
 				}, nil).Once()
 			},
@@ -216,18 +226,18 @@ func TestWarrantyClaimService_CreateClaim(t *testing.T) {
 		{
 			name: "duplicate check repository error",
 			req: &dto.CreateWarrantyClaimRequest{
-				TicketID: "ticket-duperr",
+				TicketID: "88888888-8888-8888-8888-888888888888",
 				Issue:    "Masalah",
 			},
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mTicket.On("GetByID", mock.Anything, "ticket-duperr").Return(&model.Ticket{
-					ID:           "ticket-duperr",
+				mTicket.On("GetByID", mock.Anything, "88888888-8888-8888-8888-888888888888").Return(&model.Ticket{
+					ID:           "88888888-8888-8888-8888-888888888888",
 					CustomerName: "Budi",
 					Status:       model.StatusPickedUp,
 					WarrantyDays: 30,
 					ExitDate:     &futureExitDate,
 				}, nil).Once()
-				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "ticket-duperr").Return(nil, errors.New("db error")).Once()
+				mClaim.On("GetOpenClaimByTicketID", mock.Anything, "88888888-8888-8888-8888-888888888888").Return(nil, errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},

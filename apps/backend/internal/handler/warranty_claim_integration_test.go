@@ -11,19 +11,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 )
 
 type WarrantyClaimIntegrationTestSuite struct {
 	suite.Suite
-	db  *sqlx.DB
-	app *fiber.App
+	db               *sqlx.DB
+	app              *fiber.App
+	idempotencyStore *database.PostgresStorage
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) SetupSuite() {
@@ -41,6 +44,10 @@ func (s *WarrantyClaimIntegrationTestSuite) SetupSuite() {
 		ErrorHandler: middleware.ErrorHandler,
 	})
 
+	s.idempotencyStore = database.NewPostgresStorage(s.db)
+	s.app.Use(middleware.ScopeIdempotencyKey(s.idempotencyStore))
+	s.app.Use(middleware.NewIdempotency(s.idempotencyStore))
+
 	api := s.app.Group("/api/v1")
 
 	tickets := api.Group("/tickets")
@@ -56,6 +63,12 @@ func (s *WarrantyClaimIntegrationTestSuite) SetupSuite() {
 
 func (s *WarrantyClaimIntegrationTestSuite) SetupTest() {
 	CleanTestDB(s.T(), s.db)
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) TearDownSuite() {
+	if s.idempotencyStore != nil {
+		_ = s.idempotencyStore.Close()
+	}
 }
 
 func TestWarrantyClaimIntegrationSuite(t *testing.T) {
@@ -154,6 +167,7 @@ func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_Success() {
 	// 1. Setup a valid claim waiting inspection
 	ticketID := s.createPickedUpTicket()
 	claimID := s.createClaim(ticketID, "Layar bergaris hijau")
+	oldUpdatedAt := s.backdateClaimTimestamps(claimID)
 
 	// 2. Approve the claim
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/approve", claimID), nil)
@@ -173,6 +187,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_Success() {
 	s.Equal("approved", claimData["status"])
 	s.NotEmpty(claimData["claim_ticket_id"])
 	s.NotEmpty(claimData["inspected_at"])
+	responseUpdatedAt := s.parseJSONTime(claimData["updated_at"])
+	s.True(responseUpdatedAt.After(oldUpdatedAt), "claim updated_at in response should reflect the DB update")
 
 	// Check spawned ticket details
 	ticketData := data["ticket"].(map[string]interface{})
@@ -187,12 +203,16 @@ func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_Success() {
 	// Double check that price is Rp 0 (serialized as string or float depending on config)
 	priceVal := fmt.Sprintf("%v", ticketData["price"])
 	s.Contains([]string{"0", "0.00", "0.0"}, priceVal)
+
+	dbUpdatedAt := s.getClaimUpdatedAt(claimID)
+	s.True(responseUpdatedAt.Equal(dbUpdatedAt), "claim updated_at in response should match the database")
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_Success() {
 	// 1. Setup a valid claim waiting inspection
 	ticketID := s.createPickedUpTicket()
 	claimID := s.createClaim(ticketID, "Kamera retak")
+	oldUpdatedAt := s.backdateClaimTimestamps(claimID)
 
 	// 2. Void the claim
 	reqBody := map[string]interface{}{
@@ -218,6 +238,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_Success() {
 	s.Equal("void", claimData["status"])
 	s.Equal("Kerusakan fisik akibat jatuh sendiri oleh user", claimData["void_reason"])
 	s.NotEmpty(claimData["claim_ticket_id"])
+	responseUpdatedAt := s.parseJSONTime(claimData["updated_at"])
+	s.True(responseUpdatedAt.After(oldUpdatedAt), "claim updated_at in response should reflect the DB update")
 
 	// Check spawned ticket details (should be cancelled)
 	ticketData := data["ticket"].(map[string]interface{})
@@ -229,6 +251,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_Success() {
 	// Void/cancelled warranty tickets must have warranty_days = 0
 	warrantyVal := fmt.Sprintf("%v", ticketData["warranty_days"])
 	s.Equal("0", warrantyVal)
+
+	dbUpdatedAt := s.getClaimUpdatedAt(claimID)
+	s.True(responseUpdatedAt.Equal(dbUpdatedAt), "claim updated_at in response should match the database")
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_Duplicate() {
@@ -507,4 +532,173 @@ func (s *WarrantyClaimIntegrationTestSuite) createClaim(ticketID string, issue s
 	err := s.db.QueryRow(query, ticketID, issue).Scan(&id)
 	s.Require().NoError(err)
 	return id
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) backdateClaimTimestamps(claimID string) time.Time {
+	oldUpdatedAt := time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
+	_, err := s.db.Exec(
+		"UPDATE warranty_claims SET created_at = $1, updated_at = $1 WHERE id = $2",
+		oldUpdatedAt,
+		claimID,
+	)
+	s.Require().NoError(err)
+	return oldUpdatedAt
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) getClaimUpdatedAt(claimID string) time.Time {
+	var updatedAt time.Time
+	err := s.db.QueryRow("SELECT updated_at FROM warranty_claims WHERE id = $1", claimID).Scan(&updatedAt)
+	s.Require().NoError(err)
+	return updatedAt.UTC()
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) parseJSONTime(value interface{}) time.Time {
+	raw, ok := value.(string)
+	s.Require().True(ok)
+
+	parsed, err := time.Parse(time.RFC3339Nano, raw)
+	s.Require().NoError(err)
+	return parsed.UTC()
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_CreateWarrantyClaim() {
+	ticketID := s.createPickedUpTicket()
+	key := uuid.New().String()
+
+	reqBody := map[string]interface{}{
+		"ticket_id":              ticketID,
+		"issue":                  "Layar flicker setelah 2 hari",
+		"additional_description": "Flicker parah di bagian bawah layar",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+
+	// First Request
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/warranty-claims", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Idempotency-Key", key)
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var res1 map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	data1 := res1["data"].(map[string]interface{})
+	id1 := data1["id"].(string)
+
+	// Second Request (Duplicate)
+	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/warranty-claims", bytes.NewReader(bodyBytes))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Idempotency-Key", key)
+	resp2, err := s.app.Test(req2)
+	s.Require().NoError(err)
+	defer resp2.Body.Close()
+	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
+
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	data2 := res2["data"].(map[string]interface{})
+	id2 := data2["id"].(string)
+
+	s.Equal(id1, id2)
+
+	// Verify only one claim was created in the DB
+	var count int
+	err = s.db.Get(&count, "SELECT COUNT(*) FROM warranty_claims WHERE ticket_id = $1", ticketID)
+	s.Require().NoError(err)
+	s.Equal(1, count)
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_ApproveWarrantyClaim() {
+	ticketID := s.createPickedUpTicket()
+	claimID := s.createClaim(ticketID, "Layar flicker")
+	key := uuid.New().String()
+
+	// First Request
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/approve", claimID), nil)
+	req.Header.Set("X-Idempotency-Key", key)
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Require().Equal(http.StatusOK, resp.StatusCode)
+
+	var res1 map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	s.True(res1["success"].(bool))
+	data1 := res1["data"].(map[string]interface{})
+	claimData1 := data1["claim"].(map[string]interface{})
+	s.Equal("approved", claimData1["status"])
+
+	// Second Request (Duplicate)
+	req2, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/approve", claimID), nil)
+	req2.Header.Set("X-Idempotency-Key", key)
+	resp2, err := s.app.Test(req2)
+	s.Require().NoError(err)
+	defer resp2.Body.Close()
+	s.Require().Equal(http.StatusOK, resp2.StatusCode)
+
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.True(res2["success"].(bool))
+	data2 := res2["data"].(map[string]interface{})
+	claimData2 := data2["claim"].(map[string]interface{})
+	s.Equal("approved", claimData2["status"])
+}
+
+func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_VoidWarrantyClaim() {
+	ticketID := s.createPickedUpTicket()
+	claimID := s.createClaim(ticketID, "Layar flicker")
+	key := uuid.New().String()
+
+	reqBody := map[string]interface{}{
+		"void_reason": "Kerusakan fisik akibat jatuh sendiri oleh user",
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+
+	// First Request
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/void", claimID), bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Idempotency-Key", key)
+	resp, err := s.app.Test(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Require().Equal(http.StatusOK, resp.StatusCode)
+
+	var res1 map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	s.True(res1["success"].(bool))
+	data1 := res1["data"].(map[string]interface{})
+	claimData1 := data1["claim"].(map[string]interface{})
+	s.Equal("void", claimData1["status"])
+	s.Equal("Kerusakan fisik akibat jatuh sendiri oleh user", claimData1["void_reason"])
+
+	// Second Request (Duplicate)
+	req2, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/void", claimID), bytes.NewReader(bodyBytes))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Idempotency-Key", key)
+	resp2, err := s.app.Test(req2)
+	s.Require().NoError(err)
+	defer resp2.Body.Close()
+	s.Require().Equal(http.StatusOK, resp2.StatusCode)
+
+	var res2 map[string]interface{}
+	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.True(res2["success"].(bool))
+	data2 := res2["data"].(map[string]interface{})
+	claimData2 := data2["claim"].(map[string]interface{})
+	s.Equal("void", claimData2["status"])
+	s.Equal("Kerusakan fisik akibat jatuh sendiri oleh user", claimData2["void_reason"])
+
+	// Verify that sending a different body with the same key returns 409 Conflict
+	differentBody := map[string]interface{}{
+		"void_reason": "Berbeda alasan",
+	}
+	differentBodyBytes, _ := json.Marshal(differentBody)
+	req3, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/warranty-claims/%s/void", claimID), bytes.NewReader(differentBodyBytes))
+	req3.Header.Set("Content-Type", "application/json")
+	req3.Header.Set("X-Idempotency-Key", key)
+	resp3, err := s.app.Test(req3)
+	s.Require().NoError(err)
+	defer resp3.Body.Close()
+	s.Require().Equal(http.StatusConflict, resp3.StatusCode)
 }
