@@ -155,7 +155,7 @@
     isUpdating = true;
     try {
       const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -222,7 +222,7 @@
     if (!nextStatus) return;
     isActionLoading[ticketId] = true;
     try {
-      const res = await fetch(`/api/v1/tickets/${ticketId}/status`, {
+      const res = await fetch(`/api/v1/tickets/${ticketId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -247,13 +247,21 @@
     if (!selectedTicket || isUpdating) return;
     isUpdating = true;
     try {
-      const payload = {
-        issue_type: issueType,
-        new_price: newPrice,
-        new_diagnosis: newDiagnosis,
-      };
-      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}/issue`, {
-        method: "POST",
+      let payload: any = {};
+      if (issueType === "unrepairable") {
+        payload = {
+          status: "cancelled",
+        };
+      } else {
+        payload = {
+          status: "waiting_confirmation",
+          price: newPrice,
+          additional_description: newDiagnosis,
+        };
+      }
+
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -269,6 +277,8 @@
       }
     } catch (e) {
       console.error("Error reporting issue:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isUpdating = false;
     }
@@ -278,8 +288,10 @@
     if (!selectedTicket || isUpdating) return;
     isUpdating = true;
     try {
-      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}/approve`, {
-        method: "POST",
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "on_process" }),
       });
       const data = await res.json();
       if (data.success) {
@@ -293,6 +305,8 @@
       }
     } catch (e) {
       console.error("Error approving:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isUpdating = false;
     }
@@ -302,8 +316,10 @@
     if (!selectedTicket || isUpdating) return;
     isUpdating = true;
     try {
-      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}/reject`, {
-        method: "POST",
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
       });
       const data = await res.json();
       if (data.success) {
@@ -317,6 +333,8 @@
       }
     } catch (e) {
       console.error("Error rejecting:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isUpdating = false;
     }
