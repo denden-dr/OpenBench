@@ -13,6 +13,7 @@ type Config struct {
 	Port             string
 	CORSAllowOrigins string
 	Database         DatabaseConfig
+	RateLimit        RateLimitConfig
 }
 
 type DatabaseConfig struct {
@@ -24,6 +25,12 @@ type DatabaseConfig struct {
 	PingTimeout     time.Duration
 }
 
+type RateLimitConfig struct {
+	Disable   bool
+	MaxPublic int
+	MaxAdmin  int
+}
+
 func Load() *Config {
 	_ = godotenv.Load()
 
@@ -32,10 +39,24 @@ func Load() *Config {
 		log.Fatal("DB_URL environment variable is required")
 	}
 
+	rateLimitDisable := os.Getenv("RATE_LIMIT_DISABLE") == "true"
+
+	defaultPublicMax := 20
+	defaultAdminMax := 100
+	if os.Getenv("APP_ENV") == "test" {
+		defaultPublicMax = 1000
+		defaultAdminMax = 1000
+	}
+
 	return &Config{
 		Port:             getEnv("PORT", "3000"),
 		CORSAllowOrigins: getEnv("CORS_ALLOW_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
 		Database:         loadDatabaseConfig(dbURL),
+		RateLimit: RateLimitConfig{
+			Disable:   rateLimitDisable,
+			MaxPublic: getEnvInt("RATE_LIMIT_MAX", defaultPublicMax),
+			MaxAdmin:  getEnvInt("ADMIN_RATE_LIMIT_MAX", defaultAdminMax),
+		},
 	}
 }
 
