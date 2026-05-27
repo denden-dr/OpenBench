@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
@@ -65,98 +63,7 @@ func main() {
 	app.Use(middleware.NewIdempotency(idempotencyStore))
 
 	// Routes
-	api := app.Group("/api/v1")
-
-	// Public Tracking Routes with Rate Limiting
-	rateLimitDisable := os.Getenv("RATE_LIMIT_DISABLE") == "true"
-
-	rateLimitMax := 20
-	if os.Getenv("APP_ENV") == "test" {
-		rateLimitMax = 1000
-	}
-	if envLimit := os.Getenv("RATE_LIMIT_MAX"); envLimit != "" {
-		if limit, err := strconv.Atoi(envLimit); err == nil {
-			rateLimitMax = limit
-		}
-	}
-
-	publicLimiter := limiter.New(limiter.Config{
-		Max:        rateLimitMax,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		Next: func(c *fiber.Ctx) bool {
-			return rateLimitDisable
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"success": false,
-				"error":   "Too many requests, please try again later",
-			})
-		},
-	})
-
-	public := api.Group("/public", publicLimiter)
-	public.Get("/tickets/:id", ticketHandler.GetPublicByID)
-	public.Post("/track", ticketHandler.TrackPublic)
-
-	adminLimitMax := 100
-	if os.Getenv("APP_ENV") == "test" {
-		adminLimitMax = 1000
-	}
-	if envLimit := os.Getenv("ADMIN_RATE_LIMIT_MAX"); envLimit != "" {
-		if limit, err := strconv.Atoi(envLimit); err == nil {
-			adminLimitMax = limit
-		}
-	}
-
-	adminLimiter := limiter.New(limiter.Config{
-		Max:        adminLimitMax,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		Next: func(c *fiber.Ctx) bool {
-			return rateLimitDisable
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"success": false,
-				"error":   "Too many admin requests, please try again later",
-			})
-		},
-	})
-
-	tickets := api.Group("/tickets", adminLimiter)
-	tickets.Post("/", ticketHandler.Create)
-	tickets.Get("/", ticketHandler.List)
-	tickets.Get("/:id", ticketHandler.GetByID)
-	tickets.Patch("/:id", ticketHandler.Update)
-	tickets.Delete("/:id", ticketHandler.Delete)
-
-	warrantyClaims := api.Group("/warranty-claims", adminLimiter)
-	warrantyClaims.Post("/", warrantyClaimHandler.Create)
-	warrantyClaims.Get("/", warrantyClaimHandler.List)
-	warrantyClaims.Post("/:id/approve", warrantyClaimHandler.Approve)
-	warrantyClaims.Post("/:id/void", warrantyClaimHandler.Void)
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		if err := db.PingContext(c.Context()); err != nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"success": false,
-				"error":   "Database connection lost",
-			})
-		}
-
-		return c.JSON(fiber.Map{
-			"success": true,
-			"data": fiber.Map{
-				"status":  "ok",
-				"message": "Hello from OpenBench Backend!",
-			},
-		})
-	})
+	handler.RegisterRoutes(app, db.DB, cfg, ticketHandler, warrantyClaimHandler)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
