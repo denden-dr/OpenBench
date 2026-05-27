@@ -63,7 +63,8 @@ func main() {
 	app.Use(middleware.NewIdempotency(idempotencyStore))
 
 	// Routes
-	handler.RegisterRoutes(app, db.DB, cfg, ticketHandler, warrantyClaimHandler)
+	healthHandler := handler.NewHealthHandler(db.DB)
+	handler.RegisterRoutes(app, cfg, ticketHandler, warrantyClaimHandler, healthHandler)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"database/sql"
-
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -11,10 +9,10 @@ import (
 // RegisterRoutes configures all routes for the Fiber application.
 func RegisterRoutes(
 	app *fiber.App,
-	db *sql.DB,
 	cfg *config.Config,
 	ticketHandler *TicketHandler,
 	warrantyClaimHandler *WarrantyClaimHandler,
+	healthHandler *HealthHandler,
 ) {
 	api := app.Group("/api/v1")
 
@@ -38,16 +36,5 @@ func RegisterRoutes(
 	warrantyClaims.Post("/:id/approve", warrantyClaimHandler.Approve)
 	warrantyClaims.Post("/:id/void", warrantyClaimHandler.Void)
 
-	app.Get("/health", func(c *fiber.Ctx) error {
-		if err := db.PingContext(c.Context()); err != nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"success": false,
-				"error":   err.Error(),
-			})
-		}
-		return c.JSON(fiber.Map{
-			"success": true,
-			"message": "healthy",
-		})
-	})
+	app.Get("/health", healthHandler.Check)
 }
