@@ -21,7 +21,7 @@ func (h *WarrantyClaimHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	res, err := h.service.CreateClaim(c.Context(), &req)
+	res, err := h.service.CreateClaim(c.UserContext(), &req)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,10 @@ func (h *WarrantyClaimHandler) Create(c *fiber.Ctx) error {
 
 func (h *WarrantyClaimHandler) List(c *fiber.Ctx) error {
 	status := c.Query("status")
-	res, err := h.service.ListClaims(c.Context(), status)
+	if status != "" && status != "waiting_inspection" && status != "approved" && status != "void" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid warranty claim status")
+	}
+	res, err := h.service.ListClaims(c.UserContext(), status)
 	if err != nil {
 		return err
 	}
@@ -51,7 +54,7 @@ func (h *WarrantyClaimHandler) Approve(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid warranty claim ID format")
 	}
 
-	res, err := h.service.ApproveClaim(c.Context(), id)
+	res, err := h.service.ApproveClaim(c.UserContext(), id)
 	if err != nil {
 		return err
 	}
@@ -76,7 +79,7 @@ func (h *WarrantyClaimHandler) Void(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	res, err := h.service.VoidClaim(c.Context(), id, &req)
+	res, err := h.service.VoidClaim(c.UserContext(), id, &req)
 	if err != nil {
 		return err
 	}

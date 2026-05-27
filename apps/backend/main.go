@@ -50,7 +50,7 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: cfg.CORSAllowOrigins,
 		AllowMethods: "GET,POST,PATCH,DELETE,OPTIONS",
-		AllowHeaders: "Origin,Content-Type,Accept,Authorization,Idempotency-Key",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization,X-Idempotency-Key",
 	}))
 
 	// Idempotency Middleware
@@ -63,37 +63,8 @@ func main() {
 	app.Use(middleware.NewIdempotency(idempotencyStore))
 
 	// Routes
-	api := app.Group("/api/v1")
-
-	tickets := api.Group("/tickets")
-	tickets.Post("/", ticketHandler.Create)
-	tickets.Get("/", ticketHandler.List)
-	tickets.Get("/:id", ticketHandler.GetByID)
-	tickets.Patch("/:id", ticketHandler.Update)
-	tickets.Delete("/:id", ticketHandler.Delete)
-
-	warrantyClaims := api.Group("/warranty-claims")
-	warrantyClaims.Post("/", warrantyClaimHandler.Create)
-	warrantyClaims.Get("/", warrantyClaimHandler.List)
-	warrantyClaims.Post("/:id/approve", warrantyClaimHandler.Approve)
-	warrantyClaims.Post("/:id/void", warrantyClaimHandler.Void)
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		if err := db.PingContext(c.Context()); err != nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"success": false,
-				"error":   "Database connection lost",
-			})
-		}
-
-		return c.JSON(fiber.Map{
-			"success": true,
-			"data": fiber.Map{
-				"status":  "ok",
-				"message": "Hello from OpenBench Backend!",
-			},
-		})
-	})
+	healthHandler := handler.NewHealthHandler(db.DB)
+	handler.RegisterRoutes(app, cfg, ticketHandler, warrantyClaimHandler, healthHandler)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

@@ -136,7 +136,7 @@ SET status = CASE status
   WHEN 'repaired'                  THEN 'fixed'
   WHEN 'ready'                     THEN 'fixed'
   WHEN 'completed'                 THEN 'picked_up'
-  WHEN 'cancelled'                 THEN 'picked_up'
+  WHEN 'cancelled'                 THEN 'cancelled'
   -- Canonical values pass through unchanged:
   WHEN 'service_in'                THEN 'service_in'
   WHEN 'on_process'                THEN 'on_process'
@@ -158,7 +158,7 @@ BEGIN
   SELECT COUNT(*), MIN(status)
   INTO bad_count, bad_sample
   FROM tickets
-  WHERE status NOT IN ('service_in', 'on_process', 'fixed', 'picked_up');
+  WHERE status NOT IN ('service_in', 'on_process', 'fixed', 'picked_up', 'cancelled');
 
   IF bad_count > 0 THEN
     RAISE EXCEPTION

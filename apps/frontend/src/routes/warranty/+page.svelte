@@ -2,41 +2,13 @@
   import { onMount } from 'svelte';
   import { 
     Search, ShieldCheck, ShieldAlert, 
-    ArrowLeft, Loader2, Info, AlertOctagon, CheckCircle2, X,
+    ArrowLeft, LoaderCircle, Info, AlertOctagon, CheckCircle2, X,
     FileText, User, Clock, AlertTriangle, Play, RefreshCw
   } from 'lucide-svelte';
 
-  interface Ticket {
-    id: string;
-    customer_name: string;
-    customer_gender: string;
-    brand: string;
-    model: string;
-    issue: string;
-    additional_description?: string;
-    price: number;
-    status: string;
-    payment_status: string;
-    warranty_days: number;
-    entry_date: string;
-    exit_date?: string;
-    is_warranty?: boolean;
-    parent_ticket_id?: string;
-  }
-
-  interface Claim {
-    id: string;
-    ticket_id: string;
-    claim_ticket_id: string | null;
-    issue: string;
-    additional_description: string;
-    status: 'waiting_inspection' | 'approved' | 'void';
-    void_reason: string | null;
-    inspected_at: string | null;
-    created_at: string;
-    // Client-side enriched fields
-    originalTicket?: Ticket;
-  }
+  import type { Ticket, Claim } from '$lib/types/ticket';
+  import { formatCurrency } from '$lib/utils/format';
+  import { checkWarrantyExpiry } from '$lib/utils/warranty';
 
   let searchQuery = $state('');
   let isLoading = $state(false);
@@ -72,19 +44,11 @@
   async function fetchClaims() {
     isQueueLoading = true;
     try {
-      // 1. Fetch claims
       const claimsRes = await fetch('/api/v1/warranty-claims');
       const claimsPayload = await claimsRes.json();
-      
-      // 2. Fetch all tickets to map details
-      const ticketsRes = await fetch('/api/v1/tickets');
-      const ticketsPayload = await ticketsRes.json();
 
-      if (claimsPayload.success && ticketsPayload.success) {
-        claimsQueue = claimsPayload.data.map((claim: Claim) => {
-          const originalTicket = ticketsPayload.data.find((t: Ticket) => t.id === claim.ticket_id);
-          return { ...claim, originalTicket };
-        });
+      if (claimsPayload.success) {
+        claimsQueue = claimsPayload.data;
       }
     } catch (err) {
       console.error('Error fetching claims queue:', err);
@@ -93,19 +57,7 @@
     }
   }
 
-  function checkWarrantyExpiry(exitDateStr: string, warrantyDays: number) {
-    const exitDate = new Date(exitDateStr);
-    const expiryDate = new Date(exitDate.getTime() + warrantyDays * 24 * 60 * 60 * 1000);
-    const today = new Date();
-    const remainingDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-    
-    return {
-      expiryDate,
-      isValid: remainingDays >= 0,
-      remainingDays: remainingDays >= 0 ? remainingDays : 0,
-      formattedExpiry: expiryDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-    };
-  }
+
 
   async function handleSearch(e: SubmitEvent) {
     e.preventDefault();
@@ -123,10 +75,12 @@
       if (payload.success && payload.data) {
         const needle = searchQuery.trim().toLowerCase();
         const match = payload.data.find((t: Ticket) => 
-          t.id.toLowerCase() === needle ||
-          t.customer_name.toLowerCase().includes(needle) ||
-          t.brand.toLowerCase().includes(needle) ||
-          t.model.toLowerCase().includes(needle)
+          t.status === 'picked_up' && (
+            t.id.toLowerCase() === needle ||
+            t.customer_name.toLowerCase().includes(needle) ||
+            t.brand.toLowerCase().includes(needle) ||
+            t.model.toLowerCase().includes(needle)
+          )
         );
 
         if (match) {
@@ -240,9 +194,7 @@
     }
   }
 
-  function formatCurrency(val: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
-  }
+
 </script>
 
 <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
@@ -309,7 +261,7 @@
             </div>
             <button type="submit" disabled={isLoading} class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 inline-flex items-center gap-1.5">
               {#if isLoading}
-                <Loader2 size={14} class="animate-spin" />
+                <LoaderCircle size={14} class="animate-spin" />
                 Mencari...
               {:else}
                 Cari
@@ -416,7 +368,7 @@
                       class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm inline-flex items-center gap-1.5"
                     >
                       {#if isSubmittingIntake}
-                        <Loader2 size={12} class="animate-spin" />
+                        <LoaderCircle size={12} class="animate-spin" />
                         Mendaftarkan...
                       {:else}
                         Daftarkan Antrean Inspeksi
@@ -580,7 +532,7 @@
         </button>
         <button onclick={submitVoid} disabled={isSubmittingVoid || !voidReason.trim()} class="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors shadow-sm inline-flex items-center gap-1">
           {#if isSubmittingVoid}
-            <Loader2 size={12} class="animate-spin" />
+            <LoaderCircle size={12} class="animate-spin" />
             Menolak...
           {:else}
             Void Garansi

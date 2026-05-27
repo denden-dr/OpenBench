@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
@@ -16,6 +18,8 @@ type TicketService interface {
 	UpdateTicket(ctx context.Context, id string, req *dto.UpdateTicketRequest) (*dto.TicketResponse, error)
 	ListTickets(ctx context.Context) ([]dto.TicketResponse, error)
 	DeleteTicket(ctx context.Context, id string) error
+	GetPublicTicket(ctx context.Context, id string) (*dto.PublicTicketResponse, error)
+	TrackPublicTicket(ctx context.Context, req *dto.PublicTrackRequest) (string, error)
 }
 
 type ticketService struct {
@@ -37,12 +41,17 @@ func (s *ticketService) CreateTicket(ctx context.Context, req *dto.CreateTicketR
 
 	ticket := &model.Ticket{
 		CustomerName:   req.CustomerName,
+		CustomerPhone:  req.CustomerPhone,
 		CustomerGender: req.CustomerGender,
 		Brand:          req.Brand,
 		Model:          req.Model,
 		Issue:          req.Issue,
 		Price:          req.Price,
-		WarrantyDays:   req.WarrantyDays,
+	}
+	if req.WarrantyDays != nil {
+		ticket.WarrantyDays = *req.WarrantyDays
+	} else {
+		ticket.WarrantyDays = model.DefaultWarrantyDays
 	}
 	if req.AdditionalDescription != "" {
 		ticket.AdditionalDescription = &req.AdditionalDescription
@@ -77,6 +86,7 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 
 	update := model.TicketUpdate{
 		CustomerName:          req.CustomerName,
+		CustomerPhone:         req.CustomerPhone,
 		CustomerGender:        req.CustomerGender,
 		Brand:                 req.Brand,
 		Model:                 req.Model,
@@ -143,6 +153,72 @@ func (s *ticketService) DeleteTicket(ctx context.Context, id string) error {
 	return nil
 }
 
+func (s *ticketService) GetPublicTicket(ctx context.Context, id string) (*dto.PublicTicketResponse, error) {
+	ticket, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrTicketNotFound
+		}
+		return nil, MapRepositoryError(err)
+	}
+
+	res := &dto.PublicTicketResponse{
+		ID:                    ticket.ID,
+		CustomerNameMasked:    maskName(ticket.CustomerName),
+		CustomerPhoneMasked:   maskPhone(ticket.CustomerPhone),
+		Brand:                 ticket.Brand,
+		Model:                 ticket.Model,
+		Issue:                 ticket.Issue,
+		Status:                string(ticket.Status),
+		EntryDate:             ticket.EntryDate,
+		ExitDate:              ticket.ExitDate,
+		WarrantyDays:          ticket.WarrantyDays,
+		PaymentStatus:         string(ticket.PaymentStatus),
+		Price:                 &ticket.Price,
+		AdditionalDescription: ticket.AdditionalDescription,
+		Accessories:           ticket.Accessories,
+		WarrantyExpiryDate:    ticket.WarrantyExpiryDate(),
+	}
+	return res, nil
+}
+
+func (s *ticketService) TrackPublicTicket(ctx context.Context, req *dto.PublicTrackRequest) (string, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return "", err
+	}
+
+	tickets, err := s.repo.GetByShortID(ctx, req.ShortID)
+	if err != nil {
+		return "", MapRepositoryError(err)
+	}
+	if len(tickets) == 0 {
+		return "", ErrTicketNotFound
+	}
+
+	normalizedInputPhone := normalizePhone(req.Phone)
+	if normalizedInputPhone == "" {
+		return "", ErrTicketNotFound
+	}
+
+	var match *model.Ticket
+	for i := range tickets {
+		t := &tickets[i]
+		if t.CustomerPhone == "" {
+			continue
+		}
+		if normalizePhone(t.CustomerPhone) == normalizedInputPhone {
+			match = t
+			break
+		}
+	}
+
+	if match == nil {
+		return "", ErrTicketNotFound
+	}
+
+	return match.ID, nil
+}
+
 func (s *ticketService) mapToResponse(ticket *model.Ticket) *dto.TicketResponse {
 	return MapTicketToResponse(ticket)
 }
@@ -154,6 +230,7 @@ func MapTicketToResponse(ticket *model.Ticket) *dto.TicketResponse {
 	return &dto.TicketResponse{
 		ID:                    ticket.ID,
 		CustomerName:          ticket.CustomerName,
+		CustomerPhone:         ticket.CustomerPhone,
 		CustomerGender:        ticket.CustomerGender,
 		Brand:                 ticket.Brand,
 		Model:                 ticket.Model,
@@ -170,4 +247,53 @@ func MapTicketToResponse(ticket *model.Ticket) *dto.TicketResponse {
 		IsWarranty:            ticket.IsWarranty,
 		ParentTicketID:        ticket.ParentTicketID,
 	}
+}
+
+// Masking and normalization helpers
+
+func maskName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	parts := strings.Fields(name)
+	maskedParts := make([]string, len(parts))
+	for i, part := range parts {
+		runes := []rune(part)
+		if len(runes) == 0 {
+			continue
+		}
+		masked := string(runes[0])
+		if len(runes) > 1 {
+			masked += strings.Repeat("*", len(runes)-1)
+		}
+		maskedParts[i] = masked
+	}
+	return strings.Join(maskedParts, " ")
+}
+
+func maskPhone(phone string) string {
+	phone = normalizePhone(phone)
+	runes := []rune(phone)
+	l := len(runes)
+	if l == 0 {
+		return ""
+	}
+	if l <= 4 {
+		return strings.Repeat("*", l)
+	}
+	if l <= 6 {
+		return string(runes[:2]) + strings.Repeat("*", l-3) + string(runes[l-1:])
+	}
+	return string(runes[:4]) + strings.Repeat("*", l-6) + string(runes[l-2:])
+}
+
+var nonDigitsRegexp = regexp.MustCompile(`\D`)
+
+func normalizePhone(phone string) string {
+	cleaned := nonDigitsRegexp.ReplaceAllString(phone, "")
+	if strings.HasPrefix(cleaned, "62") {
+		cleaned = "0" + cleaned[2:]
+	}
+	return cleaned
 }

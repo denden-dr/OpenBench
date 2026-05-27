@@ -12,3 +12,11 @@ packages:
     interfaces:
       TicketRepository:
       WarrantyClaimRepository:
+      Transaction:
+  github.com/denden-dr/openbench/apps/backend/internal/service:
+    config:
+      dir: "mocks/service"
+      outpkg: "service"
+    interfaces:
+      TicketService:
+      WarrantyClaimService:

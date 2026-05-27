@@ -1,140 +1,85 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    Search,
-    Plus,
-    Wrench,
-    DollarSign,
-    Clock,
-    CheckCircle2,
-    Trash2,
-    X,
-    Smartphone,
-    User,
-    Loader2,
-    AlertTriangle,
-    PhoneCall,
-    ShieldCheck,
-    RefreshCw,
-  } from "lucide-svelte";
-
-  interface Ticket {
-    id: string;
-    customer_name: string;
-    customer_gender: string;
-    brand: string;
-    model: string;
-    issue: string;
-    additional_description?: string;
-    accessories?: string;
-    price: number;
-    status: string;
-    payment_status: string;
-    warranty_days: number;
-    entry_date: string;
-    exit_date?: string;
-    warranty_expiry_date?: string;
-    is_warranty?: boolean;
-    parent_ticket_id?: string;
-  }
+  import { LoaderCircle, Search } from "lucide-svelte";
+  import type { Ticket } from "$lib/types/ticket";
+  
+  import StatsCards from "./_components/StatsCards.svelte";
+  import ControlBar from "./_components/ControlBar.svelte";
+  import TicketTable from "./_components/TicketTable.svelte";
+  import TicketCard from "./_components/TicketCard.svelte";
+  import CreateModal from "./_components/CreateModal.svelte";
+  import EditDrawer from "./_components/EditDrawer.svelte";
+  import QRModal from "./_components/QRModal.svelte";
+  import DeleteConfirmModal from "./_components/DeleteConfirmModal.svelte";
+  import SkeletonTable from "./_components/SkeletonTable.svelte";
 
   // Svelte 5 Runes state
   let tickets = $state<Ticket[]>([]);
   let searchQuery = $state("");
   let statusFilter = $state("all");
   let isLoading = $state(true);
-  let isActionLoading = $state<Record<string, boolean>>({});
+  let toastMessage = $state("");
 
+  // Modals & Action loadings
+  let showCreateModal = $state(false);
   let isCreating = $state(false);
+  let selectedTicket = $state<Ticket | null>(null);
   let isUpdating = $state(false);
   let isDeleting = $state(false);
-  let quickActionKeys = $state<Record<string, string>>({});
+  let showQRModal = $state(false);
+  let qrUrl = $state("");
+  let isActionLoading = $state<Record<string, boolean>>({});
+  let showDeleteModal = $state(false);
 
-  let createIdempotencyKey = $state("");
-  let editIdempotencyKey = $state("");
+  // Stats computed properties
+  let stats = $derived.by(() => {
+    let waiting = 0;
+    let onProcess = 0;
+    let fixed = 0;
+    let revenue = 0;
+    const today = new Date();
 
-  function newIdempotencyKey() {
-    return crypto.randomUUID();
-  }
+    for (const t of tickets) {
+      if (t.status === "waiting_confirmation") {
+        waiting++;
+      } else if (t.status === "on_process") {
+        onProcess++;
+      } else if (t.status === "fixed") {
+        fixed++;
+      }
 
-  function regenerateCreateIdempotencyKey() {
-    createIdempotencyKey = newIdempotencyKey();
-  }
-
-  function regenerateEditIdempotencyKey() {
-    editIdempotencyKey = newIdempotencyKey();
-  }
-
-  // Modal & Drawer State
-  let showCreateModal = $state(false);
-  let selectedTicket = $state<Ticket | null>(null);
-  let editFormElement = $state<HTMLFormElement | null>(null);
-
-  // Issue Tracking States
-  let issueType = $state("");
-  let newPrice = $state(0);
-  let newDiagnosis = $state("");
-
-  function submitIssue() {
-    if (isUpdating) return;
-    if (issueType === "unrepairable") {
-      editForm.status = "cancelled";
-    } else {
-      editForm.status = "waiting_confirmation";
-      if (newPrice > 0) editForm.price = newPrice;
-      if (newDiagnosis)
-        editForm.additional_description =
-          (editForm.additional_description
-            ? editForm.additional_description + "\n\n"
-            : "") + `[Kendala Teknisi]: ${newDiagnosis}`;
+      if (t.payment_status === "paid" && t.exit_date) {
+        const exitDate = new Date(t.exit_date);
+        if (
+          exitDate.getDate() === today.getDate() &&
+          exitDate.getMonth() === today.getMonth() &&
+          exitDate.getFullYear() === today.getFullYear()
+        ) {
+          revenue += Number(t.price);
+        }
+      }
     }
-    submitEditForm();
-  }
 
-  function approveByCustomer() {
-    if (isUpdating) return;
-    editForm.status = "on_process";
-    submitEditForm();
-  }
-
-  function rejectByCustomer() {
-    if (isUpdating) return;
-    editForm.status = "cancelled";
-    submitEditForm();
-  }
-
-  // Form States
-  let createForm = $state({
-    customer_name: "",
-    customer_gender: "Male",
-    brand: "",
-    model: "",
-    issue: "",
-    additional_description: "",
-    accessories: "",
-    price: 0,
-    warranty_days: 30,
+    return {
+      waiting,
+      onProcess,
+      fixed,
+      revenue
+    };
   });
 
-  let editForm = $state({
-    customer_name: "",
-    customer_gender: "Male",
-    brand: "",
-    model: "",
-    issue: "",
-    additional_description: "",
-    accessories: "",
-    price: 0,
-    status: "",
-    payment_status: "",
-    warranty_days: 30,
-  });
-
-  $effect(() => {
-    if (editForm.status === "picked_up") {
-      editForm.payment_status = "paid";
-    }
-  });
+  let filteredTickets = $derived(
+    tickets.filter((t) => {
+      const matchStatus = statusFilter === "all" || t.status === statusFilter;
+      const matchSearch =
+        searchQuery === "" ||
+        t.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.issue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.brand.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchStatus && matchSearch;
+    })
+  );
 
   // Load tickets on mount
   onMount(async () => {
@@ -148,19 +93,33 @@
       const data = await res.json();
       if (data.success) {
         tickets = data.data || [];
+      } else {
+        toastMessage = data.error || "Gagal memuat tiket.";
+        setTimeout(() => toastMessage = "", 3000);
       }
     } catch (e) {
       console.error("Error fetching tickets:", e);
+      toastMessage = "Koneksi gagal. Silakan coba lagi.";
+      setTimeout(() => toastMessage = "", 3000);
     } finally {
       isLoading = false;
     }
   }
 
-  async function handleCreateTicket(e: SubmitEvent) {
-    e.preventDefault();
+  // Idempotency Key logic
+  let createIdempotencyKey = $state("");
+
+  function newIdempotencyKey() {
+    return crypto.randomUUID();
+  }
+
+  function regenerateCreateIdempotencyKey() {
+    createIdempotencyKey = newIdempotencyKey();
+  }
+
+  async function handleCreateTicket(formData: any) {
     if (isCreating) return;
     if (!createIdempotencyKey) regenerateCreateIdempotencyKey();
-
     isCreating = true;
     try {
       const res = await fetch("/api/v1/tickets", {
@@ -169,224 +128,253 @@
           "Content-Type": "application/json",
           "X-Idempotency-Key": createIdempotencyKey,
         },
-        body: JSON.stringify(createForm),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {
+        toastMessage = "Servis baru berhasil didaftarkan!";
         showCreateModal = false;
-        // Reset form
-        createForm = {
-          customer_name: "",
-          customer_gender: "Male",
-          brand: "",
-          model: "",
-          issue: "",
-          additional_description: "",
-          accessories: "",
-          price: 0,
-          warranty_days: 30,
-        };
         await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        alert("Failed to create ticket: " + (data.error || "Unknown error"));
+        toastMessage = data.error || "Gagal mendaftarkan servis.";
         regenerateCreateIdempotencyKey();
+        setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error creating ticket:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isCreating = false;
     }
   }
 
-  async function handleQuickStatusUpdate(
-    ticketId: string,
-    currentStatus: string,
-  ) {
-    if (isActionLoading[ticketId]) return;
-
-    let nextStatus = "";
-    if (currentStatus === "service_in") nextStatus = "on_process";
-    else if (currentStatus === "on_process") nextStatus = "fixed";
-    else if (currentStatus === "fixed") nextStatus = "picked_up";
-    else return;
-
-    const key = quickActionKeys[ticketId] || newIdempotencyKey();
-    quickActionKeys[ticketId] = key;
-
-    isActionLoading[ticketId] = true;
-    try {
-      const res = await fetch(`/api/v1/tickets/${ticketId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": key,
-        },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        quickActionKeys[ticketId] = newIdempotencyKey();
-        const index = tickets.findIndex((t) => t.id === ticketId);
-        if (index !== -1) {
-          tickets[index] = data.data;
-        }
-      } else {
-        alert("Failed to update status: " + (data.error || "Unknown error"));
-        quickActionKeys[ticketId] = newIdempotencyKey();
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      isActionLoading[ticketId] = false;
-    }
-  }
-
-  function openEditDrawer(ticket: Ticket) {
-    selectedTicket = ticket;
-    regenerateEditIdempotencyKey();
-    editForm = {
-      customer_name: ticket.customer_name,
-      customer_gender: ticket.customer_gender,
-      brand: ticket.brand,
-      model: ticket.model,
-      issue: ticket.issue,
-      additional_description: ticket.additional_description || "",
-      accessories: ticket.accessories || "",
-      price: Number(ticket.price),
-      status: ticket.status,
-      payment_status: ticket.payment_status,
-      warranty_days: ticket.warranty_days,
-    };
-  }
-
-  function closeEditDrawer() {
-    selectedTicket = null;
-  }
-
-  function submitEditForm() {
-    if (isUpdating) return;
-    editFormElement?.requestSubmit();
-  }
-
-  async function deleteSelectedTicket() {
-    if (!selectedTicket || isDeleting || isUpdating) return;
-    await handleDeleteTicket(selectedTicket.id);
-  }
-
-  async function handleUpdateTicket(e: SubmitEvent) {
-    e.preventDefault();
+  async function handleUpdateTicket(formData: any) {
     if (!selectedTicket || isUpdating) return;
-    if (!editIdempotencyKey) regenerateEditIdempotencyKey();
-
     isUpdating = true;
     try {
       const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-Idempotency-Key": editIdempotencyKey,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {
-        const ticketId = selectedTicket.id;
-        closeEditDrawer();
-        const index = tickets.findIndex((t) => t.id === ticketId);
-        if (index !== -1) {
-          tickets[index] = data.data;
-        }
+        toastMessage = "Detail tiket berhasil diperbarui!";
+        selectedTicket = null;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        alert("Failed to update ticket: " + (data.error || "Unknown error"));
-        regenerateEditIdempotencyKey();
+        toastMessage = data.error || "Gagal memperbarui tiket.";
+        setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error updating ticket:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isUpdating = false;
     }
   }
 
-  async function handleDeleteTicket(ticketId: string) {
-    if (isDeleting) return;
-    if (!confirm("Are you sure you want to delete this ticket?")) return;
+  function triggerDeleteConfirmation() {
+    showDeleteModal = true;
+  }
 
+  async function executeDeleteTicket() {
+    if (!selectedTicket || isDeleting || isUpdating) return;
     isDeleting = true;
     try {
-      const res = await fetch(`/api/v1/tickets/${ticketId}`, {
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
       if (data.success) {
-        closeEditDrawer();
-        tickets = tickets.filter((t) => t.id !== ticketId);
+        toastMessage = "Tiket berhasil dihapus!";
+        showDeleteModal = false;
+        selectedTicket = null;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        alert("Failed to delete ticket: " + (data.error || "Unknown error"));
+        toastMessage = data.error || "Gagal menghapus tiket.";
+        setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error deleting ticket:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
     } finally {
       isDeleting = false;
     }
   }
 
-  // Derived statistics (Runes)
-  let serviceInCount = $derived(
-    tickets.filter((t) => t.status === "service_in").length,
-  );
-  let onProcessCount = $derived(
-    tickets.filter((t) => t.status === "on_process").length,
-  );
-  let waitingCount = $derived(
-    tickets.filter((t) => t.status === "waiting_confirmation").length,
-  );
-  let fixedCount = $derived(tickets.filter((t) => t.status === "fixed").length);
-  let todaysRevenue = $derived(
-    tickets
-      .filter((t) => {
-        if (t.status !== "picked_up" || !t.exit_date) return false;
-        const exitDate = new Date(t.exit_date);
-        const today = new Date();
-        return (
-          exitDate.getDate() === today.getDate() &&
-          exitDate.getMonth() === today.getMonth() &&
-          exitDate.getFullYear() === today.getFullYear()
-        );
-      })
-      .reduce((acc, t) => acc + Number(t.price), 0),
-  );
+  async function handleQuickStatusUpdate(ticketId: string, currentStatus: string) {
+    if (isActionLoading[ticketId]) return;
 
-  // Filtered Tickets
-  let filteredTickets = $derived(
-    tickets.filter((t) => {
-      const matchesSearch =
-        t.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.issue.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "all" || t.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    }),
-  );
+    let nextStatus = "";
+    if (currentStatus === "service_in") nextStatus = "on_process";
+    else if (currentStatus === "on_process") nextStatus = "fixed";
+    else if (currentStatus === "fixed") nextStatus = "picked_up";
 
-  function getStatusLabel(status: string, isWarranty: boolean = false) {
-    if (isWarranty && status === 'on_process') {
-      return 'Klaim Diproses';
+    if (!nextStatus) return;
+    isActionLoading[ticketId] = true;
+    try {
+      const res = await fetch(`/api/v1/tickets/${ticketId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastMessage = `Status berhasil diperbarui ke: ${getStatusLabel(nextStatus, false)}`;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
+      } else {
+        toastMessage = data.error || "Gagal memperbarui status.";
+        setTimeout(() => (toastMessage = ""), 3000);
+      }
+    } catch (e) {
+      console.error("Error quick updating status:", e);
+    } finally {
+      isActionLoading[ticketId] = false;
     }
-    if (isWarranty && status === 'cancelled') {
-      return 'Klaim Void';
+  }
+
+  async function submitIssue(issueType: string, newPrice: number, newDiagnosis: string) {
+    if (!selectedTicket || isUpdating) return;
+    isUpdating = true;
+    try {
+      let payload: any = {};
+      if (issueType === "unrepairable") {
+        payload = {
+          status: "cancelled",
+        };
+      } else {
+        payload = {
+          status: "waiting_confirmation",
+          price: newPrice,
+          additional_description: newDiagnosis,
+        };
+      }
+
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastMessage = "Kendala teknisi berhasil dilaporkan!";
+        selectedTicket = null;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
+      } else {
+        toastMessage = data.error || "Gagal mengirim laporan kendala.";
+        setTimeout(() => (toastMessage = ""), 3000);
+      }
+    } catch (e) {
+      console.error("Error reporting issue:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
+    } finally {
+      isUpdating = false;
     }
+  }
+
+  async function approveByCustomer() {
+    if (!selectedTicket || isUpdating) return;
+    isUpdating = true;
+    try {
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "on_process" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastMessage = "Persetujuan pelanggan berhasil disimpan!";
+        selectedTicket = null;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
+      } else {
+        toastMessage = data.error || "Gagal menyimpan persetujuan.";
+        setTimeout(() => (toastMessage = ""), 3000);
+      }
+    } catch (e) {
+      console.error("Error approving:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
+    } finally {
+      isUpdating = false;
+    }
+  }
+
+  async function rejectByCustomer() {
+    if (!selectedTicket || isUpdating) return;
+    isUpdating = true;
+    try {
+      const res = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastMessage = "Penolakan pelanggan berhasil disimpan (servis batal)!";
+        selectedTicket = null;
+        await fetchTickets();
+        setTimeout(() => (toastMessage = ""), 3000);
+      } else {
+        toastMessage = data.error || "Gagal menyimpan penolakan.";
+        setTimeout(() => (toastMessage = ""), 3000);
+      }
+    } catch (e) {
+      console.error("Error rejecting:", e);
+      toastMessage = "Terjadi kesalahan koneksi.";
+      setTimeout(() => (toastMessage = ""), 3000);
+    } finally {
+      isUpdating = false;
+    }
+  }
+
+  function getStatusBadgeClass(status: string, isWarranty: boolean) {
+    if (isWarranty) {
+      return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900";
+    }
+    switch (status) {
+      case "service_in":
+        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900";
+      case "on_process":
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900";
+      case "waiting_confirmation":
+        return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900";
+      case "cancelled":
+        return "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800";
+      case "fixed":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900";
+      case "picked_up":
+        return "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900";
+      default:
+        return "bg-slate-50 text-slate-700 border-slate-200";
+    }
+  }
+
+  function getStatusLabel(status: string, isWarranty: boolean) {
+    if (isWarranty) return "Klaim Garansi";
     switch (status) {
       case "service_in":
         return "Masuk";
       case "on_process":
-        return "Sedang Diproses";
+        return "Diproses";
       case "waiting_confirmation":
-        return "Menunggu Konfirmasi";
+        return "Kendala (Menunggu)";
       case "cancelled":
-        return "Dibatalkan";
+        return "Batal";
       case "fixed":
-        return "Siap Diambil";
+        return "Selesai";
       case "picked_up":
         return "Sudah Diambil";
       default:
@@ -394,1139 +382,144 @@
     }
   }
 
-  function getStatusBadgeClass(status: string, isWarranty: boolean = false) {
-    if (isWarranty && status === 'on_process') {
-      return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50';
-    }
-    if (isWarranty && status === 'cancelled') {
-      return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50';
-    }
-    switch (status) {
-      case "service_in":
-        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
-      case "on_process":
-        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
-      case "waiting_confirmation":
-        return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800 animate-pulse";
-      case "cancelled":
-        return "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800";
-      case "fixed":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
-      case "picked_up":
-        return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700";
-      default:
-        return "bg-slate-50 text-slate-600 border-slate-200";
-    }
+  function copyTrackingLink(id: string) {
+    const link = `${window.location.origin}/track/${id}`;
+    navigator.clipboard.writeText(link);
+    toastMessage = "Link pelacakan berhasil disalin!";
+    setTimeout(() => (toastMessage = ""), 3000);
   }
 
-  function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
+  function openQRModal(id: string) {
+    qrUrl = `${window.location.origin}/track/${id}`;
+    showQRModal = true;
   }
 
-  function formatDate(dateStr: string) {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function checkWarrantyExpiry(exitDateStr: string | undefined, warrantyDays: number) {
-    if (!exitDateStr) return null;
-    const exitDate = new Date(exitDateStr);
-    const expiryDate = new Date(exitDate.getTime() + warrantyDays * 24 * 60 * 60 * 1000);
-    const today = new Date();
-    const remainingDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-    return {
-      isValid: remainingDays >= 0,
-      remainingDays: remainingDays >= 0 ? remainingDays : 0
-    };
+  function copyQRUrl() {
+    navigator.clipboard.writeText(qrUrl);
+    toastMessage = "URL pelacakan berhasil disalin!";
+    setTimeout(() => (toastMessage = ""), 3000);
   }
 </script>
 
-<div class="container mx-auto px-4 py-8 max-w-7xl animate-fade-in">
+<div class="container mx-auto px-4 py-8 max-w-7xl animate-fade-in font-sans">
   <!-- Stats Section -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-    <div
-      class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all hover:shadow-md"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p
-            class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-          >
-            Antrean Servis
-          </p>
-          <h3 class="text-3xl font-bold mt-1 text-slate-900 dark:text-white">
-            {serviceInCount}
-          </h3>
-        </div>
-        <div
-          class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl"
-        >
-          <Clock size={20} />
-        </div>
-      </div>
-      <div
-        class="h-1 bg-blue-600 w-full absolute bottom-0 left-0 rounded-b-2xl"
-      ></div>
-    </div>
-
-    <div
-      class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all hover:shadow-md"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p
-            class="text-xs font-semibold text-rose-500 uppercase tracking-wider"
-          >
-            Butuh Tindakan
-          </p>
-          <h3 class="text-3xl font-bold mt-1 text-slate-900 dark:text-white">
-            {waitingCount}
-          </h3>
-        </div>
-        <div
-          class="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl"
-        >
-          <AlertTriangle size={20} />
-        </div>
-      </div>
-      <div
-        class="h-1 bg-rose-500 w-full absolute bottom-0 left-0 rounded-b-2xl"
-      ></div>
-    </div>
-
-    <div
-      class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all hover:shadow-md"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p
-            class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-          >
-            Sedang Diproses
-          </p>
-          <h3 class="text-3xl font-bold mt-1 text-slate-900 dark:text-white">
-            {onProcessCount}
-          </h3>
-        </div>
-        <div
-          class="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl"
-        >
-          <Wrench size={20} />
-        </div>
-      </div>
-      <div
-        class="h-1 bg-amber-500 w-full absolute bottom-0 left-0 rounded-b-2xl"
-      ></div>
-    </div>
-
-    <div
-      class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all hover:shadow-md"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p
-            class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-          >
-            Siap Diambil
-          </p>
-          <h3 class="text-3xl font-bold mt-1 text-slate-900 dark:text-white">
-            {fixedCount}
-          </h3>
-        </div>
-        <div
-          class="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl"
-        >
-          <CheckCircle2 size={20} />
-        </div>
-      </div>
-      <div
-        class="h-1 bg-emerald-500 w-full absolute bottom-0 left-0 rounded-b-2xl"
-      ></div>
-    </div>
-
-    <div
-      class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all hover:shadow-md"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p
-            class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-          >
-            Pendapatan Hari Ini
-          </p>
-          <h3 class="text-2xl font-bold mt-1.5 text-slate-900 dark:text-white">
-            {formatCurrency(todaysRevenue)}
-          </h3>
-        </div>
-        <div
-          class="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl"
-        >
-          <DollarSign size={20} />
-        </div>
-      </div>
-      <div
-        class="h-1 bg-indigo-500 w-full absolute bottom-0 left-0 rounded-b-2xl"
-      ></div>
-    </div>
-  </div>
+  <StatsCards
+    waitingCount={stats.waiting}
+    onProcessCount={stats.onProcess}
+    fixedCount={stats.fixed}
+    todaysRevenue={stats.revenue}
+  />
 
   <!-- Control Bar -->
-  <div
-    class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6"
-  >
-    <div class="flex flex-col sm:flex-row items-center w-full md:w-auto gap-4">
-      <!-- Search Input -->
-      <div class="relative w-full sm:w-80">
-        <span
-          class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"
-        >
-          <Search size={18} />
-        </span>
-        <input
-          type="text"
-          bind:value={searchQuery}
-          placeholder="Search by customer, model, issue..."
-          class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder-slate-400"
-        />
-      </div>
-
-      <!-- Status Filter -->
-      <select
-        bind:value={statusFilter}
-        class="w-full sm:w-44 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all cursor-pointer"
-      >
-        <option value="all">Semua Status</option>
-        <option value="service_in">Masuk</option>
-        <option value="on_process">Sedang Diproses</option>
-        <option value="waiting_confirmation">Menunggu Konfirmasi</option>
-        <option value="cancelled">Dibatalkan</option>
-        <option value="fixed">Selesai Diperbaiki</option>
-        <option value="picked_up">Sudah Diambil</option>
-      </select>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex items-center gap-2 w-full md:w-auto">
-      <a
-        href="/warranty"
-        class="w-full md:w-auto px-6 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-all inline-flex items-center justify-center gap-2"
-      >
-        <ShieldCheck size={16} class="text-indigo-600" />
-        Klaim Garansi
-      </a>
-      <button
-        onclick={() => {
-          regenerateCreateIdempotencyKey();
-          showCreateModal = true;
-        }}
-        class="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow active:scale-95 inline-flex items-center justify-center gap-2"
-      >
-        <Plus size={16} />
-        New Repair
-      </button>
-    </div>
-  </div>
+  <ControlBar
+    bind:searchQuery
+    bind:statusFilter
+    onAddTicket={() => {
+      regenerateCreateIdempotencyKey();
+      showCreateModal = true;
+    }}
+  />
 
   <!-- Tickets Content -->
   {#if isLoading}
-    <div
-      class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center shadow-sm"
-    >
-      <Loader2 class="animate-spin text-blue-600 mx-auto mb-4" size={32} />
-      <p class="text-sm font-semibold text-slate-500">
-        Memuat database servis...
-      </p>
-    </div>
+    <SkeletonTable />
   {:else if filteredTickets.length === 0}
-    <div
-      class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center shadow-sm"
-    >
-      <div
-        class="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-800 text-slate-400"
-      >
+    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center shadow-sm">
+      <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-800 text-slate-400">
         <Search size={22} />
       </div>
-      <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">
-        Tidak ada tiket ditemukan
-      </h3>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Tidak ada tiket ditemukan</h3>
       <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-        Try modifying your search or filters, or add a new repair ticket to get
-        started.
+        Try modifying your search or filters, or add a new repair ticket to get started.
       </p>
     </div>
   {:else}
-    <!-- Table -->
-    <div
-      class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm"
-    >
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr
-              class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
-            >
-              <th class="py-4 px-6">Device</th>
-              <th class="py-4 px-6">Customer</th>
-              <th class="py-4 px-6">Kerusakan</th>
-              <th class="py-4 px-6">Price</th>
-              <th class="py-4 px-6">Status</th>
-              <th class="py-4 px-6 text-right">Quick Action</th>
-            </tr>
-          </thead>
-          <tbody
-            class="divide-y divide-slate-200 dark:divide-slate-800 text-sm text-slate-900 dark:text-slate-200"
-          >
-            {#each filteredTickets as ticket (ticket.id)}
-              <tr
-                onclick={() => openEditDrawer(ticket)}
-                class="hover:bg-slate-50/70 dark:hover:bg-slate-900/30 transition-colors cursor-pointer group"
-              >
-                <td class="py-4 px-6">
-                  <div
-                    class="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors flex items-center gap-1.5"
-                  >
-                    {ticket.brand}
-                    {#if ticket.is_warranty}
-                      <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30">
-                        <RefreshCw size={10} />
-                        Klaim Garansi
-                      </span>
-                    {/if}
-                  </div>
-                  <div
-                    class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5"
-                  >
-                    <span>{ticket.model}</span>
-                    {#if !ticket.is_warranty && ticket.status === 'picked_up'}
-                      {@const warranty = checkWarrantyExpiry(ticket.exit_date, ticket.warranty_days)}
-                      {#if warranty && warranty.isValid}
-                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30">
-                          <ShieldCheck size={10} />
-                          Garansi Aktif ({warranty.remainingDays} H)
-                        </span>
-                      {/if}
-                    {/if}
-                  </div>
-                </td>
-                <td class="py-4 px-6">
-                  <div class="font-medium text-slate-900 dark:text-white">
-                    {ticket.customer_name}
-                  </div>
-                  <div
-                    class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
-                  >
-                    {ticket.customer_gender}
-                  </div>
-                </td>
-                <td class="py-4 px-6">
-                  <div class="line-clamp-1 max-w-xs">{ticket.issue}</div>
-                </td>
-                <td class="py-4 px-6 font-semibold">
-                  {formatCurrency(Number(ticket.price))}
-                </td>
-                <td class="py-4 px-6">
-                  <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {getStatusBadgeClass(
-                      ticket.status,
-                      Boolean(ticket.is_warranty),
-                    )}"
-                  >
-                    {getStatusLabel(ticket.status, Boolean(ticket.is_warranty))}
-                  </span>
-                </td>
-                <td
-                  class="py-4 px-6 text-right"
-                  onclick={(e) => e.stopPropagation()}
-                >
-                  {#if ticket.status !== "picked_up"}
-                    <button
-                      onclick={() => {
-                        if (ticket.status === "waiting_confirmation") {
-                          openEditDrawer(ticket);
-                        } else {
-                          handleQuickStatusUpdate(ticket.id, ticket.status);
-                        }
-                      }}
-                      disabled={isActionLoading[ticket.id]}
-                      class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all active:scale-95 inline-flex items-center gap-1.5 shadow-sm"
-                    >
-                      {#if isActionLoading[ticket.id]}
-                        <Loader2 size={12} class="animate-spin" />
-                      {/if}
-                      {#if ticket.status === "service_in"}
-                        Mulai Proses
-                      {:else if ticket.status === "on_process"}
-                        Tandai Selesai
-                      {:else if ticket.status === "waiting_confirmation"}
-                        Hubungi Pelanggan
-                      {:else if ticket.status === "fixed"}
-                        Ambil & Bayar
-                      {/if}
-                    </button>
-                  {:else}
-                    <span class="text-xs font-semibold text-slate-400"
-                      >Selesai</span
-                    >
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+    <!-- Table Layout (Desktop) -->
+    <TicketTable
+      tickets={filteredTickets}
+      {isActionLoading}
+      onSelectTicket={(ticket) => (selectedTicket = ticket)}
+      onQuickAction={handleQuickStatusUpdate}
+      {getStatusBadgeClass}
+      {getStatusLabel}
+    />
+
+    <!-- Mobile Cards List (Mobile) -->
+    <div class="grid grid-cols-1 gap-4 md:hidden">
+      {#each filteredTickets as ticket (ticket.id)}
+        <TicketCard
+          {ticket}
+          isActionLoading={Boolean(isActionLoading[ticket.id])}
+          onSelectTicket={() => (selectedTicket = ticket)}
+          onQuickAction={() => handleQuickStatusUpdate(ticket.id, ticket.status)}
+          {getStatusBadgeClass}
+          {getStatusLabel}
+        />
+      {/each}
     </div>
   {/if}
 </div>
 
 <!-- Create Modal -->
-{#if showCreateModal}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
-  >
-    <div
-      class="bg-white dark:bg-slate-950 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-    >
-      <!-- Header -->
-      <div
-        class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30"
-      >
-        <h3
-          class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2"
-        >
-          <Smartphone size={20} class="text-blue-600" />
-          Pendaftaran Servis
-        </h3>
-        <button
-          onclick={() => (showCreateModal = false)}
-          disabled={isCreating}
-          class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors disabled:opacity-50"
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      <!-- Body -->
-      <form
-        onsubmit={handleCreateTicket}
-        class="flex-1 overflow-y-auto p-6 space-y-6"
-      >
-        <!-- Customer Info -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"
-          >
-            <User size={14} />
-            Informasi Pelanggan
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label
-                for="create-customer-name"
-                class="text-xs font-bold text-slate-500 block">Nama Lengkap *</label
-              >
-              <input
-                id="create-customer-name"
-                type="text"
-                bind:value={createForm.customer_name}
-                required
-                placeholder="Customer Name"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="create-customer-gender"
-                class="text-xs font-bold text-slate-500 block">Jenis Kelamin *</label
-              >
-              <select
-                id="create-customer-gender"
-                bind:value={createForm.customer_gender}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors cursor-pointer"
-              >
-                <option value="Male">Laki-laki</option>
-                <option value="Female">Perempuan</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Device Info -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"
-          >
-            <Wrench size={14} />
-            Detail Perangkat
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div class="space-y-1.5">
-              <label
-                for="create-brand"
-                class="text-xs font-bold text-slate-500 block">Merek *</label
-              >
-              <input
-                id="create-brand"
-                type="text"
-                bind:value={createForm.brand}
-                required
-                placeholder="e.g. Apple, Samsung"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="create-model"
-                class="text-xs font-bold text-slate-500 block">Tipe / Model *</label
-              >
-              <input
-                id="create-model"
-                type="text"
-                bind:value={createForm.model}
-                required
-                placeholder="e.g. iPhone 15 Pro, Galaxy S24"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div class="space-y-1.5">
-              <label
-                for="create-issue"
-                class="text-xs font-bold text-slate-500 block"
-                >Kerusakan *</label
-              >
-              <input
-                id="create-issue"
-                type="text"
-                bind:value={createForm.issue}
-                required
-                placeholder="e.g. Broken LCD screen, Battery drain"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="create-additional-description"
-                class="text-xs font-bold text-slate-500 block"
-                >Deskripsi Tambahan</label
-              >
-              <textarea
-                id="create-additional-description"
-                bind:value={createForm.additional_description}
-                rows="3"
-                placeholder="Any cosmetic damage or technical background details..."
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors resize-none"
-              ></textarea>
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="create-accessories"
-                class="text-xs font-bold text-slate-500 block"
-                >Kelengkapan Bawaan</label
-              >
-              <input
-                id="create-accessories"
-                type="text"
-                bind:value={createForm.accessories}
-                placeholder="e.g. Charger, Case, SIM card tray"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Price & Warranty -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"
-          >
-            <DollarSign size={14} />
-            Harga & Garansi
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label
-                for="create-price"
-                class="text-xs font-bold text-slate-500 block"
-                >Estimasi Harga (Rp)</label
-              >
-              <input
-                id="create-price"
-                type="number"
-                bind:value={createForm.price}
-                min="0"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="create-warranty-days"
-                class="text-xs font-bold text-slate-500 block"
-                >Masa Garansi (Hari)</label
-              >
-              <input
-                id="create-warranty-days"
-                type="number"
-                bind:value={createForm.warranty_days}
-                min="0"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div
-          class="pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3"
-        >
-          <button
-            type="button"
-            onclick={() => (showCreateModal = false)}
-            disabled={isCreating}
-            class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isCreating}
-            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm inline-flex items-center gap-1.5 disabled:opacity-50"
-          >
-            {#if isCreating}
-              <Loader2 class="animate-spin" size={14} />
-              Menyimpan...
-            {:else}
-              Submit Intake
-            {/if}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-{/if}
+<CreateModal
+  isOpen={showCreateModal}
+  {isCreating}
+  onSubmit={handleCreateTicket}
+  onClose={() => (showCreateModal = false)}
+/>
 
 <!-- Edit Drawer -->
-{#if selectedTicket}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-sm animate-fade-in"
-    onclick={closeEditDrawer}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="bg-white dark:bg-slate-950 w-full max-w-lg border-l border-slate-200 dark:border-slate-800 shadow-2xl h-full flex flex-col animate-slide-in"
-      onclick={(e) => e.stopPropagation()}
-    >
-      <!-- Header -->
-      <div
-        class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30"
-      >
-        <div>
-          <h3 class="font-bold text-lg text-slate-900 dark:text-white">
-            Detail Perbaikan
-          </h3>
-          <p
-            class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono"
-          >
-            ID: {selectedTicket.id}
-          </p>
-        </div>
-        <button
-          onclick={closeEditDrawer}
-          disabled={isUpdating || isDeleting}
-          class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors disabled:opacity-50"
-        >
-          <X size={18} />
-        </button>
-      </div>
+<EditDrawer
+  ticket={selectedTicket}
+  {isUpdating}
+  {isDeleting}
+  onClose={() => (selectedTicket = null)}
+  onSubmitUpdate={handleUpdateTicket}
+  onDelete={triggerDeleteConfirmation}
+  {copyTrackingLink}
+  {openQRModal}
+  {submitIssue}
+  {approveByCustomer}
+  {rejectByCustomer}
+  {getStatusBadgeClass}
+  {getStatusLabel}
+/>
 
-      <!-- Body -->
-      <form
-        bind:this={editFormElement}
-        onsubmit={handleUpdateTicket}
-        class="flex-1 overflow-y-auto p-6 space-y-6"
-      >
-        <!-- Status Panel -->
-        <div
-          class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-850 space-y-3"
-        >
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-slate-500">Status Saat Ini</span>
-            <span
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {getStatusBadgeClass(
-                editForm.status,
-                Boolean(selectedTicket.is_warranty),
-              )}"
-            >
-              {getStatusLabel(editForm.status, Boolean(selectedTicket.is_warranty))}
-            </span>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="space-y-1">
-              <span class="text-[10px] font-black uppercase text-slate-400"
-                >Tanggal Masuk</span
-              >
-              <p
-                class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                {formatDate(selectedTicket.entry_date)}
-              </p>
-            </div>
-            <div class="space-y-1">
-              <span class="text-[10px] font-black uppercase text-slate-400"
-                >Tanggal Keluar</span
-              >
-              <p
-                class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                {selectedTicket.exit_date
-                  ? formatDate(selectedTicket.exit_date)
-                  : "-"}
-              </p>
-            </div>
-          </div>
-          {#if selectedTicket.warranty_expiry_date}
-            <div
-              class="pt-2 border-t border-slate-200/50 dark:border-slate-800/50 flex justify-between items-center"
-            >
-              <span class="text-xs font-bold text-slate-500"
-                >Batas Garansi</span
-              >
-              <span
-                class="text-xs font-bold text-indigo-600 dark:text-indigo-400"
-                >{formatDate(selectedTicket.warranty_expiry_date)}</span
-              >
-            </div>
-          {/if}
-        </div>
+<!-- QR Modal -->
+<QRModal
+  isOpen={showQRModal}
+  {qrUrl}
+  onClose={() => (showQRModal = false)}
+  onCopyQRUrl={copyQRUrl}
+/>
 
-        <!-- Customer Form Fields -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"
-          >
-            Profil Pelanggan
-          </h4>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label
-                for="edit-customer-name"
-                class="text-xs font-bold text-slate-500">Nama Pelanggan</label
-              >
-              <input
-                id="edit-customer-name"
-                type="text"
-                bind:value={editForm.customer_name}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="edit-customer-gender"
-                class="text-xs font-bold text-slate-500">Jenis Kelamin</label
-              >
-              <select
-                id="edit-customer-gender"
-                bind:value={editForm.customer_gender}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors cursor-pointer"
-              >
-                <option value="Male">Laki-laki</option>
-                <option value="Female">Perempuan</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          </div>
-        </div>
+<!-- Delete Confirm Modal -->
+<DeleteConfirmModal
+  isOpen={showDeleteModal}
+  ticket={selectedTicket}
+  {isDeleting}
+  onConfirm={executeDeleteTicket}
+  onClose={() => (showDeleteModal = false)}
+/>
 
-        <!-- Device Info -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"
-          >
-            Informasi Servis
-          </h4>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="space-y-1.5">
-              <label for="edit-brand" class="text-xs font-bold text-slate-500"
-                >Merek</label
-              >
-              <input
-                id="edit-brand"
-                type="text"
-                bind:value={editForm.brand}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label for="edit-model" class="text-xs font-bold text-slate-500"
-                >Model</label
-              >
-              <input
-                id="edit-model"
-                type="text"
-                bind:value={editForm.model}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div class="space-y-1.5">
-              <label for="edit-issue" class="text-xs font-bold text-slate-500"
-                >Kerusakan</label
-              >
-              <input
-                id="edit-issue"
-                type="text"
-                bind:value={editForm.issue}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="edit-additional-description"
-                class="text-xs font-bold text-slate-500"
-                >Deskripsi Tambahan</label
-              >
-              <textarea
-                id="edit-additional-description"
-                bind:value={editForm.additional_description}
-                rows="3"
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors resize-none"
-              ></textarea>
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="edit-accessories"
-                class="text-xs font-bold text-slate-500">Kelengkapan</label
-              >
-              <input
-                id="edit-accessories"
-                type="text"
-                bind:value={editForm.accessories}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Finances & Status overrides -->
-        <div>
-          <h4
-            class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"
-          >
-            Biaya & Parameter
-          </h4>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="space-y-1.5">
-              <label for="edit-price" class="text-xs font-bold text-slate-500"
-                >Harga (Rp)</label
-              >
-              <input
-                id="edit-price"
-                type="number"
-                bind:value={editForm.price}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="edit-warranty-days"
-                class="text-xs font-bold text-slate-500"
-                >Masa Garansi (Hari)</label
-              >
-              <input
-                id="edit-warranty-days"
-                type="number"
-                bind:value={editForm.warranty_days}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="edit-status" class="text-xs font-bold text-slate-500"
-                >Status</label
-              >
-              <select
-                id="edit-status"
-                bind:value={editForm.status}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors cursor-pointer"
-              >
-                <option value="service_in">Masuk</option>
-                <option value="on_process">Sedang Diproses</option>
-                <option value="waiting_confirmation">Menunggu Konfirmasi</option
-                >
-                <option value="cancelled">Dibatalkan</option>
-                <option value="fixed">Selesai Diperbaiki</option>
-                <option value="picked_up">Sudah Diambil</option>
-              </select>
-            </div>
-            <div class="space-y-1.5">
-              <label
-                for="edit-payment-status"
-                class="text-xs font-bold text-slate-500">Status Pembayaran</label
-              >
-              <select
-                id="edit-payment-status"
-                bind:value={editForm.payment_status}
-                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600 transition-colors cursor-pointer"
-              >
-                <option
-                  value="unpaid"
-                  disabled={editForm.status === "picked_up"}>Unpaid</option
-                >
-                <option value="paid">Lunas</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {#if editForm.status === "on_process"}
-          <div
-            class="mt-6 border-t border-slate-200 dark:border-slate-800 pt-6"
-          >
-            <h4
-              class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"
-            >
-              <AlertTriangle size={14} />
-              Kendala Teknisi (Opsional)
-            </h4>
-
-            <div
-              class="space-y-4 bg-rose-50/50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/50"
-            >
-              <div class="space-y-1.5">
-                <label for="issue-type" class="text-xs font-bold text-slate-500 block"
-                  >Pilih Jenis Kendala</label
-                >
-                <select
-                  id="issue-type"
-                  bind:value={issueType}
-                  class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 transition-colors cursor-pointer"
-                >
-                  <option value="">-- Pilih Kendala --</option>
-                  <option value="unrepairable"
-                    >1. Tidak dapat dilanjutkan (Rusak Total)</option
-                  >
-                  <option value="additional_damage"
-                    >2. Kerusakan Tambahan</option
-                  >
-                  <option value="wrong_diagnosis">3. Salah Diagnosa Awal</option
-                  >
-                </select>
-              </div>
-
-              {#if issueType === "additional_damage" || issueType === "wrong_diagnosis"}
-                <div class="space-y-1.5">
-                  <label for="new-price" class="text-xs font-bold text-slate-500 block"
-                    >Penyesuaian Harga Baru (IDR)</label
-                  >
-                  <input
-                    id="new-price"
-                    type="number"
-                    bind:value={newPrice}
-                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 transition-colors"
-                  />
-                </div>
-                <div class="space-y-1.5">
-                  <label for="new-diagnosis" class="text-xs font-bold text-slate-500 block"
-                    >Detail Diagnosa Baru</label
-                  >
-                  <textarea
-                    id="new-diagnosis"
-                    bind:value={newDiagnosis}
-                    placeholder="Contoh: Ternyata IC Power ikut rusak..."
-                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 transition-colors resize-none"
-                  ></textarea>
-                </div>
-
-                <button
-                  type="button"
-                  onclick={submitIssue}
-                  disabled={isUpdating || isDeleting}
-                  class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {#if isUpdating}
-                    <Loader2 class="animate-spin" size={14} />
-                    Menyimpan...
-                  {:else}
-                    Kirim ke Status Menunggu Konfirmasi
-                  {/if}
-                </button>
-              {/if}
-
-              {#if issueType === "unrepairable"}
-                <button
-                  type="button"
-                  onclick={submitIssue}
-                  disabled={isUpdating || isDeleting}
-                  class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {#if isUpdating}
-                    <Loader2 class="animate-spin" size={14} />
-                    Menyimpan...
-                  {:else}
-                    Batalkan Perbaikan (Kembalikan ke Customer)
-                  {/if}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
-
-        {#if editForm.status === "waiting_confirmation"}
-          <div
-            class="mt-6 border-t border-slate-200 dark:border-slate-800 pt-6"
-          >
-            <div
-              class="bg-amber-100 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-200 dark:border-amber-800 space-y-4"
-            >
-              <div class="flex gap-3 items-start">
-                <PhoneCall
-                  class="text-amber-600 dark:text-amber-500 mt-1"
-                  size={20}
-                />
-                <div>
-                  <h4 class="font-bold text-amber-900 dark:text-amber-100">
-                    Tindakan Diperlukan
-                  </h4>
-                  <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                    Terdapat perubahan harga atau kerusakan. Harap hubungi
-                    customer untuk meminta persetujuan.
-                  </p>
-
-                  <div
-                    class="mt-3 p-3 bg-white/60 dark:bg-black/20 rounded-lg text-sm"
-                  >
-                    <p class="text-slate-700 dark:text-slate-300">
-                      <strong>Harga Baru:</strong>
-                      {formatCurrency(editForm.price)}
-                    </p>
-                    <p
-                      class="text-slate-700 dark:text-slate-300 mt-1 whitespace-pre-wrap"
-                    >
-                      <strong>Alasan/Keterangan:</strong><br
-                      />{editForm.additional_description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onclick={approveByCustomer}
-                  disabled={isUpdating || isDeleting}
-                  class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {#if isUpdating}
-                    <Loader2 class="animate-spin" size={14} />
-                  {/if}
-                  Pelanggan Setuju (Lanjut)
-                </button>
-                <button
-                  type="button"
-                  onclick={rejectByCustomer}
-                  disabled={isUpdating || isDeleting}
-                  class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {#if isUpdating}
-                    <Loader2 class="animate-spin" size={14} />
-                  {/if}
-                  Pelanggan Menolak (Batal)
-                </button>
-              </div>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Footer Actions -->
-        <div
-          class="pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center"
-        >
-          <button
-            type="button"
-            onclick={deleteSelectedTicket}
-            disabled={isUpdating || isDeleting}
-            class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors inline-flex items-center gap-1.5 border border-red-200 disabled:opacity-50"
-          >
-            {#if isDeleting}
-              <Loader2 class="animate-spin" size={14} />
-              Deleting...
-            {:else}
-              <Trash2 size={14} />
-              Delete Ticket
-            {/if}
-          </button>
-
-          <div class="flex gap-3">
-            <button
-              type="button"
-              onclick={closeEditDrawer}
-              disabled={isUpdating || isDeleting}
-              class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onclick={submitEditForm}
-              disabled={isUpdating || isDeleting}
-              class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm inline-flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {#if isUpdating}
-                <Loader2 class="animate-spin" size={14} />
-                Menyimpan...
-              {:else}
-                Save Changes
-              {/if}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+{#if toastMessage}
+  <div class="fixed bottom-6 right-6 z-50 animate-slide-in bg-slate-900 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
+    <span class="text-sm font-semibold">{toastMessage}</span>
   </div>
 {/if}
 
 <style>
   @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
-
   @keyframes slide-in {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
   }
-
   .animate-fade-in {
     animation: fade-in 0.25s ease-out forwards;
   }
-
   .animate-slide-in {
     animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }

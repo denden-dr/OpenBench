@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
@@ -40,6 +41,8 @@ func (s *WarrantyClaimIntegrationTestSuite) SetupSuite() {
 	warrantyClaimService := service.NewWarrantyClaimService(warrantyClaimRepo, ticketRepo)
 	warrantyClaimHandler := handler.NewWarrantyClaimHandler(warrantyClaimService)
 
+	healthHandler := handler.NewHealthHandler(s.db.DB)
+
 	s.app = fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
@@ -48,17 +51,15 @@ func (s *WarrantyClaimIntegrationTestSuite) SetupSuite() {
 	s.app.Use(middleware.ScopeIdempotencyKey(s.idempotencyStore))
 	s.app.Use(middleware.NewIdempotency(s.idempotencyStore))
 
-	api := s.app.Group("/api/v1")
+	cfg := &config.Config{
+		RateLimit: config.RateLimitConfig{
+			Disable:   false,
+			MaxPublic: 1000,
+			MaxAdmin:  1000,
+		},
+	}
 
-	tickets := api.Group("/tickets")
-	tickets.Post("/", ticketHandler.Create)
-	tickets.Patch("/:id", ticketHandler.Update)
-
-	warrantyClaims := api.Group("/warranty-claims")
-	warrantyClaims.Post("/", warrantyClaimHandler.Create)
-	warrantyClaims.Get("/", warrantyClaimHandler.List)
-	warrantyClaims.Post("/:id/approve", warrantyClaimHandler.Approve)
-	warrantyClaims.Post("/:id/void", warrantyClaimHandler.Void)
+	handler.RegisterRoutes(s.app, cfg, ticketHandler, warrantyClaimHandler, healthHandler)
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) SetupTest() {

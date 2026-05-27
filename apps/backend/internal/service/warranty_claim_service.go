@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
@@ -88,11 +90,31 @@ func (s *warrantyClaimService) ListClaims(ctx context.Context, status string) ([
 		return nil, MapRepositoryError(err)
 	}
 
+	if len(claims) == 0 {
+		return []*dto.WarrantyClaimResponse{}, nil
+	}
+
+	ticketIDs := make([]string, len(claims))
+	for i, c := range claims {
+		ticketIDs[i] = c.TicketID
+	}
+
+	tickets, err := s.ticketRepo.GetByIDs(ctx, ticketIDs)
+	if err != nil {
+		return nil, MapRepositoryError(err)
+	}
+
+	ticketMap := make(map[string]*model.Ticket)
+	for i := range tickets {
+		t := &tickets[i]
+		ticketMap[t.ID] = t
+	}
+
 	responses := make([]*dto.WarrantyClaimResponse, len(claims))
 	for i, c := range claims {
-		ticket, err := s.ticketRepo.GetByID(ctx, c.TicketID)
-		if err != nil {
-			return nil, MapRepositoryError(err)
+		ticket, ok := ticketMap[c.TicketID]
+		if !ok {
+			ticket = &model.Ticket{}
 		}
 		responses[i] = s.mapToResponse(c, ticket)
 	}
@@ -118,7 +140,7 @@ func (s *warrantyClaimService) ApproveClaim(ctx context.Context, id string) (*dt
 		return nil, ErrClaimAlreadyDecided
 	}
 
-	ticket, err := s.ticketRepo.GetByID(ctx, claim.TicketID)
+	ticket, err := s.ticketRepo.GetByIDForUpdateTx(ctx, tx, claim.TicketID)
 	if err != nil {
 		return nil, MapRepositoryError(err)
 	}
@@ -191,7 +213,7 @@ func (s *warrantyClaimService) VoidClaim(ctx context.Context, id string, req *dt
 		return nil, ErrClaimAlreadyDecided
 	}
 
-	ticket, err := s.ticketRepo.GetByID(ctx, claim.TicketID)
+	ticket, err := s.ticketRepo.GetByIDForUpdateTx(ctx, tx, claim.TicketID)
 	if err != nil {
 		return nil, MapRepositoryError(err)
 	}
@@ -259,5 +281,7 @@ func (s *warrantyClaimService) mapToResponse(claim *model.WarrantyClaim, ticket 
 }
 
 func rollbackTx(tx txRollbacker) {
-	_ = tx.Rollback()
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		slog.Error("failed to rollback transaction", "error", err)
+	}
 }

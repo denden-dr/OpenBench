@@ -100,51 +100,32 @@ func (s *PostgresStorage) ReserveRequest(key string, requestHash string, exp tim
 		expiresAt = time.Now().Add(24 * time.Hour)
 	}
 
-	var existingHash string
-	err := s.db.Get(&existingHash, `
-		SELECT request_hash
-		FROM idempotency_keys
-		WHERE key = $1 AND expires_at > CURRENT_TIMESTAMP
-	`, key)
-	if err == nil {
-		if existingHash != requestHash {
-			return ErrIdempotencyConflict
-		}
-		return nil
-	}
-	if err != sql.ErrNoRows {
-		return err
-	}
-
-	result, err := s.db.Exec(`
+	var dbHash string
+	err := s.db.Get(&dbHash, `
 		INSERT INTO idempotency_keys (key, request_hash, expires_at)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (key) DO UPDATE
-		SET request_hash = EXCLUDED.request_hash,
-		    value = NULL,
-		    expires_at = EXCLUDED.expires_at
-		WHERE idempotency_keys.expires_at <= CURRENT_TIMESTAMP
+		SET request_hash = CASE 
+		        WHEN idempotency_keys.expires_at <= CURRENT_TIMESTAMP THEN EXCLUDED.request_hash
+		        ELSE idempotency_keys.request_hash
+		    END,
+		    value = CASE 
+		        WHEN idempotency_keys.expires_at <= CURRENT_TIMESTAMP THEN NULL
+		        ELSE idempotency_keys.value
+		    END,
+		    expires_at = CASE 
+		        WHEN idempotency_keys.expires_at <= CURRENT_TIMESTAMP THEN EXCLUDED.expires_at
+		        ELSE idempotency_keys.expires_at
+		    END
+		RETURNING request_hash
 	`, key, requestHash, expiresAt)
+
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		err = s.db.Get(&existingHash, `
-			SELECT request_hash
-			FROM idempotency_keys
-			WHERE key = $1 AND expires_at > CURRENT_TIMESTAMP
-		`, key)
-		if err != nil {
-			return err
-		}
-		if existingHash != requestHash {
-			return ErrIdempotencyConflict
-		}
+	if dbHash != requestHash {
+		return ErrIdempotencyConflict
 	}
 
 	return nil
@@ -169,6 +150,7 @@ func (s *PostgresStorage) Set(key string, val []byte, exp time.Duration) error {
 	`, key, utils.CopyBytes(val), expiresAt)
 	if err != nil {
 		slog.Error("failed to write idempotency response cache", "error", err)
+		return err
 	}
 	return nil
 }

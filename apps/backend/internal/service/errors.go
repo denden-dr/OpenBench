@@ -46,6 +46,7 @@ var (
 	ErrNegativeWarranty        = NewAppError(400, "warranty days cannot be negative")
 	ErrNonPickedUpWithExitDate = NewAppError(400, "non-picked up ticket cannot have exit date")
 	ErrPickedUpMissingExitDate = NewAppError(400, "picked up ticket must have an exit date")
+	ErrInvalidStatusTransition = NewAppError(400, "invalid status transition")
 
 	ErrDuplicate           = NewAppError(409, "resource already exists")
 	ErrDatabaseUnavailable = NewAppError(503, "database is currently unavailable")
@@ -76,6 +77,8 @@ func MapModelError(err error) error {
 			return ErrPickedUpMissingExitDate
 		case errors.Is(modelErr, model.ErrNonPickedUpCannotHaveExitDate):
 			return ErrNonPickedUpWithExitDate
+		case errors.Is(modelErr, model.ErrInvalidStatusTransition):
+			return ErrInvalidStatusTransition
 		}
 	}
 	return err

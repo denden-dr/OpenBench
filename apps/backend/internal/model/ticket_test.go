@@ -11,18 +11,6 @@ import (
 )
 
 func TestTicketPrepareForCreate(t *testing.T) {
-	t.Run("applies default warranty days", func(t *testing.T) {
-		ticket := Ticket{
-			Price:        decimal.NewFromInt(100000),
-			WarrantyDays: 0,
-		}
-
-		err := ticket.PrepareForCreate()
-
-		require.NoError(t, err)
-		assert.Equal(t, DefaultWarrantyDays, ticket.WarrantyDays)
-	})
-
 	t.Run("applies default status and payment status if empty", func(t *testing.T) {
 		ticket := Ticket{
 			Price:        decimal.NewFromInt(100000),
@@ -153,7 +141,7 @@ func TestTicketApplyUpdate(t *testing.T) {
 		assert.ErrorIs(t, err, ErrPickedUpRequiresPaid)
 	})
 
-	t.Run("clears exit date when moving out of picked up", func(t *testing.T) {
+	t.Run("transition out of picked up is blocked", func(t *testing.T) {
 		status := string(StatusFixed)
 		exitDate := time.Now()
 		ticket := Ticket{
@@ -165,17 +153,14 @@ func TestTicketApplyUpdate(t *testing.T) {
 
 		err := ticket.ApplyUpdate(TicketUpdate{Status: &status})
 
-		require.NoError(t, err)
-		assert.Equal(t, StatusFixed, ticket.Status)
-		assert.Nil(t, ticket.ExitDate)
-		assert.Nil(t, ticket.WarrantyExpiryDate())
+		assert.ErrorIs(t, err, ErrInvalidStatusTransition)
 	})
 
 	t.Run("rejects exit date on non-picked-up ticket", func(t *testing.T) {
 		status := string(StatusFixed)
 		exitDate := time.Now()
 		ticket := Ticket{
-			Status:        StatusServiceIn,
+			Status:        StatusOnProcess,
 			PaymentStatus: PaymentUnpaid,
 		}
 
@@ -226,6 +211,19 @@ func TestTicketApplyUpdate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, StatusCancelled, ticket.Status)
 	})
+
+	t.Run("rejects invalid status transitions", func(t *testing.T) {
+		statusPickedUp := string(StatusPickedUp)
+		ticket := Ticket{
+			Status:        StatusServiceIn,
+			PaymentStatus: PaymentUnpaid,
+		}
+
+		err := ticket.ApplyUpdate(TicketUpdate{
+			Status: &statusPickedUp,
+		})
+		assert.ErrorIs(t, err, ErrInvalidStatusTransition)
+	})
 }
 
 func TestValidateTicketUpdate(t *testing.T) {
@@ -243,25 +241,6 @@ func TestValidateTicketUpdate(t *testing.T) {
 		err := ValidateTicketUpdate(TicketUpdate{WarrantyDays: &warrantyDays})
 
 		assert.ErrorIs(t, err, ErrNegativeWarranty)
-	})
-}
-
-func TestTicketPrepareForCreate_VoidWarrantyDays(t *testing.T) {
-	t.Run("applies default warranty days then can be reset to zero", func(t *testing.T) {
-		ticket := Ticket{
-			Price:        decimal.NewFromInt(0),
-			WarrantyDays: 0,
-			Status:       StatusCancelled,
-		}
-
-		err := ticket.PrepareForCreate()
-		require.NoError(t, err)
-		// PrepareForCreate sets 0 → DefaultWarrantyDays
-		assert.Equal(t, DefaultWarrantyDays, ticket.WarrantyDays)
-
-		// Void claim path: reset to 0 after PrepareForCreate
-		ticket.WarrantyDays = 0
-		assert.Equal(t, 0, ticket.WarrantyDays)
 	})
 }
 

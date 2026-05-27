@@ -21,7 +21,7 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	res, err := h.service.CreateTicket(c.Context(), &req)
+	res, err := h.service.CreateTicket(c.UserContext(), &req)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (h *TicketHandler) GetByID(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid ticket ID format")
 	}
 
-	res, err := h.service.GetTicket(c.Context(), id)
+	res, err := h.service.GetTicket(c.UserContext(), id)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	res, err := h.service.UpdateTicket(c.Context(), id, &req)
+	res, err := h.service.UpdateTicket(c.UserContext(), id, &req)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 }
 
 func (h *TicketHandler) List(c *fiber.Ctx) error {
-	res, err := h.service.ListTickets(c.Context())
+	res, err := h.service.ListTickets(c.UserContext())
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid ticket ID format")
 	}
 
-	err := h.service.DeleteTicket(c.Context(), id)
+	err := h.service.DeleteTicket(c.UserContext(), id)
 	if err != nil {
 		return err
 	}
@@ -97,5 +97,39 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Ticket deleted successfully",
+	})
+}
+
+func (h *TicketHandler) GetPublicByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if _, err := uuid.Parse(id); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid ticket ID format. Only full UUID is supported.")
+	}
+
+	res, err := h.service.GetPublicTicket(c.UserContext(), id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    res,
+	})
+}
+
+func (h *TicketHandler) TrackPublic(c *fiber.Ctx) error {
+	var req dto.PublicTrackRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	uuidResult, err := h.service.TrackPublicTicket(c.UserContext(), &req)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success":   true,
+		"ticket_id": uuidResult,
 	})
 }
