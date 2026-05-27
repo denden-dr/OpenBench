@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
@@ -35,6 +36,12 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	ticketService := service.NewTicketService(ticketRepo)
 	ticketHandler := handler.NewTicketHandler(ticketService)
 
+	warrantyClaimRepo := repository.NewWarrantyClaimRepository(s.db)
+	warrantyClaimService := service.NewWarrantyClaimService(warrantyClaimRepo, ticketRepo)
+	warrantyClaimHandler := handler.NewWarrantyClaimHandler(warrantyClaimService)
+
+	healthHandler := handler.NewHealthHandler(s.db.DB)
+
 	s.app = fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
@@ -43,13 +50,15 @@ func (s *TicketIntegrationTestSuite) SetupSuite() {
 	s.app.Use(middleware.ScopeIdempotencyKey(s.idempotencyStore))
 	s.app.Use(middleware.NewIdempotency(s.idempotencyStore))
 
-	api := s.app.Group("/api/v1")
-	tickets := api.Group("/tickets")
-	tickets.Post("/", ticketHandler.Create)
-	tickets.Get("/", ticketHandler.List)
-	tickets.Get("/:id", ticketHandler.GetByID)
-	tickets.Patch("/:id", ticketHandler.Update)
-	tickets.Delete("/:id", ticketHandler.Delete)
+	cfg := &config.Config{
+		RateLimit: config.RateLimitConfig{
+			Disable:   false,
+			MaxPublic: 1000,
+			MaxAdmin:  1000,
+		},
+	}
+
+	handler.RegisterRoutes(s.app, cfg, ticketHandler, warrantyClaimHandler, healthHandler)
 }
 
 func (s *TicketIntegrationTestSuite) SetupTest() {

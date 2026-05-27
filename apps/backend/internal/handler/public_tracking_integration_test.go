@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/handler"
 	"github.com/denden-dr/openbench/apps/backend/internal/middleware"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
@@ -33,20 +34,25 @@ func (s *PublicTrackingIntegrationTestSuite) SetupSuite() {
 	ticketService := service.NewTicketService(ticketRepo)
 	ticketHandler := handler.NewTicketHandler(ticketService)
 
+	warrantyClaimRepo := repository.NewWarrantyClaimRepository(s.db)
+	warrantyClaimService := service.NewWarrantyClaimService(warrantyClaimRepo, ticketRepo)
+	warrantyClaimHandler := handler.NewWarrantyClaimHandler(warrantyClaimService)
+
+	healthHandler := handler.NewHealthHandler(s.db.DB)
+
 	s.app = fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
 
-	// Public api group with high rate limit for testing
-	api := s.app.Group("/api/v1")
-	publicLimiter := limiter.New(limiter.Config{
-		Max:        1000,
-		Expiration: 1 * time.Minute,
-	})
+	cfg := &config.Config{
+		RateLimit: config.RateLimitConfig{
+			Disable:   false,
+			MaxPublic: 1000,
+			MaxAdmin:  1000,
+		},
+	}
 
-	public := api.Group("/public", publicLimiter)
-	public.Get("/tickets/:id", ticketHandler.GetPublicByID)
-	public.Post("/track", ticketHandler.TrackPublic)
+	handler.RegisterRoutes(s.app, cfg, ticketHandler, warrantyClaimHandler, healthHandler)
 }
 
 func (s *PublicTrackingIntegrationTestSuite) SetupTest() {
