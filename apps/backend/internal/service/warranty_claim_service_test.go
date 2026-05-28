@@ -287,7 +287,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 		limit          int
 		setupMock      func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository)
 		expectedError  error
-		expectedAssert func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse)
+		expectedAssert func(t *testing.T, res *dto.PaginatedWarrantyClaimsResult)
 	}{
 		{
 			name:   "success list all claims",
@@ -324,7 +324,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResult) {
 				assert.Equal(t, int64(2), res.Total)
 				assert.Equal(t, int64(1), res.TotalPages)
 				assert.Len(t, res.Data, 2)
@@ -359,7 +359,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResult) {
 				assert.Equal(t, int64(1), res.Total)
 				assert.Len(t, res.Data, 1)
 				assert.Equal(t, "waiting_inspection", res.Data[0].Status)
@@ -375,7 +375,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 				mClaim.On("ListPaginated", mock.Anything, "all", 10, 0).Return([]*model.WarrantyClaim{}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResult) {
 				assert.Equal(t, int64(0), res.Total)
 				assert.Len(t, res.Data, 0)
 			},

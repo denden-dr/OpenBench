@@ -649,7 +649,7 @@ func TestTicketService_ListTickets(t *testing.T) {
 		status         string
 		setupMock      func(m *mockrepo.MockTicketRepository)
 		expectedError  error
-		expectedAssert func(t *testing.T, res *dto.PaginatedTicketsResponse)
+		expectedAssert func(t *testing.T, res *dto.PaginatedTicketsResult)
 	}{
 		{
 			name:   "success list tickets",
@@ -674,7 +674,7 @@ func TestTicketService_ListTickets(t *testing.T) {
 				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResponse) {
+			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResult) {
 				assert.Equal(t, int64(2), res.Total)
 				assert.Equal(t, int64(1), res.TotalPages)
 				assert.Len(t, res.Data, 2)
@@ -696,7 +696,7 @@ func TestTicketService_ListTickets(t *testing.T) {
 				m.On("GetStatusCounts", mock.Anything, "").Return(map[string]int64{}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResponse) {
+			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResult) {
 				assert.Equal(t, int64(0), res.Total)
 				assert.Len(t, res.Data, 0)
 			},

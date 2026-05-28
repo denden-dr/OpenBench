@@ -80,7 +80,7 @@ func (s *PublicTrackingIntegrationTestSuite) TestGetPublicTicket_SuccessUUID() {
 	s.Equal(http.StatusOK, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 	s.Equal(float64(200), res["code"])
 	s.Equal("Success", res["message"])
 
@@ -161,7 +161,7 @@ func (s *PublicTrackingIntegrationTestSuite) TestTrackPublic_Success() {
 	s.Equal(http.StatusOK, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 	s.Equal(float64(200), res["code"])
 	s.Equal("Success", res["message"])
 	data := res["data"].(map[string]interface{})
@@ -183,7 +183,7 @@ func (s *PublicTrackingIntegrationTestSuite) TestTrackPublic_Success() {
 	s.Equal(http.StatusOK, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
 	s.Equal(float64(200), res2["code"])
 	s.Equal("Success", res2["message"])
 	data2 := res2["data"].(map[string]interface{})
