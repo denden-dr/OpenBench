@@ -1,16 +1,16 @@
 # Graph Report - OpenBench  (2026-05-27)
 
 ## Corpus Check
-- 107 files · ~117,858 words
+- 108 files · ~118,903 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1118 nodes · 1459 edges · 77 communities (53 shown, 24 thin omitted)
+- 1168 nodes · 1517 edges · 84 communities (58 shown, 26 thin omitted)
 - Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 161 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c1f9f0b3`
+- Built from commit: `cf1b205e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -76,15 +76,21 @@
 - [[_COMMUNITY_Community 63|Community 63]]
 - [[_COMMUNITY_Community 64|Community 64]]
 - [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
+- [[_COMMUNITY_Community 69|Community 69]]
 - [[_COMMUNITY_Community 70|Community 70]]
 - [[_COMMUNITY_Community 71|Community 71]]
 - [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 75|Community 75]]
 - [[_COMMUNITY_Community 76|Community 76]]
 - [[_COMMUNITY_Community 77|Community 77]]
 - [[_COMMUNITY_Community 78|Community 78]]
 - [[_COMMUNITY_Community 79|Community 79]]
 - [[_COMMUNITY_Community 80|Community 80]]
 - [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_Community 83|Community 83]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `TicketIntegrationTestSuite` - 28 edges
@@ -115,7 +121,7 @@
 - **Phone Board Microsoldering Workflow** — microsoldering_repair_scene, smartphone_logic_board, soldering_iron, precision_tweezers, a15_bionic_chip [INFERRED 0.92]
 - **Repair Status Workflow Stages** — prd_ticket_status_service_in, prd_ticket_status_on_process, prd_ticket_status_fixed, prd_ticket_status_picked_up [EXTRACTED 1.00]
 
-## Communities (77 total, 24 thin omitted)
+## Communities (84 total, 26 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.06
@@ -126,8 +132,8 @@ Cohesion: 0.24
 Nodes (10): stubResult, NewTicketService(), ptrInt(), TestTicketService_CreateTicket(), TestTicketService_DeleteTicket(), TestTicketService_GetPublicTicket(), TestTicketService_GetTicket(), TestTicketService_ListTickets() (+2 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.06
-Nodes (12): MockTicketRepository, MockTicketRepository_BeginTx_Call, MockTicketRepository_Create_Call, MockTicketRepository_CreateTx_Call, MockTicketRepository_Delete_Call, MockTicketRepository_GetByID_Call, MockTicketRepository_GetByIDForUpdateTx_Call, MockTicketRepository_GetByIDs_Call (+4 more)
+Cohesion: 0.09
+Nodes (11): MockTicketRepository_BeginTx_Call, MockTicketRepository_Create_Call, MockTicketRepository_CreateTx_Call, MockTicketRepository_Delete_Call, MockTicketRepository_GetByID_Call, MockTicketRepository_GetByIDForUpdateTx_Call, MockTicketRepository_GetByIDs_Call, MockTicketRepository_GetByShortID_Call (+3 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.06
@@ -266,8 +272,8 @@ Cohesion: 0.40
 Nodes (4): Deskripsi Masalah, Detail Lokasi Kode, Rencana: Implementasi Pagination pada Endpoint List, Rencana Solusi
 
 ### Community 57 - "Community 57"
-Cohesion: 0.06
-Nodes (31): warranty, warranty, svelte, ../app.css, $lib/types/ticket, $lib/utils/format, $lib/utils/warranty, activeIndex (+23 more)
+Cohesion: 0.12
+Nodes (17): approveClaim(), errorMessage, exitDate, expiryDate, fetchClaims(), intakeIssue, intakeNote, isSubmittingIntake (+9 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.06
@@ -289,6 +295,22 @@ Nodes (6): MockWarrantyClaimService, MockWarrantyClaimService_ApproveClaim_Call,
 Cohesion: 0.13
 Nodes (15): 1. Status Perbaikan Sebelumnya, 1. Status Perbaikan Sebelumnya (Resolved), 1. Status Perbaikan Secara Keseluruhan (All Resolved 🎉), 1. Unhandled Error pada `tx.Rollback()` (Bug / Best Practice), 2. Status Pengembangan Lanjutan, 2. Temuan Isu Baru, 2. Tidak Ada Graceful Shutdown pada Fiber App (Best Practice / Konsistensi), 3. Konfigurasi CORS Belum Didefinisikan (Potensi Bug Integrasi) (+7 more)
 
+### Community 66 - "Community 66"
+Cohesion: 0.07
+Nodes (26): approveByCustomer(), createIdempotencyKey, executeDeleteTicket(), exitDate, expiryDate, fetchTickets(), filteredTickets, getStatusLabel() (+18 more)
+
+### Community 67 - "Community 67"
+Cohesion: 0.18
+Nodes (8): warranty, warranty, ../app.css, $lib/types/ticket, $lib/utils/format, $lib/utils/warranty, activeIndex, $app/stores
+
+### Community 69 - "Community 69"
+Cohesion: 0.17
+Nodes (11): code:svelte (<script lang="ts">), code:svelte (<script lang="ts">), code:typescript (import StatusFilters from "./_components/StatusFilters.svelt), code:typescript (// Status counts computed properties), code:svelte (<!-- Stats Section -->), code:svelte (<!-- Status Filters -->), Compact Status Filters Implementation Plan, Task 1: Create StatusFilters Component (+3 more)
+
+### Community 75 - "Community 75"
+Cohesion: 0.18
+Nodes (10): 1. Objective, 2.1 UI Layout, 2.2 Functional Behavior, 2. Requirements & UI/UX Design, 3. Implementation Plan, Design Spec: Compact Status Filters, Phase 1: Modify `ControlBar.svelte`, Phase 2: Create a responsive `StatusFilters.svelte` or integrate directly into parent/child (+2 more)
+
 ### Community 76 - "Community 76"
 Cohesion: 0.21
 Nodes (14): main(), hashIdempotencyRequest(), idempotencyConcretePath(), NewIdempotency(), NewTicketIdempotency(), ScopeIdempotencyKey(), ScopeTicketIdempotencyKey(), TestHashIdempotencyRequest() (+6 more)
@@ -302,19 +324,19 @@ Cohesion: 0.53
 Nodes (5): NewWarrantyClaimService(), TestWarrantyClaimService_ApproveClaim(), TestWarrantyClaimService_CreateClaim(), TestWarrantyClaimService_ListClaims(), TestWarrantyClaimService_VoidClaim()
 
 ## Knowledge Gaps
-- **355 isolated node(s):** `bool`, `extends`, `rewriteRelativeImportExtensions`, `allowJs`, `checkJs` (+350 more)
+- **379 isolated node(s):** `bool`, `extends`, `rewriteRelativeImportExtensions`, `allowJs`, `checkJs` (+374 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `main()` connect `Community 76` to `Community 1`, `Community 3`, `Community 5`, `Community 8`, `Community 79`, `Community 81`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+- **Why does `ValidateTicketUpdate()` connect `Community 6` to `Community 9`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Why does `ScopeIdempotencyKey()` connect `Community 76` to `Community 5`, `Community 6`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `TicketIntegrationTestSuite` connect `Community 3` to `Community 8`, `Community 5`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Are the 19 inferred relationships involving `MapDatabaseError()` (e.g. with `TestMapDatabaseError()` and `.Is()`) actually correct?**
   _`MapDatabaseError()` has 19 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 17 inferred relationships involving `main()` (e.g. with `Load()` and `NewDB()`) actually correct?**
@@ -322,4 +344,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 3 inferred relationships involving `str` (e.g. with `.tokenize()` and `_search_csv()`) actually correct?**
   _`str` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?**
-  _381 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _405 weakly-connected nodes found - possible documentation gaps or missing edges._

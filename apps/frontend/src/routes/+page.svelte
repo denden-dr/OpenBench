@@ -3,7 +3,6 @@
   import { LoaderCircle, Search } from "lucide-svelte";
   import type { Ticket } from "$lib/types/ticket";
   
-  import StatsCards from "./_components/StatsCards.svelte";
   import ControlBar from "./_components/ControlBar.svelte";
   import TicketTable from "./_components/TicketTable.svelte";
   import TicketCard from "./_components/TicketCard.svelte";
@@ -31,41 +30,23 @@
   let isActionLoading = $state<Record<string, boolean>>({});
   let showDeleteModal = $state(false);
 
-  // Stats computed properties
-  let stats = $derived.by(() => {
-    let waiting = 0;
-    let onProcess = 0;
-    let fixed = 0;
-    let revenue = 0;
-    const today = new Date();
-
+  // Status counts computed properties
+  let statusCounts = $derived.by(() => {
+    const counts: Record<string, number> = {
+      all: tickets.length,
+      service_in: 0,
+      on_process: 0,
+      waiting_confirmation: 0,
+      fixed: 0,
+      picked_up: 0,
+      cancelled: 0,
+    };
     for (const t of tickets) {
-      if (t.status === "waiting_confirmation") {
-        waiting++;
-      } else if (t.status === "on_process") {
-        onProcess++;
-      } else if (t.status === "fixed") {
-        fixed++;
-      }
-
-      if (t.payment_status === "paid" && t.exit_date) {
-        const exitDate = new Date(t.exit_date);
-        if (
-          exitDate.getDate() === today.getDate() &&
-          exitDate.getMonth() === today.getMonth() &&
-          exitDate.getFullYear() === today.getFullYear()
-        ) {
-          revenue += Number(t.price);
-        }
+      if (counts[t.status] !== undefined) {
+        counts[t.status]++;
       }
     }
-
-    return {
-      waiting,
-      onProcess,
-      fixed,
-      revenue
-    };
+    return counts;
   });
 
   let filteredTickets = $derived(
@@ -402,18 +383,11 @@
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-7xl animate-fade-in font-sans">
-  <!-- Stats Section -->
-  <StatsCards
-    waitingCount={stats.waiting}
-    onProcessCount={stats.onProcess}
-    fixedCount={stats.fixed}
-    todaysRevenue={stats.revenue}
-  />
-
   <!-- Control Bar -->
   <ControlBar
     bind:searchQuery
     bind:statusFilter
+    {statusCounts}
     onAddTicket={() => {
       regenerateCreateIdempotencyKey();
       showCreateModal = true;
