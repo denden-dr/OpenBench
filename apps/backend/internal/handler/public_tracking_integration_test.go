@@ -81,7 +81,8 @@ func (s *PublicTrackingIntegrationTestSuite) TestGetPublicTicket_SuccessUUID() {
 
 	var res map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Equal(float64(200), res["code"])
+	s.Equal("Success", res["message"])
 
 	data := res["data"].(map[string]interface{})
 	s.Equal(id, data["id"])
@@ -161,8 +162,10 @@ func (s *PublicTrackingIntegrationTestSuite) TestTrackPublic_Success() {
 
 	var res map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
-	s.Equal(id, res["ticket_id"])
+	s.Equal(float64(200), res["code"])
+	s.Equal("Success", res["message"])
+	data := res["data"].(map[string]interface{})
+	s.Equal(id, data["ticket_id"])
 
 	// 3. Track using international Indonesian phone number format
 	// Input: "+62 812-9876-5432"
@@ -181,8 +184,10 @@ func (s *PublicTrackingIntegrationTestSuite) TestTrackPublic_Success() {
 
 	var res2 map[string]interface{}
 	_ = json.NewDecoder(resp2.Body).Decode(&res2)
-	s.True(res2["success"].(bool))
-	s.Equal(id, res2["ticket_id"])
+	s.Equal(float64(200), res2["code"])
+	s.Equal("Success", res2["message"])
+	data2 := res2["data"].(map[string]interface{})
+	s.Equal(id, data2["ticket_id"])
 }
 
 func (s *PublicTrackingIntegrationTestSuite) TestTrackPublic_NotFound() {

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
 	"github.com/denden-dr/openbench/apps/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -26,9 +28,10 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"success": true,
-		"data":    res,
+	return c.Status(fiber.StatusCreated).JSON(dto.ApiResponse{
+		Code:    fiber.StatusCreated,
+		Message: "Success",
+		Data:    res,
 	})
 }
 
@@ -43,9 +46,10 @@ func (h *TicketHandler) GetByID(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
+	return c.JSON(dto.ApiResponse{
+		Code:    fiber.StatusOK,
+		Message: "Success",
+		Data:    res,
 	})
 }
 
@@ -65,22 +69,42 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
+	return c.JSON(dto.ApiResponse{
+		Code:    fiber.StatusOK,
+		Message: "Success",
+		Data:    res,
 	})
 }
 
 func (h *TicketHandler) List(c *fiber.Ctx) error {
-	res, err := h.service.ListTickets(c.UserContext())
+	pageStr := c.Query("page")
+	limitStr := c.Query("limit")
+	search := c.Query("search")
+	status := c.Query("status")
+
+	page := 1
+	var err error
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid page parameter")
+		}
+	}
+
+	limit := 20
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid limit parameter")
+		}
+	}
+
+	res, err := h.service.ListTickets(c.UserContext(), page, limit, search, status)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
-	})
+	return c.JSON(res)
 }
 
 func (h *TicketHandler) Delete(c *fiber.Ctx) error {
@@ -94,9 +118,9 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "Ticket deleted successfully",
+	return c.JSON(dto.ApiResponse{
+		Code:    fiber.StatusOK,
+		Message: "Ticket deleted successfully",
 	})
 }
 
@@ -111,9 +135,10 @@ func (h *TicketHandler) GetPublicByID(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    res,
+	return c.JSON(dto.ApiResponse{
+		Code:    fiber.StatusOK,
+		Message: "Success",
+		Data:    res,
 	})
 }
 
@@ -128,8 +153,11 @@ func (h *TicketHandler) TrackPublic(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
-		"success":   true,
-		"ticket_id": uuidResult,
+	return c.JSON(dto.ApiResponse{
+		Code:    fiber.StatusOK,
+		Message: "Success",
+		Data: fiber.Map{
+			"ticket_id": uuidResult,
+		},
 	})
 }

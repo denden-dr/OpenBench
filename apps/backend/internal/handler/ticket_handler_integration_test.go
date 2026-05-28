@@ -98,7 +98,7 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 
 	var createRes map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&createRes)
-	s.True(createRes["success"].(bool))
+	s.Equal(float64(201), createRes["code"])
 	data := createRes["data"].(map[string]interface{})
 	s.NotEmpty(data["id"])
 	s.Equal("service_in", data["status"])
@@ -112,7 +112,17 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 
 	var listRes map[string]interface{}
 	_ = json.NewDecoder(respList.Body).Decode(&listRes)
-	s.True(listRes["success"].(bool))
+	s.Equal(float64(200), listRes["code"])
+	// Wait, the data key for listing tickets is actually a slice, but in our paginated response it might be wrapped differently. Let's see:
+	// The tickets list response is now PaginatedTicketsResponse. So tickets is listRes["data"].([]interface{}) if it was not paginated.
+	// Oh, wait! In our previous backend pagination plan, we changed List to return PaginatedTicketsResponse!
+	// So data is a map representing the paginated response!
+	// Let's check how PaginatedTicketsResponse is structured. It has `data` as a list of TicketResponse inside the outer `data` wrapper of ApiResponse?
+	// No! The handler code:
+	// return c.JSON(dto.PaginatedTicketsResponse{ Code: 200, Message: "Success", Data: ticketResponses, Total: count, ... })
+	// So the root JSON is the PaginatedTicketsResponse struct!
+	// Struct: PaginatedTicketsResponse has Code, Message, Data (slice), Total, TotalPages, Page, Limit.
+	// So listRes["data"] is indeed the slice! Let's make sure of this.
 	tickets := listRes["data"].([]interface{})
 	s.Len(tickets, 1)
 }
@@ -161,7 +171,7 @@ func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
 			"PATCH to status=%q returned non-200", newStatus)
 		var res map[string]interface{}
 		_ = json.NewDecoder(patchResp.Body).Decode(&res)
-		s.True(res["success"].(bool), "success=false for status=%q", newStatus)
+		s.Equal(float64(200), res["code"])
 		return res["data"].(map[string]interface{})
 	}
 
@@ -374,7 +384,7 @@ func (s *TicketIntegrationTestSuite) TestValidation_PhoneOptional() {
 
 	var res map[string]interface{}
 	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Equal(float64(201), res["code"])
 	data := res["data"].(map[string]interface{})
 	s.Equal("", data["customer_phone"])
 }

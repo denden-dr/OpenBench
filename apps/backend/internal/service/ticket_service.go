@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"regexp"
 	"strings"
 
@@ -10,13 +11,14 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/denden-dr/openbench/apps/backend/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 )
 
 type TicketService interface {
 	CreateTicket(ctx context.Context, req *dto.CreateTicketRequest) (*dto.TicketResponse, error)
 	GetTicket(ctx context.Context, id string) (*dto.TicketResponse, error)
 	UpdateTicket(ctx context.Context, id string, req *dto.UpdateTicketRequest) (*dto.TicketResponse, error)
-	ListTickets(ctx context.Context) ([]dto.TicketResponse, error)
+	ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResponse, error)
 	DeleteTicket(ctx context.Context, id string) error
 	GetPublicTicket(ctx context.Context, id string) (*dto.PublicTicketResponse, error)
 	TrackPublicTicket(ctx context.Context, req *dto.PublicTrackRequest) (string, error)
@@ -132,9 +134,58 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 	return s.mapToResponse(ticket), nil
 }
 
-func (s *ticketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, error) {
-	tickets, err := s.repo.List(ctx)
-	if err != nil {
+func (s *ticketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResponse, error) {
+	status = strings.TrimSpace(status)
+	if status != "" && status != "all" {
+		validStatuses := map[string]bool{
+			"service_in":           true,
+			"on_process":           true,
+			"waiting_confirmation": true,
+			"cancelled":            true,
+			"fixed":                true,
+			"picked_up":            true,
+		}
+		if !validStatuses[status] {
+			return nil, ErrInvalidStatus
+		}
+	}
+
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+
+	var total int64
+	var tickets []model.Ticket
+	var countsMap map[string]int64
+
+	g, ctxGroup := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		total, err = s.repo.CountPaginated(ctxGroup, search, status)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		tickets, err = s.repo.ListPaginated(ctxGroup, search, status, limit, offset)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		countsMap, err = s.repo.GetStatusCounts(ctxGroup, search)
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
 		return nil, MapRepositoryError(err)
 	}
 
@@ -142,7 +193,34 @@ func (s *ticketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, 
 	for i, t := range tickets {
 		responses[i] = *s.mapToResponse(&t)
 	}
-	return responses, nil
+
+	allStatuses := []string{"service_in", "on_process", "waiting_confirmation", "cancelled", "fixed", "picked_up"}
+	resCounts := make(map[string]int64)
+	var activeSum int64
+	for _, st := range allStatuses {
+		cnt := countsMap[st]
+		resCounts[st] = cnt
+		if st != "picked_up" {
+			activeSum += cnt
+		}
+	}
+	resCounts["all"] = activeSum
+
+	totalPages := int64(math.Ceil(float64(total) / float64(limit)))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	return &dto.PaginatedTicketsResponse{
+		Code:         200,
+		Message:      "Success",
+		Data:         responses,
+		Total:        total,
+		TotalPages:   totalPages,
+		Page:         page,
+		Limit:        limit,
+		StatusCounts: resCounts,
+	}, nil
 }
 
 func (s *ticketService) DeleteTicket(ctx context.Context, id string) error {

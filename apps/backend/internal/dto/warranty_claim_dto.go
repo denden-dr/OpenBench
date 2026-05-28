@@ -30,3 +30,13 @@ type ClaimCreationResult struct {
 	Claim  WarrantyClaimResponse `json:"claim"`
 	Ticket *TicketResponse       `json:"ticket,omitempty"`
 }
+
+type PaginatedWarrantyClaimsResponse struct {
+	Code       int                      `json:"code"`
+	Message    string                   `json:"message"`
+	Data       []*WarrantyClaimResponse `json:"data"`
+	Total      int64                    `json:"total"`
+	TotalPages int64                    `json:"total_pages"`
+	Page       int                      `json:"page"`
+	Limit      int                      `json:"limit"`
+}

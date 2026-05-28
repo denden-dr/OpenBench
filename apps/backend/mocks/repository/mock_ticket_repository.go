@@ -82,6 +82,64 @@ func (_c *MockTicketRepository_BeginTx_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// CountPaginated provides a mock function with given fields: ctx, search, status
+func (_m *MockTicketRepository) CountPaginated(ctx context.Context, search string, status string) (int64, error) {
+	ret := _m.Called(ctx, search, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountPaginated")
+	}
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (int64, error)); ok {
+		return rf(ctx, search, status)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) int64); ok {
+		r0 = rf(ctx, search, status)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, search, status)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTicketRepository_CountPaginated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountPaginated'
+type MockTicketRepository_CountPaginated_Call struct {
+	*mock.Call
+}
+
+// CountPaginated is a helper method to define mock.On call
+//   - ctx context.Context
+//   - search string
+//   - status string
+func (_e *MockTicketRepository_Expecter) CountPaginated(ctx interface{}, search interface{}, status interface{}) *MockTicketRepository_CountPaginated_Call {
+	return &MockTicketRepository_CountPaginated_Call{Call: _e.mock.On("CountPaginated", ctx, search, status)}
+}
+
+func (_c *MockTicketRepository_CountPaginated_Call) Run(run func(ctx context.Context, search string, status string)) *MockTicketRepository_CountPaginated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockTicketRepository_CountPaginated_Call) Return(_a0 int64, _a1 error) *MockTicketRepository_CountPaginated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTicketRepository_CountPaginated_Call) RunAndReturn(run func(context.Context, string, string) (int64, error)) *MockTicketRepository_CountPaginated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function with given fields: ctx, ticket
 func (_m *MockTicketRepository) Create(ctx context.Context, ticket *model.Ticket) error {
 	ret := _m.Called(ctx, ticket)
@@ -461,6 +519,65 @@ func (_c *MockTicketRepository_GetByShortID_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// GetStatusCounts provides a mock function with given fields: ctx, search
+func (_m *MockTicketRepository) GetStatusCounts(ctx context.Context, search string) (map[string]int64, error) {
+	ret := _m.Called(ctx, search)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStatusCounts")
+	}
+
+	var r0 map[string]int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (map[string]int64, error)); ok {
+		return rf(ctx, search)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) map[string]int64); ok {
+		r0 = rf(ctx, search)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]int64)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, search)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTicketRepository_GetStatusCounts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStatusCounts'
+type MockTicketRepository_GetStatusCounts_Call struct {
+	*mock.Call
+}
+
+// GetStatusCounts is a helper method to define mock.On call
+//   - ctx context.Context
+//   - search string
+func (_e *MockTicketRepository_Expecter) GetStatusCounts(ctx interface{}, search interface{}) *MockTicketRepository_GetStatusCounts_Call {
+	return &MockTicketRepository_GetStatusCounts_Call{Call: _e.mock.On("GetStatusCounts", ctx, search)}
+}
+
+func (_c *MockTicketRepository_GetStatusCounts_Call) Run(run func(ctx context.Context, search string)) *MockTicketRepository_GetStatusCounts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTicketRepository_GetStatusCounts_Call) Return(_a0 map[string]int64, _a1 error) *MockTicketRepository_GetStatusCounts_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTicketRepository_GetStatusCounts_Call) RunAndReturn(run func(context.Context, string) (map[string]int64, error)) *MockTicketRepository_GetStatusCounts_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function with given fields: ctx
 func (_m *MockTicketRepository) List(ctx context.Context) ([]model.Ticket, error) {
 	ret := _m.Called(ctx)
@@ -515,6 +632,68 @@ func (_c *MockTicketRepository_List_Call) Return(_a0 []model.Ticket, _a1 error) 
 }
 
 func (_c *MockTicketRepository_List_Call) RunAndReturn(run func(context.Context) ([]model.Ticket, error)) *MockTicketRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListPaginated provides a mock function with given fields: ctx, search, status, limit, offset
+func (_m *MockTicketRepository) ListPaginated(ctx context.Context, search string, status string, limit int, offset int) ([]model.Ticket, error) {
+	ret := _m.Called(ctx, search, status, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPaginated")
+	}
+
+	var r0 []model.Ticket
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) ([]model.Ticket, error)); ok {
+		return rf(ctx, search, status, limit, offset)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) []model.Ticket); ok {
+		r0 = rf(ctx, search, status, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.Ticket)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, int, int) error); ok {
+		r1 = rf(ctx, search, status, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTicketRepository_ListPaginated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPaginated'
+type MockTicketRepository_ListPaginated_Call struct {
+	*mock.Call
+}
+
+// ListPaginated is a helper method to define mock.On call
+//   - ctx context.Context
+//   - search string
+//   - status string
+//   - limit int
+//   - offset int
+func (_e *MockTicketRepository_Expecter) ListPaginated(ctx interface{}, search interface{}, status interface{}, limit interface{}, offset interface{}) *MockTicketRepository_ListPaginated_Call {
+	return &MockTicketRepository_ListPaginated_Call{Call: _e.mock.On("ListPaginated", ctx, search, status, limit, offset)}
+}
+
+func (_c *MockTicketRepository_ListPaginated_Call) Run(run func(ctx context.Context, search string, status string, limit int, offset int)) *MockTicketRepository_ListPaginated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(int), args[4].(int))
+	})
+	return _c
+}
+
+func (_c *MockTicketRepository_ListPaginated_Call) Return(_a0 []model.Ticket, _a1 error) *MockTicketRepository_ListPaginated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTicketRepository_ListPaginated_Call) RunAndReturn(run func(context.Context, string, string, int, int) ([]model.Ticket, error)) *MockTicketRepository_ListPaginated_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -82,6 +82,63 @@ func (_c *MockWarrantyClaimRepository_BeginTx_Call) RunAndReturn(run func(contex
 	return _c
 }
 
+// CountPaginated provides a mock function with given fields: ctx, status
+func (_m *MockWarrantyClaimRepository) CountPaginated(ctx context.Context, status string) (int64, error) {
+	ret := _m.Called(ctx, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountPaginated")
+	}
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (int64, error)); ok {
+		return rf(ctx, status)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) int64); ok {
+		r0 = rf(ctx, status)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, status)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockWarrantyClaimRepository_CountPaginated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountPaginated'
+type MockWarrantyClaimRepository_CountPaginated_Call struct {
+	*mock.Call
+}
+
+// CountPaginated is a helper method to define mock.On call
+//   - ctx context.Context
+//   - status string
+func (_e *MockWarrantyClaimRepository_Expecter) CountPaginated(ctx interface{}, status interface{}) *MockWarrantyClaimRepository_CountPaginated_Call {
+	return &MockWarrantyClaimRepository_CountPaginated_Call{Call: _e.mock.On("CountPaginated", ctx, status)}
+}
+
+func (_c *MockWarrantyClaimRepository_CountPaginated_Call) Run(run func(ctx context.Context, status string)) *MockWarrantyClaimRepository_CountPaginated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockWarrantyClaimRepository_CountPaginated_Call) Return(_a0 int64, _a1 error) *MockWarrantyClaimRepository_CountPaginated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockWarrantyClaimRepository_CountPaginated_Call) RunAndReturn(run func(context.Context, string) (int64, error)) *MockWarrantyClaimRepository_CountPaginated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function with given fields: ctx, claim
 func (_m *MockWarrantyClaimRepository) Create(ctx context.Context, claim *model.WarrantyClaim) error {
 	ret := _m.Called(ctx, claim)
@@ -362,6 +419,67 @@ func (_c *MockWarrantyClaimRepository_List_Call) Return(_a0 []*model.WarrantyCla
 }
 
 func (_c *MockWarrantyClaimRepository_List_Call) RunAndReturn(run func(context.Context, string) ([]*model.WarrantyClaim, error)) *MockWarrantyClaimRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListPaginated provides a mock function with given fields: ctx, status, limit, offset
+func (_m *MockWarrantyClaimRepository) ListPaginated(ctx context.Context, status string, limit int, offset int) ([]*model.WarrantyClaim, error) {
+	ret := _m.Called(ctx, status, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPaginated")
+	}
+
+	var r0 []*model.WarrantyClaim
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) ([]*model.WarrantyClaim, error)); ok {
+		return rf(ctx, status, limit, offset)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) []*model.WarrantyClaim); ok {
+		r0 = rf(ctx, status, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.WarrantyClaim)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
+		r1 = rf(ctx, status, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockWarrantyClaimRepository_ListPaginated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPaginated'
+type MockWarrantyClaimRepository_ListPaginated_Call struct {
+	*mock.Call
+}
+
+// ListPaginated is a helper method to define mock.On call
+//   - ctx context.Context
+//   - status string
+//   - limit int
+//   - offset int
+func (_e *MockWarrantyClaimRepository_Expecter) ListPaginated(ctx interface{}, status interface{}, limit interface{}, offset interface{}) *MockWarrantyClaimRepository_ListPaginated_Call {
+	return &MockWarrantyClaimRepository_ListPaginated_Call{Call: _e.mock.On("ListPaginated", ctx, status, limit, offset)}
+}
+
+func (_c *MockWarrantyClaimRepository_ListPaginated_Call) Run(run func(ctx context.Context, status string, limit int, offset int)) *MockWarrantyClaimRepository_ListPaginated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(int), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockWarrantyClaimRepository_ListPaginated_Call) Return(_a0 []*model.WarrantyClaim, _a1 error) *MockWarrantyClaimRepository_ListPaginated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockWarrantyClaimRepository_ListPaginated_Call) RunAndReturn(run func(context.Context, string, int, int) ([]*model.WarrantyClaim, error)) *MockWarrantyClaimRepository_ListPaginated_Call {
 	_c.Call.Return(run)
 	return _c
 }

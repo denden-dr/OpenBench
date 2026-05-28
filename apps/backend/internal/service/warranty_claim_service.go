@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/dto"
@@ -16,7 +18,7 @@ import (
 
 type WarrantyClaimService interface {
 	CreateClaim(ctx context.Context, req *dto.CreateWarrantyClaimRequest) (*dto.WarrantyClaimResponse, error)
-	ListClaims(ctx context.Context, status string) ([]*dto.WarrantyClaimResponse, error)
+	ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResponse, error)
 	ApproveClaim(ctx context.Context, id string) (*dto.ClaimCreationResult, error)
 	VoidClaim(ctx context.Context, id string, req *dto.VoidWarrantyClaimRequest) (*dto.ClaimCreationResult, error)
 }
@@ -84,14 +86,54 @@ func (s *warrantyClaimService) CreateClaim(ctx context.Context, req *dto.CreateW
 	return s.mapToResponse(claim, ticket), nil
 }
 
-func (s *warrantyClaimService) ListClaims(ctx context.Context, status string) ([]*dto.WarrantyClaimResponse, error) {
-	claims, err := s.claimRepo.List(ctx, status)
+func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResponse, error) {
+	status = strings.TrimSpace(status)
+	if status != "" && status != "all" {
+		validStatuses := map[string]bool{
+			"waiting_inspection": true,
+			"approved":           true,
+			"void":               true,
+		}
+		if !validStatuses[status] {
+			return nil, ErrInvalidStatus
+		}
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+
+	total, err := s.claimRepo.CountPaginated(ctx, status)
 	if err != nil {
 		return nil, MapRepositoryError(err)
 	}
 
+	claims, err := s.claimRepo.ListPaginated(ctx, status, limit, offset)
+	if err != nil {
+		return nil, MapRepositoryError(err)
+	}
+
+	totalPages := int64(math.Ceil(float64(total) / float64(limit)))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
 	if len(claims) == 0 {
-		return []*dto.WarrantyClaimResponse{}, nil
+		return &dto.PaginatedWarrantyClaimsResponse{
+			Code:       200,
+			Message:    "Success",
+			Data:       []*dto.WarrantyClaimResponse{},
+			Total:      total,
+			TotalPages: totalPages,
+			Page:       page,
+			Limit:      limit,
+		}, nil
 	}
 
 	ticketIDs := make([]string, len(claims))
@@ -118,7 +160,16 @@ func (s *warrantyClaimService) ListClaims(ctx context.Context, status string) ([
 		}
 		responses[i] = s.mapToResponse(c, ticket)
 	}
-	return responses, nil
+
+	return &dto.PaginatedWarrantyClaimsResponse{
+		Code:       200,
+		Message:    "Success",
+		Data:       responses,
+		Total:      total,
+		TotalPages: totalPages,
+		Page:       page,
+		Limit:      limit,
+	}, nil
 }
 
 func (s *warrantyClaimService) ApproveClaim(ctx context.Context, id string) (*dto.ClaimCreationResult, error) {

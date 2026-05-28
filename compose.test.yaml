@@ -35,6 +35,8 @@ services:
       - backend
     environment:
       BACKEND_URL: http://backend:3000
+      ORIGIN: http://localhost:5173
+      CSRF_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
 
 volumes:
   postgres_data:

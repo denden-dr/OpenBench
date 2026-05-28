@@ -27,11 +27,15 @@ type stubTx struct {
 	rolledBack bool
 }
 
-func (s *stubTx) Commit() error                                                               { s.committed = true; return nil }
-func (s *stubTx) Rollback() error                                                             { s.rolledBack = true; return nil }
-func (s *stubTx) GetContext(context.Context, interface{}, string, ...interface{}) error       { return nil }
-func (s *stubTx) ExecContext(context.Context, string, ...interface{}) (sql.Result, error)     { return &stubResult{}, nil }
-func (s *stubTx) QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row          { panic("stubTx.QueryRowxContext should not be called — repository methods are mocked") }
+func (s *stubTx) Commit() error                                                         { s.committed = true; return nil }
+func (s *stubTx) Rollback() error                                                       { s.rolledBack = true; return nil }
+func (s *stubTx) GetContext(context.Context, interface{}, string, ...interface{}) error { return nil }
+func (s *stubTx) ExecContext(context.Context, string, ...interface{}) (sql.Result, error) {
+	return &stubResult{}, nil
+}
+func (s *stubTx) QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row {
+	panic("stubTx.QueryRowxContext should not be called — repository methods are mocked")
+}
 
 func ptrInt(v int) *int {
 	return &v
@@ -639,14 +643,23 @@ func TestTicketService_UpdateTicket(t *testing.T) {
 func TestTicketService_ListTickets(t *testing.T) {
 	tests := []struct {
 		name           string
+		page           int
+		limit          int
+		search         string
+		status         string
 		setupMock      func(m *mockrepo.MockTicketRepository)
 		expectedError  error
-		expectedAssert func(t *testing.T, res []dto.TicketResponse)
+		expectedAssert func(t *testing.T, res *dto.PaginatedTicketsResponse)
 	}{
 		{
-			name: "success list tickets",
+			name:   "success list tickets",
+			page:   1,
+			limit:  20,
+			search: "",
+			status: "all",
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("List", mock.Anything).Return([]model.Ticket{
+				m.On("CountPaginated", mock.Anything, "", "all").Return(int64(2), nil).Once()
+				m.On("ListPaginated", mock.Anything, "", "all", 20, 0).Return([]model.Ticket{
 					{
 						ID:           "ticket-1",
 						CustomerName: "Andi",
@@ -656,28 +669,59 @@ func TestTicketService_ListTickets(t *testing.T) {
 						CustomerName: "Siti",
 					},
 				}, nil).Once()
+				m.On("GetStatusCounts", mock.Anything, "").Return(map[string]int64{
+					"service_in": 2,
+				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res []dto.TicketResponse) {
-				assert.Len(t, res, 2)
-				assert.Equal(t, "ticket-1", res[0].ID)
-				assert.Equal(t, "ticket-2", res[1].ID)
+			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResponse) {
+				assert.Equal(t, int64(2), res.Total)
+				assert.Equal(t, int64(1), res.TotalPages)
+				assert.Len(t, res.Data, 2)
+				assert.Equal(t, "ticket-1", res.Data[0].ID)
+				assert.Equal(t, "ticket-2", res.Data[1].ID)
+				assert.Equal(t, int64(2), res.StatusCounts["all"])
+				assert.Equal(t, int64(2), res.StatusCounts["service_in"])
 			},
 		},
 		{
-			name: "success empty list",
+			name:   "success empty list",
+			page:   1,
+			limit:  20,
+			search: "",
+			status: "all",
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("List", mock.Anything).Return([]model.Ticket{}, nil).Once()
+				m.On("CountPaginated", mock.Anything, "", "all").Return(int64(0), nil).Once()
+				m.On("ListPaginated", mock.Anything, "", "all", 20, 0).Return([]model.Ticket{}, nil).Once()
+				m.On("GetStatusCounts", mock.Anything, "").Return(map[string]int64{}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res []dto.TicketResponse) {
-				assert.Len(t, res, 0)
+			expectedAssert: func(t *testing.T, res *dto.PaginatedTicketsResponse) {
+				assert.Equal(t, int64(0), res.Total)
+				assert.Len(t, res.Data, 0)
 			},
 		},
 		{
-			name: "repository list error",
+			name:   "invalid status",
+			page:   1,
+			limit:  20,
+			search: "",
+			status: "invalid_status",
 			setupMock: func(m *mockrepo.MockTicketRepository) {
-				m.On("List", mock.Anything).Return(nil, errors.New("list db error")).Once()
+				// No calls to repo since status validation happens first in service
+			},
+			expectedError: ErrInvalidStatus,
+		},
+		{
+			name:   "repository count error",
+			page:   1,
+			limit:  20,
+			search: "",
+			status: "all",
+			setupMock: func(m *mockrepo.MockTicketRepository) {
+				m.On("CountPaginated", mock.Anything, "", "all").Return(int64(0), errors.New("count db error")).Once()
+				m.On("ListPaginated", mock.Anything, "", "all", 20, 0).Return([]model.Ticket{}, nil).Maybe()
+				m.On("GetStatusCounts", mock.Anything, "").Return(map[string]int64{}, nil).Maybe()
 			},
 			expectedError: ErrInternal,
 		},
@@ -689,7 +733,7 @@ func TestTicketService_ListTickets(t *testing.T) {
 			tt.setupMock(mockRepo)
 
 			s := NewTicketService(mockRepo)
-			res, err := s.ListTickets(context.Background())
+			res, err := s.ListTickets(context.Background(), tt.page, tt.limit, tt.search, tt.status)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -921,4 +965,3 @@ func TestNormalizePhone(t *testing.T) {
 		}
 	}
 }
-

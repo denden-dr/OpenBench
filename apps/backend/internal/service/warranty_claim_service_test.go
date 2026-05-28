@@ -283,15 +283,20 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 	tests := []struct {
 		name           string
 		status         string
+		page           int
+		limit          int
 		setupMock      func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository)
 		expectedError  error
-		expectedAssert func(t *testing.T, res []*dto.WarrantyClaimResponse)
+		expectedAssert func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse)
 	}{
 		{
 			name:   "success list all claims",
-			status: "",
+			status: "all",
+			page:   1,
+			limit:  10,
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mClaim.On("List", mock.Anything, "").Return([]*model.WarrantyClaim{
+				mClaim.On("CountPaginated", mock.Anything, "all").Return(int64(2), nil).Once()
+				mClaim.On("ListPaginated", mock.Anything, "all", 10, 0).Return([]*model.WarrantyClaim{
 					{
 						ID:       "claim-1",
 						TicketID: "ticket-1",
@@ -319,21 +324,26 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res []*dto.WarrantyClaimResponse) {
-				assert.Len(t, res, 2)
-				assert.Equal(t, "claim-1", res[0].ID)
-				assert.Equal(t, "waiting_inspection", res[0].Status)
-				assert.Equal(t, "Budi", res[0].OriginalTicket.CustomerName)
-				assert.Equal(t, "claim-2", res[1].ID)
-				assert.Equal(t, "approved", res[1].Status)
-				assert.Equal(t, "Andi", res[1].OriginalTicket.CustomerName)
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+				assert.Equal(t, int64(2), res.Total)
+				assert.Equal(t, int64(1), res.TotalPages)
+				assert.Len(t, res.Data, 2)
+				assert.Equal(t, "claim-1", res.Data[0].ID)
+				assert.Equal(t, "waiting_inspection", res.Data[0].Status)
+				assert.Equal(t, "Budi", res.Data[0].OriginalTicket.CustomerName)
+				assert.Equal(t, "claim-2", res.Data[1].ID)
+				assert.Equal(t, "approved", res.Data[1].Status)
+				assert.Equal(t, "Andi", res.Data[1].OriginalTicket.CustomerName)
 			},
 		},
 		{
 			name:   "success filter by status",
 			status: "waiting_inspection",
+			page:   1,
+			limit:  10,
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mClaim.On("List", mock.Anything, "waiting_inspection").Return([]*model.WarrantyClaim{
+				mClaim.On("CountPaginated", mock.Anything, "waiting_inspection").Return(int64(1), nil).Once()
+				mClaim.On("ListPaginated", mock.Anything, "waiting_inspection", 10, 0).Return([]*model.WarrantyClaim{
 					{
 						ID:       "claim-1",
 						TicketID: "ticket-1",
@@ -349,43 +359,44 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 				}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res []*dto.WarrantyClaimResponse) {
-				assert.Len(t, res, 1)
-				assert.Equal(t, "waiting_inspection", res[0].Status)
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+				assert.Equal(t, int64(1), res.Total)
+				assert.Len(t, res.Data, 1)
+				assert.Equal(t, "waiting_inspection", res.Data[0].Status)
 			},
 		},
 		{
 			name:   "success empty list",
-			status: "",
+			status: "all",
+			page:   1,
+			limit:  10,
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mClaim.On("List", mock.Anything, "").Return([]*model.WarrantyClaim{}, nil).Once()
+				mClaim.On("CountPaginated", mock.Anything, "all").Return(int64(0), nil).Once()
+				mClaim.On("ListPaginated", mock.Anything, "all", 10, 0).Return([]*model.WarrantyClaim{}, nil).Once()
 			},
 			expectedError: nil,
-			expectedAssert: func(t *testing.T, res []*dto.WarrantyClaimResponse) {
-				assert.Len(t, res, 0)
+			expectedAssert: func(t *testing.T, res *dto.PaginatedWarrantyClaimsResponse) {
+				assert.Equal(t, int64(0), res.Total)
+				assert.Len(t, res.Data, 0)
 			},
 		},
 		{
-			name:   "repository list error",
-			status: "",
+			name:   "invalid status value",
+			status: "invalid_status",
+			page:   1,
+			limit:  10,
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mClaim.On("List", mock.Anything, "").Return(nil, errors.New("db error")).Once()
+				// Status validation happens first, no calls to database
 			},
-			expectedError: ErrInternal,
+			expectedError: ErrInvalidStatus,
 		},
 		{
-			name:   "ticket enrichment error",
-			status: "",
+			name:   "repository count error",
+			status: "all",
+			page:   1,
+			limit:  10,
 			setupMock: func(mClaim *mockrepo.MockWarrantyClaimRepository, mTicket *mockrepo.MockTicketRepository) {
-				mClaim.On("List", mock.Anything, "").Return([]*model.WarrantyClaim{
-					{
-						ID:       "claim-1",
-						TicketID: "ticket-1",
-						Issue:    "Layar rusak",
-						Status:   model.ClaimWaitingInspection,
-					},
-				}, nil).Once()
-				mTicket.On("GetByIDs", mock.Anything, []string{"ticket-1"}).Return(nil, errors.New("db error")).Once()
+				mClaim.On("CountPaginated", mock.Anything, "all").Return(int64(0), errors.New("db error")).Once()
 			},
 			expectedError: ErrInternal,
 		},
@@ -398,7 +409,7 @@ func TestWarrantyClaimService_ListClaims(t *testing.T) {
 			tt.setupMock(mockClaimRepo, mockTicketRepo)
 
 			s := NewWarrantyClaimService(mockClaimRepo, mockTicketRepo)
-			res, err := s.ListClaims(context.Background(), tt.status)
+			res, err := s.ListClaims(context.Background(), tt.status, tt.page, tt.limit)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
