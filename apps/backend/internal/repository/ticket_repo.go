@@ -273,6 +273,22 @@ func (r *sqlTicketRepository) GetByIDs(ctx context.Context, ids []string) ([]mod
 	return tickets, nil
 }
 
+const ticketSearchExpr = `lower(
+	COALESCE(id::text, '') || ' ' ||
+	COALESCE(customer_name, '') || ' ' ||
+	COALESCE(customer_phone, '') || ' ' ||
+	COALESCE(brand, '') || ' ' ||
+	COALESCE(model, '') || ' ' ||
+	COALESCE(issue, '')
+)`
+
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
 func (r *sqlTicketRepository) ListPaginated(ctx context.Context, search string, status string, limit int, offset int) ([]model.Ticket, error) {
 	var tickets []model.Ticket
 	query := `
@@ -283,31 +299,25 @@ func (r *sqlTicketRepository) ListPaginated(ctx context.Context, search string, 
 		WHERE 1=1
 	`
 	args := []interface{}{}
-	paramIdx := 1
 
 	if search != "" {
-		query += fmt.Sprintf(` AND lower(
-			COALESCE(id::text, '') || ' ' ||
-			COALESCE(customer_name, '') || ' ' ||
-			COALESCE(customer_phone, '') || ' ' ||
-			COALESCE(brand, '') || ' ' ||
-			COALESCE(model, '') || ' ' ||
-			COALESCE(issue, '')
-		) LIKE $%d`, paramIdx)
-		args = append(args, "%"+strings.ToLower(search)+"%")
-		paramIdx++
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
 	}
 
 	if status == "all" || status == "" {
 		query += ` AND status != 'picked_up'`
 	} else {
-		query += fmt.Sprintf(` AND status = $%d`, paramIdx)
 		args = append(args, status)
-		paramIdx++
+		query += fmt.Sprintf(` AND status = $%d`, len(args))
 	}
 
-	query += fmt.Sprintf(` ORDER BY entry_date DESC, id DESC LIMIT $%d OFFSET $%d`, paramIdx, paramIdx+1)
-	args = append(args, limit, offset)
+	args = append(args, limit)
+	limitPlaceholder := len(args)
+	args = append(args, offset)
+	offsetPlaceholder := len(args)
+
+	query += fmt.Sprintf(` ORDER BY entry_date DESC, id DESC LIMIT $%d OFFSET $%d`, limitPlaceholder, offsetPlaceholder)
 
 	err := r.db.SelectContext(ctx, &tickets, query, args...)
 	if err != nil {
@@ -324,27 +334,17 @@ func (r *sqlTicketRepository) CountPaginated(ctx context.Context, search string,
 		WHERE 1=1
 	`
 	args := []interface{}{}
-	paramIdx := 1
 
 	if search != "" {
-		query += fmt.Sprintf(` AND lower(
-			COALESCE(id::text, '') || ' ' ||
-			COALESCE(customer_name, '') || ' ' ||
-			COALESCE(customer_phone, '') || ' ' ||
-			COALESCE(brand, '') || ' ' ||
-			COALESCE(model, '') || ' ' ||
-			COALESCE(issue, '')
-		) LIKE $%d`, paramIdx)
-		args = append(args, "%"+strings.ToLower(search)+"%")
-		paramIdx++
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
 	}
 
 	if status == "all" || status == "" {
 		query += ` AND status != 'picked_up'`
 	} else {
-		query += fmt.Sprintf(` AND status = $%d`, paramIdx)
 		args = append(args, status)
-		paramIdx++
+		query += fmt.Sprintf(` AND status = $%d`, len(args))
 	}
 
 	err := r.db.GetContext(ctx, &count, query, args...)
@@ -354,6 +354,9 @@ func (r *sqlTicketRepository) CountPaginated(ctx context.Context, search string,
 	return count, nil
 }
 
+// GetStatusCounts returns the counts of tickets grouped by status matching the search query.
+// It deliberately does not accept a status filter because the frontend needs to show counts
+// for all status filters concurrently (e.g. tab badge numbers) regardless of the currently selected status tab.
 func (r *sqlTicketRepository) GetStatusCounts(ctx context.Context, search string) (map[string]int64, error) {
 	query := `
 		SELECT status, COUNT(*)
@@ -361,19 +364,10 @@ func (r *sqlTicketRepository) GetStatusCounts(ctx context.Context, search string
 		WHERE 1=1
 	`
 	args := []interface{}{}
-	paramIdx := 1
 
 	if search != "" {
-		query += fmt.Sprintf(` AND lower(
-			COALESCE(id::text, '') || ' ' ||
-			COALESCE(customer_name, '') || ' ' ||
-			COALESCE(customer_phone, '') || ' ' ||
-			COALESCE(brand, '') || ' ' ||
-			COALESCE(model, '') || ' ' ||
-			COALESCE(issue, '')
-		) LIKE $%d`, paramIdx)
-		args = append(args, "%"+strings.ToLower(search)+"%")
-		paramIdx++
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
 	}
 
 	query += ` GROUP BY status`
