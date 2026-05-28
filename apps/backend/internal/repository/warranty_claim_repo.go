@@ -12,13 +12,14 @@ import (
 // Compile-time check that *sqlx.Tx satisfies Transaction.
 var _ Transaction = (*sqlx.Tx)(nil)
 
-
 type WarrantyClaimRepository interface {
 	BeginTx(ctx context.Context) (Transaction, error)
 	Create(ctx context.Context, claim *model.WarrantyClaim) error
 	GetByID(ctx context.Context, id string) (*model.WarrantyClaim, error)
 	GetByIDForUpdateTx(ctx context.Context, tx Transaction, id string) (*model.WarrantyClaim, error)
 	List(ctx context.Context, status string) ([]*model.WarrantyClaim, error)
+	ListPaginated(ctx context.Context, status string, limit int, offset int) ([]*model.WarrantyClaim, error)
+	CountPaginated(ctx context.Context, status string) (int64, error)
 	UpdateTx(ctx context.Context, tx Transaction, claim *model.WarrantyClaim) error
 	GetOpenClaimByTicketID(ctx context.Context, ticketID string) (*model.WarrantyClaim, error)
 }
@@ -146,4 +147,54 @@ func (r *sqlWarrantyClaimRepository) UpdateTx(ctx context.Context, tx Transactio
 		return MapDatabaseError(err)
 	}
 	return nil
+}
+
+func (r *sqlWarrantyClaimRepository) ListPaginated(ctx context.Context, status string, limit int, offset int) ([]*model.WarrantyClaim, error) {
+	var claims []*model.WarrantyClaim
+	var err error
+	if status != "" && status != "all" {
+		query := `
+			SELECT id, ticket_id, claim_ticket_id, issue, additional_description, status, void_reason, inspected_at, created_at, updated_at
+			FROM warranty_claims
+			WHERE status = $1
+			ORDER BY created_at DESC, id DESC
+			LIMIT $2 OFFSET $3
+		`
+		err = r.db.SelectContext(ctx, &claims, query, status, limit, offset)
+	} else {
+		query := `
+			SELECT id, ticket_id, claim_ticket_id, issue, additional_description, status, void_reason, inspected_at, created_at, updated_at
+			FROM warranty_claims
+			ORDER BY created_at DESC, id DESC
+			LIMIT $1 OFFSET $2
+		`
+		err = r.db.SelectContext(ctx, &claims, query, limit, offset)
+	}
+	if err != nil {
+		return nil, MapDatabaseError(err)
+	}
+	return claims, nil
+}
+
+func (r *sqlWarrantyClaimRepository) CountPaginated(ctx context.Context, status string) (int64, error) {
+	var count int64
+	var err error
+	if status != "" && status != "all" {
+		query := `
+			SELECT COUNT(*)
+			FROM warranty_claims
+			WHERE status = $1
+		`
+		err = r.db.GetContext(ctx, &count, query, status)
+	} else {
+		query := `
+			SELECT COUNT(*)
+			FROM warranty_claims
+		`
+		err = r.db.GetContext(ctx, &count, query)
+	}
+	if err != nil {
+		return 0, MapDatabaseError(err)
+	}
+	return count, nil
 }

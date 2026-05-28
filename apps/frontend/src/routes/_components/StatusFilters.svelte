@@ -40,6 +40,7 @@
       badgeActiveClass: "bg-white/20 text-white",
       badgeInactiveClass: "bg-emerald-100/80 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300"
     },
+
     {
       value: "cancelled",
       label: "Dibatalkan",
@@ -54,26 +55,24 @@
 <div class="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
   {#each statuses as status}
     {@const count = statusCounts[status.value] ?? 0}
-    {#if count > 0}
-      {@const isActive = selectedStatus === status.value}
-      <button
-        onclick={() => {
-          if (isActive) {
-            selectedStatus = "all";
-          } else {
-            selectedStatus = status.value;
-          }
-        }}
-        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer select-none active:scale-95 whitespace-nowrap
-          {isActive ? status.activeClass : status.inactiveClass}"
-      >
-        <span>{status.label}</span>
-        <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-colors duration-200
-          {isActive ? status.badgeActiveClass : status.badgeInactiveClass}">
-          {count}
-        </span>
-      </button>
-    {/if}
+    {@const isActive = selectedStatus === status.value}
+    <button
+      onclick={() => {
+        if (isActive) {
+          selectedStatus = "all";
+        } else {
+          selectedStatus = status.value;
+        }
+      }}
+      class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer select-none active:scale-95 whitespace-nowrap
+        {isActive ? status.activeClass : status.inactiveClass}"
+    >
+      <span>{status.label}</span>
+      <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-colors duration-200
+        {isActive ? status.badgeActiveClass : status.badgeInactiveClass}">
+        {count}
+      </span>
+    </button>
   {/each}
 </div>
 

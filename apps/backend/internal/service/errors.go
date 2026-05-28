@@ -47,16 +47,17 @@ var (
 	ErrNonPickedUpWithExitDate = NewAppError(400, "non-picked up ticket cannot have exit date")
 	ErrPickedUpMissingExitDate = NewAppError(400, "picked up ticket must have an exit date")
 	ErrInvalidStatusTransition = NewAppError(400, "invalid status transition")
+	ErrInvalidStatus           = NewAppError(400, "invalid status query parameter")
 
 	ErrDuplicate           = NewAppError(409, "resource already exists")
 	ErrDatabaseUnavailable = NewAppError(503, "database is currently unavailable")
 	ErrInternal            = NewAppError(500, "internal server error")
 
-	ErrWarrantyClaimNotFound   = NewAppError(404, "warranty claim not found")
-	ErrTicketNotPickedUp       = NewAppError(400, "ticket has not been picked up by customer")
-	ErrWarrantyExpired         = NewAppError(400, "warranty period has expired")
-	ErrClaimAlreadyDecided     = NewAppError(400, "warranty claim has already been approved or voided")
-	ErrDuplicateWarrantyClaim  = NewAppError(409, "ticket already has an open warranty claim")
+	ErrWarrantyClaimNotFound  = NewAppError(404, "warranty claim not found")
+	ErrTicketNotPickedUp      = NewAppError(400, "ticket has not been picked up by customer")
+	ErrWarrantyExpired        = NewAppError(400, "warranty period has expired")
+	ErrClaimAlreadyDecided    = NewAppError(400, "warranty claim has already been approved or voided")
+	ErrDuplicateWarrantyClaim = NewAppError(409, "ticket already has an open warranty claim")
 )
 
 // MapModelError maps model business rule errors to service AppErrors

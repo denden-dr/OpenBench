@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/model"
 	"github.com/jmoiron/sqlx"
@@ -21,6 +23,9 @@ type TicketRepository interface {
 	Update(ctx context.Context, ticket *model.Ticket) error
 	UpdateTx(ctx context.Context, tx Transaction, ticket *model.Ticket) error
 	List(ctx context.Context) ([]model.Ticket, error)
+	ListPaginated(ctx context.Context, search string, status string, limit int, offset int) ([]model.Ticket, error)
+	CountPaginated(ctx context.Context, search string, status string) (int64, error)
+	GetStatusCounts(ctx context.Context, search string) (map[string]int64, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -266,4 +271,124 @@ func (r *sqlTicketRepository) GetByIDs(ctx context.Context, ids []string) ([]mod
 		return nil, MapDatabaseError(err)
 	}
 	return tickets, nil
+}
+
+const ticketSearchExpr = `lower(
+	COALESCE(id::text, '') || ' ' ||
+	COALESCE(customer_name, '') || ' ' ||
+	COALESCE(customer_phone, '') || ' ' ||
+	COALESCE(brand, '') || ' ' ||
+	COALESCE(model, '') || ' ' ||
+	COALESCE(issue, '')
+)`
+
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
+func (r *sqlTicketRepository) ListPaginated(ctx context.Context, search string, status string, limit int, offset int) ([]model.Ticket, error) {
+	var tickets []model.Ticket
+	query := `
+		SELECT id, customer_name, customer_phone, customer_gender, brand, model, issue,
+		       additional_description, accessories, price, status, payment_status,
+		       warranty_days, entry_date, exit_date, is_warranty, parent_ticket_id
+		FROM tickets
+		WHERE 1=1
+	`
+	args := []interface{}{}
+
+	if search != "" {
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
+	}
+
+	if status == "all" || status == "" {
+		query += ` AND status != 'picked_up'`
+	} else {
+		args = append(args, status)
+		query += fmt.Sprintf(` AND status = $%d`, len(args))
+	}
+
+	args = append(args, limit)
+	limitPlaceholder := len(args)
+	args = append(args, offset)
+	offsetPlaceholder := len(args)
+
+	query += fmt.Sprintf(` ORDER BY entry_date DESC, id DESC LIMIT $%d OFFSET $%d`, limitPlaceholder, offsetPlaceholder)
+
+	err := r.db.SelectContext(ctx, &tickets, query, args...)
+	if err != nil {
+		return nil, MapDatabaseError(err)
+	}
+	return tickets, nil
+}
+
+func (r *sqlTicketRepository) CountPaginated(ctx context.Context, search string, status string) (int64, error) {
+	var count int64
+	query := `
+		SELECT COUNT(*)
+		FROM tickets
+		WHERE 1=1
+	`
+	args := []interface{}{}
+
+	if search != "" {
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
+	}
+
+	if status == "all" || status == "" {
+		query += ` AND status != 'picked_up'`
+	} else {
+		args = append(args, status)
+		query += fmt.Sprintf(` AND status = $%d`, len(args))
+	}
+
+	err := r.db.GetContext(ctx, &count, query, args...)
+	if err != nil {
+		return 0, MapDatabaseError(err)
+	}
+	return count, nil
+}
+
+// GetStatusCounts returns the counts of tickets grouped by status matching the search query.
+// It deliberately does not accept a status filter because the frontend needs to show counts
+// for all status filters concurrently (e.g. tab badge numbers) regardless of the currently selected status tab.
+func (r *sqlTicketRepository) GetStatusCounts(ctx context.Context, search string) (map[string]int64, error) {
+	query := `
+		SELECT status, COUNT(*)
+		FROM tickets
+		WHERE 1=1
+	`
+	args := []interface{}{}
+
+	if search != "" {
+		args = append(args, "%"+escapeLike(strings.ToLower(search))+"%")
+		query += fmt.Sprintf(` AND %s LIKE $%d`, ticketSearchExpr, len(args))
+	}
+
+	query += ` GROUP BY status`
+
+	rows, err := r.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, MapDatabaseError(err)
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int64)
+	for rows.Next() {
+		var status string
+		var count int64
+		if err := rows.Scan(&status, &count); err != nil {
+			return nil, MapDatabaseError(err)
+		}
+		counts[status] = count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, MapDatabaseError(err)
+	}
+	return counts, nil
 }

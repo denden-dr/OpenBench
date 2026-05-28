@@ -96,8 +96,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_Success() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(201), res["code"])
 
 	data := res["data"].(map[string]interface{})
 	s.NotEmpty(data["id"])
@@ -128,9 +128,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_NotPickedUp(
 	s.Require().Equal(http.StatusBadRequest, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.False(res["success"].(bool))
-	s.Equal("ticket has not been picked up by customer", res["error"])
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(400), res["status"])
+	s.Equal("ticket has not been picked up by customer", res["detail"])
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_Expired() {
@@ -159,9 +159,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_Expired() {
 	s.Require().Equal(http.StatusBadRequest, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.False(res["success"].(bool))
-	s.Equal("warranty period has expired", res["error"])
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(400), res["status"])
+	s.Equal("warranty period has expired", res["detail"])
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_Success() {
@@ -178,8 +178,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_Success() {
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(200), res["code"])
 
 	// Check claim updates
 	data := res["data"].(map[string]interface{})
@@ -229,8 +229,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_Success() {
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(200), res["code"])
 
 	// Check claim updates
 	data := res["data"].(map[string]interface{})
@@ -282,9 +282,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestCreateWarrantyClaim_Duplicate() 
 	s.Require().Equal(http.StatusConflict, resp2.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res)
-	s.False(res["success"].(bool))
-	s.Equal("ticket already has an open warranty claim", res["error"])
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res))
+	s.Equal(float64(409), res["status"])
+	s.Equal("ticket already has an open warranty claim", res["detail"])
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_AlreadyDecided() {
@@ -304,9 +304,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestApproveClaim_AlreadyDecided() {
 	s.Require().Equal(http.StatusBadRequest, resp2.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res)
-	s.False(res["success"].(bool))
-	s.Equal("warranty claim has already been approved or voided", res["error"])
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res))
+	s.Equal(float64(400), res["status"])
+	s.Equal("warranty claim has already been approved or voided", res["detail"])
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_AlreadyDecided() {
@@ -330,9 +330,9 @@ func (s *WarrantyClaimIntegrationTestSuite) TestVoidClaim_AlreadyDecided() {
 	s.Require().Equal(http.StatusBadRequest, resp2.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res)
-	s.False(res["success"].(bool))
-	s.Equal("warranty claim has already been approved or voided", res["error"])
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res))
+	s.Equal(float64(400), res["status"])
+	s.Equal("warranty claim has already been approved or voided", res["detail"])
 }
 
 func (s *WarrantyClaimIntegrationTestSuite) TestConcurrentApprove_RaceCondition() {
@@ -359,13 +359,13 @@ func (s *WarrantyClaimIntegrationTestSuite) TestConcurrentApprove_RaceCondition(
 			defer resp.Body.Close()
 
 			var res map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&res)
+			s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 
 			mu.Lock()
 			if resp.StatusCode == http.StatusOK {
 				successCount++
 			} else {
-				errMsg, _ := res["error"].(string)
+				errMsg, _ := res["detail"].(string)
 				errMessages = append(errMessages, errMsg)
 			}
 			mu.Unlock()
@@ -413,13 +413,13 @@ func (s *WarrantyClaimIntegrationTestSuite) TestConcurrentVoid_RaceCondition() {
 			defer resp.Body.Close()
 
 			var res map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&res)
+			s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 
 			mu.Lock()
 			if resp.StatusCode == http.StatusOK {
 				successCount++
 			} else {
-				errMsg, _ := res["error"].(string)
+				errMsg, _ := res["detail"].(string)
 				errMessages = append(errMessages, errMsg)
 			}
 			mu.Unlock()
@@ -470,13 +470,13 @@ func (s *WarrantyClaimIntegrationTestSuite) TestConcurrentApproveAndVoid_RaceCon
 			defer resp.Body.Close()
 
 			var res map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&res)
+			s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 
 			mu.Lock()
 			if resp.StatusCode == http.StatusOK {
 				successCount++
 			} else {
-				errMsg, _ := res["error"].(string)
+				errMsg, _ := res["detail"].(string)
 				errMessages = append(errMessages, errMsg)
 			}
 			mu.Unlock()
@@ -583,7 +583,7 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_CreateWarrantyClaim(
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var res1 map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res1))
 	data1 := res1["data"].(map[string]interface{})
 	id1 := data1["id"].(string)
 
@@ -597,7 +597,7 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_CreateWarrantyClaim(
 	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
 	data2 := res2["data"].(map[string]interface{})
 	id2 := data2["id"].(string)
 
@@ -624,8 +624,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_ApproveWarrantyClaim
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
 	var res1 map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res1)
-	s.True(res1["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res1))
+	s.Equal(float64(200), res1["code"])
 	data1 := res1["data"].(map[string]interface{})
 	claimData1 := data1["claim"].(map[string]interface{})
 	s.Equal("approved", claimData1["status"])
@@ -639,8 +639,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_ApproveWarrantyClaim
 	s.Require().Equal(http.StatusOK, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
-	s.True(res2["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
+	s.Equal(float64(200), res2["code"])
 	data2 := res2["data"].(map[string]interface{})
 	claimData2 := data2["claim"].(map[string]interface{})
 	s.Equal("approved", claimData2["status"])
@@ -666,8 +666,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_VoidWarrantyClaim() 
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
 	var res1 map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res1)
-	s.True(res1["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res1))
+	s.Equal(float64(200), res1["code"])
 	data1 := res1["data"].(map[string]interface{})
 	claimData1 := data1["claim"].(map[string]interface{})
 	s.Equal("void", claimData1["status"])
@@ -683,8 +683,8 @@ func (s *WarrantyClaimIntegrationTestSuite) TestIdempotency_VoidWarrantyClaim() 
 	s.Require().Equal(http.StatusOK, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
-	s.True(res2["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
+	s.Equal(float64(200), res2["code"])
 	data2 := res2["data"].(map[string]interface{})
 	claimData2 := data2["claim"].(map[string]interface{})
 	s.Equal("void", claimData2["status"])

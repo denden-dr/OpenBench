@@ -246,29 +246,29 @@ func (_c *MockTicketService_GetTicket_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
-// ListTickets provides a mock function with given fields: ctx
-func (_m *MockTicketService) ListTickets(ctx context.Context) ([]dto.TicketResponse, error) {
-	ret := _m.Called(ctx)
+// ListTickets provides a mock function with given fields: ctx, page, limit, search, status
+func (_m *MockTicketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResult, error) {
+	ret := _m.Called(ctx, page, limit, search, status)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListTickets")
 	}
 
-	var r0 []dto.TicketResponse
+	var r0 *dto.PaginatedTicketsResult
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]dto.TicketResponse, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResult, error)); ok {
+		return rf(ctx, page, limit, search, status)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) []dto.TicketResponse); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) *dto.PaginatedTicketsResult); ok {
+		r0 = rf(ctx, page, limit, search, status)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]dto.TicketResponse)
+			r0 = ret.Get(0).(*dto.PaginatedTicketsResult)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, int, int, string, string) error); ok {
+		r1 = rf(ctx, page, limit, search, status)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -283,23 +283,27 @@ type MockTicketService_ListTickets_Call struct {
 
 // ListTickets is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockTicketService_Expecter) ListTickets(ctx interface{}) *MockTicketService_ListTickets_Call {
-	return &MockTicketService_ListTickets_Call{Call: _e.mock.On("ListTickets", ctx)}
+//   - page int
+//   - limit int
+//   - search string
+//   - status string
+func (_e *MockTicketService_Expecter) ListTickets(ctx interface{}, page interface{}, limit interface{}, search interface{}, status interface{}) *MockTicketService_ListTickets_Call {
+	return &MockTicketService_ListTickets_Call{Call: _e.mock.On("ListTickets", ctx, page, limit, search, status)}
 }
 
-func (_c *MockTicketService_ListTickets_Call) Run(run func(ctx context.Context)) *MockTicketService_ListTickets_Call {
+func (_c *MockTicketService_ListTickets_Call) Run(run func(ctx context.Context, page int, limit int, search string, status string)) *MockTicketService_ListTickets_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
+		run(args[0].(context.Context), args[1].(int), args[2].(int), args[3].(string), args[4].(string))
 	})
 	return _c
 }
 
-func (_c *MockTicketService_ListTickets_Call) Return(_a0 []dto.TicketResponse, _a1 error) *MockTicketService_ListTickets_Call {
+func (_c *MockTicketService_ListTickets_Call) Return(_a0 *dto.PaginatedTicketsResult, _a1 error) *MockTicketService_ListTickets_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTicketService_ListTickets_Call) RunAndReturn(run func(context.Context) ([]dto.TicketResponse, error)) *MockTicketService_ListTickets_Call {
+func (_c *MockTicketService_ListTickets_Call) RunAndReturn(run func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResult, error)) *MockTicketService_ListTickets_Call {
 	_c.Call.Return(run)
 	return _c
 }

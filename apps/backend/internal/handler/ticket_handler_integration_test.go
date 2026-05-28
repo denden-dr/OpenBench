@@ -97,8 +97,8 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
-	s.True(createRes["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
+	s.Equal(float64(201), createRes["code"])
 	data := createRes["data"].(map[string]interface{})
 	s.NotEmpty(data["id"])
 	s.Equal("service_in", data["status"])
@@ -111,8 +111,9 @@ func (s *TicketIntegrationTestSuite) TestCreateAndListTicket() {
 	s.Require().Equal(http.StatusOK, respList.StatusCode)
 
 	var listRes map[string]interface{}
-	_ = json.NewDecoder(respList.Body).Decode(&listRes)
-	s.True(listRes["success"].(bool))
+	s.Require().NoError(json.NewDecoder(respList.Body).Decode(&listRes))
+	s.Equal(float64(200), listRes["code"])
+
 	tickets := listRes["data"].([]interface{})
 	s.Len(tickets, 1)
 }
@@ -144,7 +145,7 @@ func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	data := createRes["data"].(map[string]interface{})
 	id := data["id"].(string)
 	s.Equal("service_in", data["status"])
@@ -160,8 +161,8 @@ func (s *TicketIntegrationTestSuite) TestDashboardStatusFlow() {
 		s.Require().Equal(http.StatusOK, patchResp.StatusCode,
 			"PATCH to status=%q returned non-200", newStatus)
 		var res map[string]interface{}
-		_ = json.NewDecoder(patchResp.Body).Decode(&res)
-		s.True(res["success"].(bool), "success=false for status=%q", newStatus)
+		s.Require().NoError(json.NewDecoder(patchResp.Body).Decode(&res))
+		s.Equal(float64(200), res["code"])
 		return res["data"].(map[string]interface{})
 	}
 
@@ -210,7 +211,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	data := createRes["data"].(map[string]interface{})
 	id := data["id"].(string)
 
@@ -250,7 +251,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 		s.Require().Equal(http.StatusOK, respUpdate.StatusCode)
 
 		var updateRes map[string]interface{}
-		_ = json.NewDecoder(respUpdate.Body).Decode(&updateRes)
+		s.Require().NoError(json.NewDecoder(respUpdate.Body).Decode(&updateRes))
 		dataUpdate := updateRes["data"].(map[string]interface{})
 		s.Equal("picked_up", dataUpdate["status"])
 		s.Equal("paid", dataUpdate["payment_status"])
@@ -285,7 +286,7 @@ func (s *TicketIntegrationTestSuite) TestUpdateTicket() {
 	s.Require().Equal(http.StatusOK, respUpdatePrice.StatusCode)
 
 	var updatePriceRes map[string]interface{}
-	_ = json.NewDecoder(respUpdatePrice.Body).Decode(&updatePriceRes)
+	s.Require().NoError(json.NewDecoder(respUpdatePrice.Body).Decode(&updatePriceRes))
 	dataUpdatePrice := updatePriceRes["data"].(map[string]interface{})
 	priceVal, ok := dataUpdatePrice["price"].(string)
 	if ok {
@@ -315,7 +316,7 @@ func (s *TicketIntegrationTestSuite) TestDeleteTicket() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	data := createRes["data"].(map[string]interface{})
 	id := data["id"].(string)
 
@@ -373,8 +374,8 @@ func (s *TicketIntegrationTestSuite) TestValidation_PhoneOptional() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
-	s.True(res["success"].(bool))
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
+	s.Equal(float64(201), res["code"])
 	data := res["data"].(map[string]interface{})
 	s.Equal("", data["customer_phone"])
 }
@@ -399,7 +400,7 @@ func (s *TicketIntegrationTestSuite) TestInvalidStatusRejected() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	id := createRes["data"].(map[string]interface{})["id"].(string)
 
 	// Try patching with a legacy/invalid status — must be rejected with 400
@@ -435,7 +436,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	id := createRes["data"].(map[string]interface{})["id"].(string)
 
 	// 2. Try updating price to negative value - must return 400
@@ -566,7 +567,7 @@ func (s *TicketIntegrationTestSuite) TestBusinessValidationRules() {
 		s.Equal(http.StatusOK, patchResp.StatusCode)
 
 		var updateRes map[string]interface{}
-		_ = json.NewDecoder(patchResp.Body).Decode(&updateRes)
+		s.Require().NoError(json.NewDecoder(patchResp.Body).Decode(&updateRes))
 		data := updateRes["data"].(map[string]interface{})
 
 		s.Equal("picked_up", data["status"])
@@ -611,7 +612,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePOST() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var res1 map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res1)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res1))
 	data1 := res1["data"].(map[string]interface{})
 	id1 := data1["id"].(string)
 
@@ -625,7 +626,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePOST() {
 	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
 	data2 := res2["data"].(map[string]interface{})
 	id2 := data2["id"].(string)
 
@@ -637,7 +638,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePOST() {
 	s.Require().NoError(err)
 	defer respList.Body.Close()
 	var listRes map[string]interface{}
-	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	s.Require().NoError(json.NewDecoder(respList.Body).Decode(&listRes))
 	tickets := listRes["data"].([]interface{})
 	s.Len(tickets, 1)
 }
@@ -659,7 +660,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePATCH() {
 	s.Require().NoError(err)
 	defer resp.Body.Close()
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	id := createRes["data"].(map[string]interface{})["id"].(string)
 
 	key := uuid.New().String()
@@ -676,7 +677,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePATCH() {
 	s.Equal(http.StatusOK, respPatch.StatusCode)
 
 	var patchRes1 map[string]interface{}
-	_ = json.NewDecoder(respPatch.Body).Decode(&patchRes1)
+	s.Require().NoError(json.NewDecoder(respPatch.Body).Decode(&patchRes1))
 	s.Equal("on_process", patchRes1["data"].(map[string]interface{})["status"])
 
 	// Second PATCH
@@ -689,7 +690,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_DuplicatePATCH() {
 	s.Equal(http.StatusOK, respPatch2.StatusCode)
 
 	var patchRes2 map[string]interface{}
-	_ = json.NewDecoder(respPatch2.Body).Decode(&patchRes2)
+	s.Require().NoError(json.NewDecoder(respPatch2.Body).Decode(&patchRes2))
 	s.Equal("on_process", patchRes2["data"].(map[string]interface{})["status"])
 }
 
@@ -741,8 +742,8 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_ConcurrentPOST() {
 	s.Require().Equal(http.StatusCreated, resp2.StatusCode)
 
 	var res1, res2 map[string]interface{}
-	_ = json.NewDecoder(resp1.Body).Decode(&res1)
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(resp1.Body).Decode(&res1))
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
 
 	id1 := res1["data"].(map[string]interface{})["id"].(string)
 	id2 := res2["data"].(map[string]interface{})["id"].(string)
@@ -755,7 +756,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_ConcurrentPOST() {
 	s.Require().NoError(err)
 	defer respList.Body.Close()
 	var listRes map[string]interface{}
-	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	s.Require().NoError(json.NewDecoder(respList.Body).Decode(&listRes))
 	tickets := listRes["data"].([]interface{})
 	s.Len(tickets, 1)
 }
@@ -782,7 +783,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_KeyIsolation() {
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
 	var createRes map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&createRes)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&createRes))
 	id := createRes["data"].(map[string]interface{})["id"].(string)
 
 	// 2. Reuse the same key for PATCH on the created ticket
@@ -798,7 +799,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_KeyIsolation() {
 	// Should succeed and return the update response, not the cached create response
 	s.Equal(http.StatusOK, respPatch.StatusCode)
 	var patchRes map[string]interface{}
-	_ = json.NewDecoder(respPatch.Body).Decode(&patchRes)
+	s.Require().NoError(json.NewDecoder(respPatch.Body).Decode(&patchRes))
 	s.Equal("on_process", patchRes["data"].(map[string]interface{})["status"])
 }
 
@@ -813,7 +814,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_TicketSpecificPATCHKeyIsola
 	r1, _ := s.app.Test(req1)
 	defer r1.Body.Close()
 	var res1 map[string]interface{}
-	_ = json.NewDecoder(r1.Body).Decode(&res1)
+	s.Require().NoError(json.NewDecoder(r1.Body).Decode(&res1))
 	id1 := res1["data"].(map[string]interface{})["id"].(string)
 
 	// Create Ticket 2
@@ -824,7 +825,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_TicketSpecificPATCHKeyIsola
 	r2, _ := s.app.Test(req2)
 	defer r2.Body.Close()
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(r2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(r2.Body).Decode(&res2))
 	id2 := res2["data"].(map[string]interface{})["id"].(string)
 
 	// Send PATCH on Ticket 1 with key
@@ -847,7 +848,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_TicketSpecificPATCHKeyIsola
 	// Should succeed (200), updating Ticket 2, and not returning Ticket 1's cached response
 	s.Equal(http.StatusOK, rPatch2.StatusCode)
 	var patchRes2 map[string]interface{}
-	_ = json.NewDecoder(rPatch2.Body).Decode(&patchRes2)
+	s.Require().NoError(json.NewDecoder(rPatch2.Body).Decode(&patchRes2))
 	s.Equal(id2, patchRes2["data"].(map[string]interface{})["id"].(string))
 }
 
@@ -953,7 +954,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_NoKeyCompatibility() {
 	respList, _ := s.app.Test(reqList)
 	defer respList.Body.Close()
 	var listRes map[string]interface{}
-	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	s.Require().NoError(json.NewDecoder(respList.Body).Decode(&listRes))
 	tickets := listRes["data"].([]interface{})
 	s.Len(tickets, 2)
 }
@@ -969,7 +970,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_ScopedHeaderSpoofing() {
 	s.Equal(http.StatusCreated, resp.StatusCode)
 
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 	id := res["data"].(map[string]interface{})["id"].(string)
 
 	// Re-send with same spoofed header, should create another ticket instead of replaying
@@ -981,7 +982,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_ScopedHeaderSpoofing() {
 	s.Equal(http.StatusCreated, resp2.StatusCode)
 
 	var res2 map[string]interface{}
-	_ = json.NewDecoder(resp2.Body).Decode(&res2)
+	s.Require().NoError(json.NewDecoder(resp2.Body).Decode(&res2))
 	id2 := res2["data"].(map[string]interface{})["id"].(string)
 
 	s.NotEqual(id, id2)
@@ -996,7 +997,7 @@ func (s *TicketIntegrationTestSuite) TestIdempotency_ScopeExclusionDelete() {
 	resp, _ := s.app.Test(req)
 	defer resp.Body.Close()
 	var res map[string]interface{}
-	_ = json.NewDecoder(resp.Body).Decode(&res)
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&res))
 	id := res["data"].(map[string]interface{})["id"].(string)
 
 	key := uuid.New().String()

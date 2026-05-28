@@ -1,7 +1,43 @@
 import type { Handle } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
+
+const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function parseAllowedOrigins(value: string | undefined): string[] {
+	if (!value) return [];
+
+	return value
+		.split(',')
+		.map((origin) => origin.trim())
+		.filter(Boolean)
+		.map((origin) => new URL(origin).origin);
+}
+
+function getAllowedCsrfOrigins(requestOrigin: string): string[] {
+	const configuredOrigins = parseAllowedOrigins(env.CSRF_ALLOWED_ORIGINS);
+	if (configuredOrigins.length > 0) {
+		return configuredOrigins;
+	}
+
+	const adapterOrigin = parseAllowedOrigins(env.ORIGIN);
+	if (adapterOrigin.length > 0) {
+		return adapterOrigin;
+	}
+
+	if (!dev) {
+		console.error(
+			'[Security Danger] Neither CSRF_ALLOWED_ORIGINS nor ORIGIN is set in production. ' +
+				'Fallback to request origin is disabled for security reasons. Please configure them.'
+		);
+		return [];
+	}
+
+	return [requestOrigin];
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (process.env.MOCK_API === 'true') {
+	if (env.MOCK_API === 'true') {
 		const { handleMockRequest } = await import('$lib/mocks/handlers');
 		const response = await handleMockRequest(event);
 		if (response) {
@@ -11,8 +47,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (event.url.pathname === '/api' || event.url.pathname.startsWith('/api/')) {
-		const isProduction = process.env.NODE_ENV === 'production';
-		const backendUrl = process.env.BACKEND_URL;
+		const isProduction = !dev;
+		const backendUrl = env.BACKEND_URL;
 		
 		if (isProduction && !backendUrl) {
 			return new Response(JSON.stringify({ success: false, error: 'Server configuration error: BACKEND_URL missing' }), {
@@ -23,10 +59,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		const actualBackendUrl = backendUrl || 'http://localhost:3000';
 
-		// CSRF Prevention for proxy routes
-		if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(event.request.method)) {
+		// CSRF prevention for proxy routes. In containers/proxies, event.url.origin
+		// can differ from the public browser origin, so prefer explicit config.
+		if (mutationMethods.has(event.request.method)) {
 			const origin = event.request.headers.get('origin');
-			if (origin && new URL(origin).origin !== event.url.origin) {
+			const allowedOrigins = getAllowedCsrfOrigins(event.url.origin);
+			if (origin && !allowedOrigins.includes(new URL(origin).origin)) {
 				return new Response(JSON.stringify({ success: false, error: 'CSRF Forbidden' }), {
 					status: 403,
 					headers: { 'Content-Type': 'application/json' }

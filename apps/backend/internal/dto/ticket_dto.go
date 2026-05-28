@@ -55,3 +55,23 @@ type TicketResponse struct {
 	IsWarranty            bool            `json:"is_warranty"`
 	ParentTicketID        *string         `json:"parent_ticket_id"`
 }
+
+type PaginatedTicketsResponse struct {
+	Code         int              `json:"code"`
+	Message      string           `json:"message"`
+	Data         []TicketResponse `json:"data"`
+	Total        int64            `json:"total"`
+	TotalPages   int64            `json:"total_pages"`
+	Page         int              `json:"page"`
+	Limit        int              `json:"limit"`
+	StatusCounts map[string]int64 `json:"status_counts"`
+}
+
+type PaginatedTicketsResult struct {
+	Data         []TicketResponse
+	Total        int64
+	TotalPages   int64
+	Page         int
+	Limit        int
+	StatusCounts map[string]int64
+}

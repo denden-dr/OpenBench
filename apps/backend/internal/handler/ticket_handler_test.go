@@ -43,7 +43,8 @@ func TestTicketHandler_GetByID(t *testing.T) {
 		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		assert.NoError(t, err)
-		assert.True(t, result["success"].(bool))
+		assert.Equal(t, float64(200), result["code"])
+		assert.Equal(t, "Success", result["message"])
 
 		data := result["data"].(map[string]interface{})
 		assert.Equal(t, ticketID, data["id"])
