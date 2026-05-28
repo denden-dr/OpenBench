@@ -1,4 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 
 const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -13,21 +15,29 @@ function parseAllowedOrigins(value: string | undefined): string[] {
 }
 
 function getAllowedCsrfOrigins(requestOrigin: string): string[] {
-	const configuredOrigins = parseAllowedOrigins(process.env.CSRF_ALLOWED_ORIGINS);
+	const configuredOrigins = parseAllowedOrigins(env.CSRF_ALLOWED_ORIGINS);
 	if (configuredOrigins.length > 0) {
 		return configuredOrigins;
 	}
 
-	const adapterOrigin = parseAllowedOrigins(process.env.ORIGIN);
+	const adapterOrigin = parseAllowedOrigins(env.ORIGIN);
 	if (adapterOrigin.length > 0) {
 		return adapterOrigin;
+	}
+
+	if (!dev) {
+		console.error(
+			'[Security Danger] Neither CSRF_ALLOWED_ORIGINS nor ORIGIN is set in production. ' +
+				'Fallback to request origin is disabled for security reasons. Please configure them.'
+		);
+		return [];
 	}
 
 	return [requestOrigin];
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (process.env.MOCK_API === 'true') {
+	if (env.MOCK_API === 'true') {
 		const { handleMockRequest } = await import('$lib/mocks/handlers');
 		const response = await handleMockRequest(event);
 		if (response) {
@@ -37,8 +47,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (event.url.pathname === '/api' || event.url.pathname.startsWith('/api/')) {
-		const isProduction = process.env.NODE_ENV === 'production';
-		const backendUrl = process.env.BACKEND_URL;
+		const isProduction = !dev;
+		const backendUrl = env.BACKEND_URL;
 		
 		if (isProduction && !backendUrl) {
 			return new Response(JSON.stringify({ success: false, error: 'Server configuration error: BACKEND_URL missing' }), {
