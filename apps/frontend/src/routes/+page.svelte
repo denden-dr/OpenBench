@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { LoaderCircle, Search } from "lucide-svelte";
+  import { LoaderCircle, Search, Archive } from "lucide-svelte";
   import type { Ticket } from "$lib/types/ticket";
   
   import ControlBar from "./_components/ControlBar.svelte";
+  import StatusFilters from "./_components/StatusFilters.svelte";
   import TicketTable from "./_components/TicketTable.svelte";
   import TicketCard from "./_components/TicketCard.svelte";
   import CreateModal from "./_components/CreateModal.svelte";
@@ -11,13 +12,28 @@
   import QRModal from "./_components/QRModal.svelte";
   import DeleteConfirmModal from "./_components/DeleteConfirmModal.svelte";
   import SkeletonTable from "./_components/SkeletonTable.svelte";
+  import Pagination from "./_components/Pagination.svelte";
+
+  function checkSuccess(res: Response, payload: any): boolean {
+    return payload && (payload.success === true || (res.ok && (payload.code === undefined || (payload.code >= 200 && payload.code < 300))));
+  }
+
+  function getErrorMessage(payload: any, fallback: string): string {
+    return payload?.detail || payload?.title || payload?.message || payload?.error || fallback;
+  }
 
   // Svelte 5 Runes state
   let tickets = $state<Ticket[]>([]);
   let searchQuery = $state("");
+  let localSearchInput = $state("");
   let statusFilter = $state("all");
+  let page = $state(1);
+  let totalPages = $state(1);
+  let totalItems = $state(0);
   let isLoading = $state(true);
   let toastMessage = $state("");
+  let statusCounts = $state<Record<string, number>>({});
+  let hasMounted = $state(false);
 
   // Modals & Action loadings
   let showCreateModal = $state(false);
@@ -30,60 +46,135 @@
   let isActionLoading = $state<Record<string, boolean>>({});
   let showDeleteModal = $state(false);
 
-  // Status counts computed properties
-  let statusCounts = $derived.by(() => {
-    const counts: Record<string, number> = {
-      all: tickets.length,
-      service_in: 0,
-      on_process: 0,
-      waiting_confirmation: 0,
-      fixed: 0,
-      picked_up: 0,
-      cancelled: 0,
-    };
-    for (const t of tickets) {
-      if (counts[t.status] !== undefined) {
-        counts[t.status]++;
+  // Reset page saat status filter berganti
+  $effect(() => {
+    const _ = statusFilter;
+    page = 1;
+  });
+
+  // Logika Debouncing untuk Search Input (300ms setelah tidak mengetik)
+  let debounceTimeout: ReturnType<typeof setTimeout>;
+  $effect(() => {
+    const input = localSearchInput;
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      if (searchQuery !== input) {
+        searchQuery = input;
+        page = 1;
       }
-    }
-    return counts;
+    }, 300);
+    return () => clearTimeout(debounceTimeout);
   });
 
-  let filteredTickets = $derived(
-    tickets.filter((t) => {
-      const matchStatus = statusFilter === "all" || t.status === statusFilter;
-      const matchSearch =
-        searchQuery === "" ||
-        t.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.issue.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.brand.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchStatus && matchSearch;
-    })
-  );
-
-  // Load tickets on mount
-  onMount(async () => {
-    await fetchTickets();
+  // Memicu fetch ulang secara otomatis ketika parameter utama berubah
+  $effect(() => {
+    if (!hasMounted) return;
+    fetchTickets();
   });
+
+  onMount(() => {
+    hasMounted = true;
+    fetchTickets();
+  });
+
+  let activeAbortController: AbortController | null = null;
 
   async function fetchTickets() {
+    if (activeAbortController) {
+      activeAbortController.abort();
+    }
+    
+    activeAbortController = new AbortController();
+    const { signal } = activeAbortController;
+
     isLoading = true;
     try {
-      const res = await fetch("/api/v1/tickets");
-      const data = await res.json();
-      if (data.success) {
-        tickets = data.data || [];
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      params.set("page", String(page));
+      params.set("limit", "20");
+
+      const res = await fetch(`/api/v1/tickets?${params}`, { signal });
+      const json = await res.json();
+      if (checkSuccess(res, json)) {
+        const rawTickets = json.data || [];
+        
+        // Robustness fallback: if backend is unpaginated (does not return total count)
+        if (json.total === undefined) {
+          let filtered = rawTickets;
+          // 1. Filter status
+          if (statusFilter === "all") {
+            filtered = filtered.filter((t: Ticket) => t.status !== "picked_up");
+          } else {
+            filtered = filtered.filter((t: Ticket) => t.status === statusFilter);
+          }
+          // 2. Filter search
+          if (searchQuery.trim()) {
+            const query = searchQuery.trim().toLowerCase();
+            filtered = filtered.filter((t: Ticket) =>
+              t.customer_name.toLowerCase().includes(query) ||
+              t.model.toLowerCase().includes(query) ||
+              t.issue.toLowerCase().includes(query) ||
+              t.brand.toLowerCase().includes(query)
+            );
+          }
+          
+          tickets = filtered;
+          totalPages = 1;
+          totalItems = filtered.length;
+
+          // Local status counts calculation
+          const counts: Record<string, number> = {
+            all: rawTickets.filter((t: Ticket) => t.status !== "picked_up").length,
+            service_in: 0,
+            on_process: 0,
+            waiting_confirmation: 0,
+            fixed: 0,
+            picked_up: 0,
+            cancelled: 0,
+          };
+          for (const t of rawTickets) {
+            if (counts[t.status] !== undefined) {
+              counts[t.status]++;
+            }
+          }
+          statusCounts = counts;
+        } else {
+          // If server supports pagination and status filtration
+          tickets = rawTickets;
+          totalPages = json.total_pages || 1;
+          totalItems = json.total ?? tickets.length;
+          statusCounts = json.status_counts ?? {
+            all: tickets.length,
+            service_in: 0,
+            on_process: 0,
+            waiting_confirmation: 0,
+            fixed: 0,
+            picked_up: 0,
+            cancelled: 0,
+          };
+        }
+
+        if (page > totalPages) {
+          page = totalPages;
+          return;
+        }
       } else {
-        toastMessage = data.error || "Gagal memuat tiket.";
+        toastMessage = json.error || "Gagal memuat tiket.";
         setTimeout(() => toastMessage = "", 3000);
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        return;
+      }
       console.error("Error fetching tickets:", e);
       toastMessage = "Koneksi gagal. Silakan coba lagi.";
       setTimeout(() => toastMessage = "", 3000);
     } finally {
-      isLoading = false;
+      if (!signal.aborted) {
+        isLoading = false;
+      }
     }
   }
 
@@ -112,13 +203,13 @@
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Servis baru berhasil didaftarkan!";
         showCreateModal = false;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal mendaftarkan servis.";
+        toastMessage = getErrorMessage(data, "Gagal mendaftarkan servis.");
         regenerateCreateIdempotencyKey();
         setTimeout(() => (toastMessage = ""), 3000);
       }
@@ -143,13 +234,13 @@
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Detail tiket berhasil diperbarui!";
         selectedTicket = null;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal memperbarui tiket.";
+        toastMessage = getErrorMessage(data, "Gagal memperbarui tiket.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -173,14 +264,14 @@
         method: "DELETE",
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Tiket berhasil dihapus!";
         showDeleteModal = false;
         selectedTicket = null;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal menghapus tiket.";
+        toastMessage = getErrorMessage(data, "Gagal menghapus tiket.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -209,12 +300,12 @@
         body: JSON.stringify({ status: nextStatus }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = `Status berhasil diperbarui ke: ${getStatusLabel(nextStatus, false)}`;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal memperbarui status.";
+        toastMessage = getErrorMessage(data, "Gagal memperbarui status.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -247,13 +338,13 @@
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Kendala teknisi berhasil dilaporkan!";
         selectedTicket = null;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal mengirim laporan kendala.";
+        toastMessage = getErrorMessage(data, "Gagal mengirim laporan kendala.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -275,13 +366,13 @@
         body: JSON.stringify({ status: "on_process" }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Persetujuan pelanggan berhasil disimpan!";
         selectedTicket = null;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal menyimpan persetujuan.";
+        toastMessage = getErrorMessage(data, "Gagal menyimpan persetujuan.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -303,13 +394,13 @@
         body: JSON.stringify({ status: "cancelled" }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (checkSuccess(res, data)) {
         toastMessage = "Penolakan pelanggan berhasil disimpan (servis batal)!";
         selectedTicket = null;
         await fetchTickets();
         setTimeout(() => (toastMessage = ""), 3000);
       } else {
-        toastMessage = data.error || "Gagal menyimpan penolakan.";
+        toastMessage = getErrorMessage(data, "Gagal menyimpan penolakan.");
         setTimeout(() => (toastMessage = ""), 3000);
       }
     } catch (e) {
@@ -385,53 +476,112 @@
 <div class="container mx-auto px-4 py-8 max-w-7xl animate-fade-in font-sans">
   <!-- Control Bar -->
   <ControlBar
-    bind:searchQuery
-    bind:statusFilter
-    {statusCounts}
+    bind:searchQuery={localSearchInput}
     onAddTicket={() => {
       regenerateCreateIdempotencyKey();
       showCreateModal = true;
     }}
   />
 
-  <!-- Tickets Content -->
-  {#if isLoading}
-    <SkeletonTable />
-  {:else if filteredTickets.length === 0}
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center shadow-sm">
-      <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-800 text-slate-400">
-        <Search size={22} />
-      </div>
-      <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Tidak ada tiket ditemukan</h3>
-      <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-        Try modifying your search or filters, or add a new repair ticket to get started.
-      </p>
+  <!-- Table Header Controls & Special Archive Button -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 mt-2 px-1">
+    <!-- Status Filters (menempel pada tabel) -->
+    <div class="flex-grow min-w-0">
+      <StatusFilters
+        bind:selectedStatus={statusFilter}
+        {statusCounts}
+      />
     </div>
-  {:else}
-    <!-- Table Layout (Desktop) -->
-    <TicketTable
-      tickets={filteredTickets}
-      {isActionLoading}
-      onSelectTicket={(ticket) => (selectedTicket = ticket)}
-      onQuickAction={handleQuickStatusUpdate}
-      {getStatusBadgeClass}
-      {getStatusLabel}
-    />
 
-    <!-- Mobile Cards List (Mobile) -->
-    <div class="grid grid-cols-1 gap-4 md:hidden">
-      {#each filteredTickets as ticket (ticket.id)}
-        <TicketCard
-          {ticket}
-          isActionLoading={Boolean(isActionLoading[ticket.id])}
-          onSelectTicket={() => (selectedTicket = ticket)}
-          onQuickAction={() => handleQuickStatusUpdate(ticket.id, ticket.status)}
-          {getStatusBadgeClass}
-          {getStatusLabel}
-        />
-      {/each}
+    <!-- Special Archive Button & Status Label -->
+    <div class="flex items-center gap-3 shrink-0 self-end lg:self-auto">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        {#if statusFilter === "picked_up"}
+          <span class="text-indigo-600 dark:text-indigo-400 font-bold">Arsip Tiket (Sudah Diambil)</span>
+        {:else}
+          <span>Antrean Perbaikan Aktif</span>
+        {/if}
+      </div>
+
+      <button
+        onclick={() => {
+          if (statusFilter === "picked_up") {
+            statusFilter = "all";
+          } else {
+            statusFilter = "picked_up";
+          }
+        }}
+        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold border rounded-xl transition-all duration-200 cursor-pointer select-none active:scale-95
+          {statusFilter === 'picked_up'
+            ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-950'
+            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-sm'}"
+      >
+        <Archive size={14} class={statusFilter === 'picked_up' ? 'text-white' : 'text-indigo-600'} />
+        <span>Lihat Sudah Diambil</span>
+      </button>
     </div>
-  {/if}
+  </div>
+
+  <!-- Tickets Content -->
+  <div class="relative min-h-[300px]">
+    {#if isLoading}
+      <!-- Viewport-Fixed Premium Circular Spinner Overlay -->
+      <div class="fixed inset-0 bg-slate-900/10 dark:bg-slate-950/20 backdrop-blur-[0.5px] flex items-center justify-center z-50 transition-all duration-300">
+        <div class="flex flex-col items-center gap-3 bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md">
+          <LoaderCircle class="animate-spin text-blue-600 dark:text-blue-400" size={32} />
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider animate-pulse">Memuat Data...</span>
+        </div>
+      </div>
+    {/if}
+
+    {#if tickets.length === 0 && !isLoading}
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center shadow-sm">
+        <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-800 text-slate-400">
+          <Search size={22} />
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Tidak ada tiket ditemukan</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+          Try modifying your search or filters, or add a new repair ticket to get started.
+        </p>
+      </div>
+    {:else if tickets.length > 0}
+      <!-- Table Layout (Desktop) -->
+      <TicketTable
+        tickets={tickets}
+        {isActionLoading}
+        onSelectTicket={(ticket) => (selectedTicket = ticket)}
+        onQuickAction={handleQuickStatusUpdate}
+        {getStatusBadgeClass}
+        {getStatusLabel}
+      />
+
+      <!-- Mobile Cards List (Mobile) -->
+      <div class="grid grid-cols-1 gap-4 md:hidden">
+        {#each tickets as ticket (ticket.id)}
+          <TicketCard
+            {ticket}
+            isActionLoading={Boolean(isActionLoading[ticket.id])}
+            onSelectTicket={() => (selectedTicket = ticket)}
+            onQuickAction={() => handleQuickStatusUpdate(ticket.id, ticket.status)}
+            {getStatusBadgeClass}
+            {getStatusLabel}
+          />
+        {/each}
+      </div>
+
+      {#if tickets.length > 0}
+        <Pagination
+          bind:currentPage={page}
+          {totalPages}
+          {totalItems}
+          limit={20}
+          onPageChange={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      {/if}
+    {/if}
+  </div>
 </div>
 
 <!-- Create Modal -->

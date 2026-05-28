@@ -9,7 +9,57 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
     // Matches /api/v1/tickets
     if (path === '/api/v1/tickets') {
         if (method === 'GET') {
-            return json({ success: true, data: mockTickets });
+            const page = parseInt(url.searchParams.get('page') || '1', 10);
+            const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+            const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+            const status = (url.searchParams.get('status') || 'all').trim().toLowerCase();
+
+            // Hitung statistik status counts berdasar filter search (tapi TIDAK memfilter status)
+            const countFiltered = mockTickets.filter(t => {
+                if (!search) return true;
+                return (
+                    t.id.toLowerCase().includes(search) ||
+                    t.customer_name.toLowerCase().includes(search) ||
+                    t.brand.toLowerCase().includes(search) ||
+                    t.model.toLowerCase().includes(search) ||
+                    t.issue.toLowerCase().includes(search)
+                );
+            });
+
+            const statusCounts = {
+                all: countFiltered.filter(t => t.status !== 'picked_up').length,
+                service_in: countFiltered.filter(t => t.status === 'service_in').length,
+                on_process: countFiltered.filter(t => t.status === 'on_process').length,
+                waiting_confirmation: countFiltered.filter(t => t.status === 'waiting_confirmation').length,
+                fixed: countFiltered.filter(t => t.status === 'fixed').length,
+                picked_up: countFiltered.filter(t => t.status === 'picked_up').length,
+                cancelled: countFiltered.filter(t => t.status === 'cancelled').length,
+            };
+
+            // Filter data untuk list response (memfilter status + search)
+            let filtered = countFiltered;
+            if (status === 'all') {
+                filtered = filtered.filter(t => t.status !== 'picked_up');
+            } else {
+                filtered = filtered.filter(t => t.status === status);
+            }
+
+            // Slicing offset-based pagination
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / limit) || 1;
+            const start = (page - 1) * limit;
+            const paginatedData = filtered.slice(start, start + limit);
+
+            return json({
+                code: 200,
+                message: 'Success',
+                data: paginatedData,
+                total,
+                total_pages: totalPages,
+                page,
+                limit,
+                status_counts: statusCounts
+            });
         }
         if (method === 'POST') {
             const data = await request.json();
@@ -21,7 +71,7 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
                 entry_date: new Date().toISOString()
             };
             setMockTickets([newTicket, ...mockTickets]);
-            return json({ success: true, data: newTicket });
+            return json({ code: 201, message: 'Success', data: newTicket }, { status: 201 });
         }
     }
 
@@ -33,7 +83,13 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
             const data = await request.json();
             const index = mockTickets.findIndex(t => t.id === id);
             if (index === -1) {
-                return json({ success: false, error: 'Ticket not found' }, { status: 404 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/not-found',
+                    title: 'Not Found',
+                    status: 404,
+                    detail: 'Ticket not found',
+                    instance: path
+                }, { status: 404 });
             }
             const updatedTicket = { ...mockTickets[index], ...data };
             if (data.status === 'picked_up') {
@@ -43,43 +99,110 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
             const newTickets = [...mockTickets];
             newTickets[index] = updatedTicket;
             setMockTickets(newTickets);
-            return json({ success: true, data: updatedTicket });
+            return json({ code: 200, message: 'Success', data: updatedTicket });
         }
         if (method === 'DELETE') {
             const index = mockTickets.findIndex(t => t.id === id);
             if (index === -1) {
-                return json({ success: false, error: 'Ticket not found' }, { status: 404 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/not-found',
+                    title: 'Not Found',
+                    status: 404,
+                    detail: 'Ticket not found',
+                    instance: path
+                }, { status: 404 });
             }
             const newTickets = mockTickets.filter(t => t.id !== id);
             setMockTickets(newTickets);
-            return json({ success: true, data: { deleted: true } });
+            return json({ code: 200, message: 'Ticket deleted successfully', data: { deleted: true } });
         }
     }
 
     // Matches /api/v1/warranty-claims
     if (path === '/api/v1/warranty-claims') {
         if (method === 'GET') {
-            return json({ success: true, data: mockWarrantyClaims });
+            const page = parseInt(url.searchParams.get('page') || '1', 10);
+            const limit = parseInt(url.searchParams.get('limit') || '10', 10);
+            const status = url.searchParams.get('status') || 'all';
+
+            let filtered = [...mockWarrantyClaims];
+            if (status !== 'all') {
+                filtered = filtered.filter(c => c.status === status);
+            }
+
+            // Inject ticket details for convenience mapping
+            const claimsWithTicket = filtered.map(c => {
+                const ticket = mockTickets.find(t => t.id === c.ticket_id);
+                return {
+                    ...c,
+                    originalTicket: ticket || null
+                };
+            });
+
+            const total = claimsWithTicket.length;
+            const totalPages = Math.ceil(total / limit) || 1;
+            const start = (page - 1) * limit;
+            const paginatedData = claimsWithTicket.slice(start, start + limit);
+
+            return json({
+                code: 200,
+                message: 'Success',
+                data: paginatedData,
+                total,
+                total_pages: totalPages,
+                page,
+                limit
+            });
         }
         if (method === 'POST') {
             const data = await request.json();
             const originalTicket = mockTickets.find(t => t.id === data.ticket_id) as any;
             if (!originalTicket) {
-                return json({ success: false, error: 'Original ticket not found' }, { status: 404 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/not-found',
+                    title: 'Not Found',
+                    status: 404,
+                    detail: 'Original ticket not found',
+                    instance: path
+                }, { status: 404 });
             }
             if (!data.issue?.trim()) {
-                return json({ success: false, error: 'Issue is required' }, { status: 400 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/validation-failed',
+                    title: 'Validation Failed',
+                    status: 400,
+                    detail: 'Issue is required',
+                    instance: path
+                }, { status: 400 });
             }
             if (originalTicket.is_warranty) {
-                return json({ success: false, error: 'Warranty claim tickets cannot spawn another warranty claim' }, { status: 400 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/validation-failed',
+                    title: 'Validation Failed',
+                    status: 400,
+                    detail: 'Warranty claim tickets cannot spawn another warranty claim',
+                    instance: path
+                }, { status: 400 });
             }
             if (originalTicket.status !== 'picked_up' || !originalTicket.exit_date) {
-                return json({ success: false, error: 'Ticket is not eligible for warranty claim' }, { status: 400 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/validation-failed',
+                    title: 'Validation Failed',
+                    status: 400,
+                    detail: 'Ticket is not eligible for warranty claim',
+                    instance: path
+                }, { status: 400 });
             }
 
             const expiryTime = new Date(originalTicket.exit_date).getTime() + originalTicket.warranty_days * 86400000;
             if (Date.now() > expiryTime) {
-                return json({ success: false, error: 'Warranty period has expired' }, { status: 400 });
+                return json({
+                    type: 'https://openbench.denden.com/errors/validation-failed',
+                    title: 'Validation Failed',
+                    status: 400,
+                    detail: 'Warranty period has expired',
+                    instance: path
+                }, { status: 400 });
             }
 
             const now = new Date().toISOString();
@@ -96,7 +219,7 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
             };
 
             setMockWarrantyClaims([claim, ...mockWarrantyClaims]);
-            return json({ success: true, data: claim }, { status: 201 });
+            return json({ code: 201, message: 'Success', data: claim }, { status: 201 });
         }
     }
 
@@ -106,12 +229,24 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         const id = claimApproveMatch[1];
         const claimIndex = mockWarrantyClaims.findIndex(c => c.id === id);
         if (claimIndex === -1) {
-            return json({ success: false, error: 'Claim not found' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Claim not found',
+                instance: path
+            }, { status: 404 });
         }
         const claim = mockWarrantyClaims[claimIndex];
         const originalTicket = mockTickets.find(t => t.id === claim.ticket_id) as any;
         if (!originalTicket) {
-            return json({ success: false, error: 'Original ticket not found' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Original ticket not found',
+                instance: path
+            }, { status: 404 });
         }
 
         const now = new Date().toISOString();
@@ -148,7 +283,8 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         setMockTickets([spawnedTicket, ...mockTickets]);
 
         return json({
-            success: true,
+            code: 200,
+            message: 'Success',
             data: {
                 claim: updatedClaim,
                 ticket: spawnedTicket
@@ -162,23 +298,41 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         const id = claimVoidMatch[1];
         const data = await request.json();
         if (!data.void_reason?.trim()) {
-            return json({ success: false, error: 'Void reason is required' }, { status: 400 });
+            return json({
+                type: 'https://openbench.denden.com/errors/validation-failed',
+                title: 'Validation Failed',
+                status: 400,
+                detail: 'Void reason is required',
+                instance: path
+            }, { status: 400 });
         }
 
         const claimIndex = mockWarrantyClaims.findIndex(c => c.id === id);
         if (claimIndex === -1) {
-            return json({ success: false, error: 'Claim not found' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Claim not found',
+                instance: path
+            }, { status: 404 });
         }
         const claim = mockWarrantyClaims[claimIndex];
         const originalTicket = mockTickets.find(t => t.id === claim.ticket_id) as any;
         if (!originalTicket) {
-            return json({ success: false, error: 'Original ticket not found' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Original ticket not found',
+                instance: path
+            }, { status: 404 });
         }
 
         const now = new Date().toISOString();
         const spawnedTicketId = 'TCK-W' + Date.now().toString().slice(-6);
 
-		const spawnedTicket = {
+        const spawnedTicket = {
             id: spawnedTicketId,
             customer_name: originalTicket.customer_name,
             customer_gender: originalTicket.customer_gender,
@@ -210,7 +364,8 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         setMockTickets([spawnedTicket, ...mockTickets]);
 
         return json({
-            success: true,
+            code: 200,
+            message: 'Success',
             data: {
                 claim: updatedClaim,
                 ticket: spawnedTicket
@@ -223,17 +378,30 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
     if (publicTicketMatch && method === 'GET') {
         const id = publicTicketMatch[1];
         if (id.length !== 36) {
-            return json({ success: false, error: 'Invalid ticket ID format. Only full UUID is supported.' }, { status: 400 });
+            return json({
+                type: 'https://openbench.denden.com/errors/validation-failed',
+                title: 'Validation Failed',
+                status: 400,
+                detail: 'Invalid ticket ID format. Only full UUID is supported.',
+                instance: path
+            }, { status: 400 });
         }
         const ticket = mockTickets.find(t => t.id.toLowerCase() === id.toLowerCase());
         if (!ticket) {
-            return json({ success: false, error: 'Tiket tidak ditemukan' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Tiket tidak ditemukan',
+                instance: path
+            }, { status: 404 });
         }
         const maskName = (name: string) => name.split(' ').map(n => n[0] + '*'.repeat(Math.max(0, n.length - 1))).join(' ');
         const maskPhone = (phone: string) => phone ? phone.slice(0, 4) + '*'.repeat(Math.max(0, phone.length - 6)) + phone.slice(-2) : '';
 
         return json({
-            success: true,
+            code: 200,
+            message: 'Success',
             data: {
                 id: ticket.id,
                 customer_name_masked: maskName(ticket.customer_name),
@@ -258,7 +426,13 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
         const data = await request.json();
         const { short_id, phone } = data;
         if (!short_id || !phone) {
-            return json({ success: false, error: 'ID Tiket dan Nomor Telepon wajib diisi' }, { status: 400 });
+            return json({
+                type: 'https://openbench.denden.com/errors/validation-failed',
+                title: 'Validation Failed',
+                status: 400,
+                detail: 'ID Tiket dan Nomor Telepon wajib diisi',
+                instance: path
+            }, { status: 400 });
         }
         const ticket = mockTickets.find(t => {
             const query = short_id.toLowerCase();
@@ -274,9 +448,21 @@ export async function handleMockRequest(event: any): Promise<Response | null> {
             return idMatch && cleanPhoneT === cleanPhoneInput;
         });
         if (!ticket) {
-            return json({ success: false, error: 'Tiket tidak ditemukan atau nomor HP salah' }, { status: 404 });
+            return json({
+                type: 'https://openbench.denden.com/errors/not-found',
+                title: 'Not Found',
+                status: 404,
+                detail: 'Tiket tidak ditemukan atau nomor HP salah',
+                instance: path
+            }, { status: 404 });
         }
-        return json({ success: true, ticket_id: ticket.id });
+        return json({
+            code: 200,
+            message: 'Success',
+            data: {
+                ticket_id: ticket.id
+            }
+        });
     }
 
     return null;

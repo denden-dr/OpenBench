@@ -31,3 +31,29 @@ export interface Claim {
   created_at: string;
   originalTicket?: Ticket;
 }
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data?: T;
+}
+
+export interface ProblemDetails {
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance: string;
+  invalid_params?: Record<string, string>;
+}
+
+export interface PaginatedResponse<T> {
+  code: number;
+  message: string;
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  status_counts?: Record<string, number>;
+}

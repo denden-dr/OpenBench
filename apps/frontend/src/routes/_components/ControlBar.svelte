@@ -1,25 +1,20 @@
 <script lang="ts">
   import { Search, Plus, ShieldCheck } from "lucide-svelte";
-  import StatusFilters from "./StatusFilters.svelte";
 
   let {
     searchQuery = $bindable(),
-    statusFilter = $bindable(),
-    statusCounts = {},
     onAddTicket,
   }: {
     searchQuery: string;
-    statusFilter: string;
-    statusCounts: Record<string, number>;
     onAddTicket: () => void;
   } = $props();
 </script>
 
 <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
-  <!-- Left Side: Search + Status Filters -->
-  <div class="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1 min-w-0">
+  <!-- Left Side: Search -->
+  <div class="flex items-stretch md:items-center gap-4 flex-1 min-w-0">
     <!-- Search Input -->
-    <div class="relative w-full md:w-72 lg:w-80 shrink-0">
+    <div class="relative w-full md:w-72 lg:w-96 shrink-0">
       <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
         <Search size={18} />
       </span>
@@ -28,14 +23,6 @@
         bind:value={searchQuery}
         placeholder="Cari pelanggan, model, kendala..."
         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder-slate-400"
-      />
-    </div>
-
-    <!-- Status Filters -->
-    <div class="flex-grow min-w-0">
-      <StatusFilters
-        bind:selectedStatus={statusFilter}
-        {statusCounts}
       />
     </div>
   </div>

@@ -40,7 +40,7 @@
           const res = await fetch(`/api/v1/public/tickets/${ticketId}`);
           const payload = await res.json();
           if (!res.ok) {
-              errorMsg = payload.error || 'Gagal memuat detail perbaikan';
+              errorMsg = payload.detail || payload.title || payload.message || 'Gagal memuat detail perbaikan';
           } else {
               ticket = payload.data;
               errorMsg = '';

@@ -49,9 +49,9 @@
           });
           const payload = await res.json();
           if (!res.ok) {
-              errorMsg = payload.error || 'Verifikasi gagal. Periksa nomor HP Anda.';
+              errorMsg = payload.detail || payload.title || payload.message || 'Verifikasi gagal. Periksa nomor HP Anda.';
           } else {
-              window.location.href = `/track/${payload.ticket_id}`;
+              window.location.href = `/track/${payload.data.ticket_id}`;
           }
       } catch (err) {
           errorMsg = 'Koneksi gagal. Silakan coba lagi.';
