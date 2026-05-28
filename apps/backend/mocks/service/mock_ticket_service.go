@@ -247,23 +247,23 @@ func (_c *MockTicketService_GetTicket_Call) RunAndReturn(run func(context.Contex
 }
 
 // ListTickets provides a mock function with given fields: ctx, page, limit, search, status
-func (_m *MockTicketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResponse, error) {
+func (_m *MockTicketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResult, error) {
 	ret := _m.Called(ctx, page, limit, search, status)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListTickets")
 	}
 
-	var r0 *dto.PaginatedTicketsResponse
+	var r0 *dto.PaginatedTicketsResult
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResult, error)); ok {
 		return rf(ctx, page, limit, search, status)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) *dto.PaginatedTicketsResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, string) *dto.PaginatedTicketsResult); ok {
 		r0 = rf(ctx, page, limit, search, status)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*dto.PaginatedTicketsResponse)
+			r0 = ret.Get(0).(*dto.PaginatedTicketsResult)
 		}
 	}
 
@@ -298,12 +298,12 @@ func (_c *MockTicketService_ListTickets_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockTicketService_ListTickets_Call) Return(_a0 *dto.PaginatedTicketsResponse, _a1 error) *MockTicketService_ListTickets_Call {
+func (_c *MockTicketService_ListTickets_Call) Return(_a0 *dto.PaginatedTicketsResult, _a1 error) *MockTicketService_ListTickets_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTicketService_ListTickets_Call) RunAndReturn(run func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResponse, error)) *MockTicketService_ListTickets_Call {
+func (_c *MockTicketService_ListTickets_Call) RunAndReturn(run func(context.Context, int, int, string, string) (*dto.PaginatedTicketsResult, error)) *MockTicketService_ListTickets_Call {
 	_c.Call.Return(run)
 	return _c
 }

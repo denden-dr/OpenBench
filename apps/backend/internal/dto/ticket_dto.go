@@ -66,3 +66,12 @@ type PaginatedTicketsResponse struct {
 	Limit        int              `json:"limit"`
 	StatusCounts map[string]int64 `json:"status_counts"`
 }
+
+type PaginatedTicketsResult struct {
+	Data         []TicketResponse
+	Total        int64
+	TotalPages   int64
+	Page         int
+	Limit        int
+	StatusCounts map[string]int64
+}

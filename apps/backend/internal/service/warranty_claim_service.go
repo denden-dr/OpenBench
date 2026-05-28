@@ -18,10 +18,16 @@ import (
 
 type WarrantyClaimService interface {
 	CreateClaim(ctx context.Context, req *dto.CreateWarrantyClaimRequest) (*dto.WarrantyClaimResponse, error)
-	ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResponse, error)
+	ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResult, error)
 	ApproveClaim(ctx context.Context, id string) (*dto.ClaimCreationResult, error)
 	VoidClaim(ctx context.Context, id string, req *dto.VoidWarrantyClaimRequest) (*dto.ClaimCreationResult, error)
 }
+
+const (
+	defaultClaimLimit = 20
+	maxClaimLimit     = 100
+	maxClaimPage      = 10000
+)
 
 type warrantyClaimService struct {
 	claimRepo  repository.WarrantyClaimRepository
@@ -86,7 +92,7 @@ func (s *warrantyClaimService) CreateClaim(ctx context.Context, req *dto.CreateW
 	return s.mapToResponse(claim, ticket), nil
 }
 
-func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResponse, error) {
+func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResult, error) {
 	status = strings.TrimSpace(status)
 	if status != "" && status != "all" {
 		validStatuses := map[string]bool{
@@ -100,11 +106,13 @@ func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, pa
 	}
 	if page < 1 {
 		page = 1
+	} else if page > maxClaimPage {
+		page = maxClaimPage
 	}
 	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
+		limit = defaultClaimLimit
+	} else if limit > maxClaimLimit {
+		limit = maxClaimLimit
 	}
 
 	offset := (page - 1) * limit
@@ -125,9 +133,7 @@ func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, pa
 	}
 
 	if len(claims) == 0 {
-		return &dto.PaginatedWarrantyClaimsResponse{
-			Code:       200,
-			Message:    "Success",
+		return &dto.PaginatedWarrantyClaimsResult{
 			Data:       []*dto.WarrantyClaimResponse{},
 			Total:      total,
 			TotalPages: totalPages,
@@ -161,9 +167,7 @@ func (s *warrantyClaimService) ListClaims(ctx context.Context, status string, pa
 		responses[i] = s.mapToResponse(c, ticket)
 	}
 
-	return &dto.PaginatedWarrantyClaimsResponse{
-		Code:       200,
-		Message:    "Success",
+	return &dto.PaginatedWarrantyClaimsResult{
 		Data:       responses,
 		Total:      total,
 		TotalPages: totalPages,

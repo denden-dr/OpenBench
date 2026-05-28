@@ -40,3 +40,11 @@ type PaginatedWarrantyClaimsResponse struct {
 	Page       int                      `json:"page"`
 	Limit      int                      `json:"limit"`
 }
+
+type PaginatedWarrantyClaimsResult struct {
+	Data       []*WarrantyClaimResponse
+	Total      int64
+	TotalPages int64
+	Page       int
+	Limit      int
+}

@@ -82,12 +82,22 @@ func (h *TicketHandler) List(c *fiber.Ctx) error {
 	search := c.Query("search")
 	status := c.Query("status")
 
+	if len(search) > 200 {
+		return fiber.NewError(fiber.StatusBadRequest, "Search query too long")
+	}
+
 	page := 1
 	var err error
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "Invalid page parameter")
+		}
+		if page < 1 {
+			return fiber.NewError(fiber.StatusBadRequest, "Page parameter must be at least 1")
+		}
+		if page > 10000 {
+			return fiber.NewError(fiber.StatusBadRequest, "Page parameter exceeds maximum limit")
 		}
 	}
 
@@ -97,6 +107,9 @@ func (h *TicketHandler) List(c *fiber.Ctx) error {
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "Invalid limit parameter")
 		}
+		if limit < 1 || limit > 100 {
+			return fiber.NewError(fiber.StatusBadRequest, "Limit parameter must be between 1 and 100")
+		}
 	}
 
 	res, err := h.service.ListTickets(c.UserContext(), page, limit, search, status)
@@ -104,7 +117,16 @@ func (h *TicketHandler) List(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(res)
+	return c.JSON(dto.PaginatedTicketsResponse{
+		Code:         fiber.StatusOK,
+		Message:      "Success",
+		Data:         res.Data,
+		Total:        res.Total,
+		TotalPages:   res.TotalPages,
+		Page:         res.Page,
+		Limit:        res.Limit,
+		StatusCounts: res.StatusCounts,
+	})
 }
 
 func (h *TicketHandler) Delete(c *fiber.Ctx) error {

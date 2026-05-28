@@ -18,11 +18,17 @@ type TicketService interface {
 	CreateTicket(ctx context.Context, req *dto.CreateTicketRequest) (*dto.TicketResponse, error)
 	GetTicket(ctx context.Context, id string) (*dto.TicketResponse, error)
 	UpdateTicket(ctx context.Context, id string, req *dto.UpdateTicketRequest) (*dto.TicketResponse, error)
-	ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResponse, error)
+	ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResult, error)
 	DeleteTicket(ctx context.Context, id string) error
 	GetPublicTicket(ctx context.Context, id string) (*dto.PublicTicketResponse, error)
 	TrackPublicTicket(ctx context.Context, req *dto.PublicTrackRequest) (string, error)
 }
+
+const (
+	defaultTicketLimit = 20
+	maxTicketLimit     = 100
+	maxTicketPage      = 10000
+)
 
 type ticketService struct {
 	repo     repository.TicketRepository
@@ -134,7 +140,7 @@ func (s *ticketService) UpdateTicket(ctx context.Context, id string, req *dto.Up
 	return s.mapToResponse(ticket), nil
 }
 
-func (s *ticketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResponse, error) {
+func (s *ticketService) ListTickets(ctx context.Context, page int, limit int, search string, status string) (*dto.PaginatedTicketsResult, error) {
 	status = strings.TrimSpace(status)
 	if status != "" && status != "all" {
 		validStatuses := map[string]bool{
@@ -152,11 +158,13 @@ func (s *ticketService) ListTickets(ctx context.Context, page int, limit int, se
 
 	if page < 1 {
 		page = 1
+	} else if page > maxTicketPage {
+		page = maxTicketPage
 	}
 	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
+		limit = defaultTicketLimit
+	} else if limit > maxTicketLimit {
+		limit = maxTicketLimit
 	}
 
 	offset := (page - 1) * limit
@@ -211,9 +219,7 @@ func (s *ticketService) ListTickets(ctx context.Context, page int, limit int, se
 		totalPages = 1
 	}
 
-	return &dto.PaginatedTicketsResponse{
-		Code:         200,
-		Message:      "Success",
+	return &dto.PaginatedTicketsResult{
 		Data:         responses,
 		Total:        total,
 		TotalPages:   totalPages,

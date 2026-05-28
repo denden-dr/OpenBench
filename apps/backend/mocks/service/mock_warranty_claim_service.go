@@ -141,23 +141,23 @@ func (_c *MockWarrantyClaimService_CreateClaim_Call) RunAndReturn(run func(conte
 }
 
 // ListClaims provides a mock function with given fields: ctx, status, page, limit
-func (_m *MockWarrantyClaimService) ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResponse, error) {
+func (_m *MockWarrantyClaimService) ListClaims(ctx context.Context, status string, page int, limit int) (*dto.PaginatedWarrantyClaimsResult, error) {
 	ret := _m.Called(ctx, status, page, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListClaims")
 	}
 
-	var r0 *dto.PaginatedWarrantyClaimsResponse
+	var r0 *dto.PaginatedWarrantyClaimsResult
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) (*dto.PaginatedWarrantyClaimsResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) (*dto.PaginatedWarrantyClaimsResult, error)); ok {
 		return rf(ctx, status, page, limit)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) *dto.PaginatedWarrantyClaimsResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) *dto.PaginatedWarrantyClaimsResult); ok {
 		r0 = rf(ctx, status, page, limit)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*dto.PaginatedWarrantyClaimsResponse)
+			r0 = ret.Get(0).(*dto.PaginatedWarrantyClaimsResult)
 		}
 	}
 
@@ -191,12 +191,12 @@ func (_c *MockWarrantyClaimService_ListClaims_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockWarrantyClaimService_ListClaims_Call) Return(_a0 *dto.PaginatedWarrantyClaimsResponse, _a1 error) *MockWarrantyClaimService_ListClaims_Call {
+func (_c *MockWarrantyClaimService_ListClaims_Call) Return(_a0 *dto.PaginatedWarrantyClaimsResult, _a1 error) *MockWarrantyClaimService_ListClaims_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockWarrantyClaimService_ListClaims_Call) RunAndReturn(run func(context.Context, string, int, int) (*dto.PaginatedWarrantyClaimsResponse, error)) *MockWarrantyClaimService_ListClaims_Call {
+func (_c *MockWarrantyClaimService_ListClaims_Call) RunAndReturn(run func(context.Context, string, int, int) (*dto.PaginatedWarrantyClaimsResult, error)) *MockWarrantyClaimService_ListClaims_Call {
 	_c.Call.Return(run)
 	return _c
 }
