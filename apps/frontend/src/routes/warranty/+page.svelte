@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { 
     Search, ShieldCheck, ShieldAlert, 
     ArrowLeft, LoaderCircle, Info, AlertOctagon, CheckCircle2, X,
@@ -10,15 +10,8 @@
   import type { Ticket, Claim } from '$lib/types/ticket';
   import { formatCurrency } from '$lib/utils/format';
   import { checkWarrantyExpiry } from '$lib/utils/warranty';
+  import { checkSuccess, getErrorMessage } from '$lib/utils/api';
   import Pagination from '../_components/Pagination.svelte';
-
-  function checkSuccess(res: Response, payload: any): boolean {
-    return payload && (payload.success === true || (res.ok && (payload.code === undefined || (payload.code >= 200 && payload.code < 300))));
-  }
-
-  function getErrorMessage(payload: any, fallback: string): string {
-    return payload?.detail || payload?.title || payload?.message || payload?.error || fallback;
-  }
 
   let searchQuery = $state('');
   let isLoading = $state(false);
@@ -68,7 +61,15 @@
     searchInput?.focus();
   });
 
+  let activeAbortController: AbortController | null = null;
+
   async function fetchClaims() {
+    if (activeAbortController) {
+      activeAbortController.abort();
+    }
+    activeAbortController = new AbortController();
+    const { signal } = activeAbortController;
+
     isQueueLoading = true;
     try {
       const params = new URLSearchParams();
@@ -76,24 +77,34 @@
       params.set('page', String(queuePage));
       params.set('limit', '10');
 
-      const claimsRes = await fetch(`/api/v1/warranty-claims?${params}`);
+      const claimsRes = await fetch(`/api/v1/warranty-claims?${params}`, { signal });
       const claimsPayload = await claimsRes.json();
 
       if (checkSuccess(claimsRes, claimsPayload)) {
         claimsQueue = claimsPayload.data || [];
         queueTotalPages = claimsPayload.total_pages || 1;
         queueTotalItems = claimsPayload.total ?? claimsQueue.length;
+      } else {
+        addToast(getErrorMessage(claimsPayload, 'Gagal memuat antrean klaim.'), 'error');
       }
-    } catch (err) {
-      console.error('Error fetching claims queue:', err);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching claims queue:', err);
+        addToast('Gagal memuat antrean klaim.', 'error');
+      }
     } finally {
-      isQueueLoading = false;
+      if (!signal.aborted) {
+        isQueueLoading = false;
+      }
     }
   }
 
   // Reactive effect for fetching claims queue when page changes
   $effect(() => {
-    fetchClaims();
+    const _page = queuePage;
+    untrack(() => {
+      fetchClaims();
+    });
   });
 
   async function handleSearch(e: SubmitEvent) {
@@ -578,7 +589,7 @@
                 
                 <span class="text-[10px] text-slate-400 flex items-center gap-1 shrink-0">
                   <Clock size={12} />
-                  {new Date(claim.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}
+                  {new Date(claim.created_at).toLocaleString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}
                 </span>
               </div>
 
