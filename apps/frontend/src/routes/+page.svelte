@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { LoaderCircle, Search, Archive } from "lucide-svelte";
   import type { Ticket } from "$lib/types/ticket";
+  import { checkSuccess, getErrorMessage } from "$lib/utils/api";
   
   import ControlBar from "./_components/ControlBar.svelte";
   import StatusFilters from "./_components/StatusFilters.svelte";
@@ -13,14 +14,6 @@
   import DeleteConfirmModal from "./_components/DeleteConfirmModal.svelte";
   import SkeletonTable from "./_components/SkeletonTable.svelte";
   import Pagination from "./_components/Pagination.svelte";
-
-  function checkSuccess(res: Response, payload: any): boolean {
-    return payload && (payload.success === true || (res.ok && (payload.code === undefined || (payload.code >= 200 && payload.code < 300))));
-  }
-
-  function getErrorMessage(payload: any, fallback: string): string {
-    return payload?.detail || payload?.title || payload?.message || payload?.error || fallback;
-  }
 
   // Svelte 5 Runes state
   let tickets = $state<Ticket[]>([]);
@@ -74,7 +67,6 @@
 
   onMount(() => {
     hasMounted = true;
-    fetchTickets();
   });
 
   let activeAbortController: AbortController | null = null;
