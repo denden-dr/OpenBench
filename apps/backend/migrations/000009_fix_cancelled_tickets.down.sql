@@ -1,2 +1,0 @@
--- Migration 000009 DOWN: No-op.
--- Rolling back this correction is unnecessary as we do not want to restore the incorrect 'picked_up' status for cancelled tickets.
