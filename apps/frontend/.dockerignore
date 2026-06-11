@@ -1,0 +1,6 @@
+.env
+.env.test
+.git
+.svelte-kit
+build
+node_modules
