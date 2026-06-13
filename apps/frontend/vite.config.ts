@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [
@@ -13,5 +13,26 @@ export default defineConfig({
 			},
 			adapter: adapter()
 		})
-	]
+	],
+	resolve: {
+		conditions: ['browser']
+	},
+	server: {
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8080',
+				changeOrigin: true
+			},
+			'/health': {
+				target: 'http://localhost:8080',
+				changeOrigin: true
+			}
+		}
+	},
+	test: {
+		include: ['src/**/*.{test,spec}.{js,ts}'],
+		environment: 'jsdom',
+		globals: true,
+		setupFiles: ['src/tests/setup.ts']
+	}
 });

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -9,8 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/denden-dr/openbench/apps/backend/internal/auth"
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
+	"github.com/denden-dr/openbench/apps/backend/internal/health"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -32,6 +33,17 @@ func main() {
 	}
 	defer db.Close()
 
+	// Seed Development/Testing Users
+	if cfg.Env == "development" || cfg.Env == "test" {
+		if err := database.SeedDevUsers(db); err != nil {
+			log.Fatalf("Database seeding failed: %v", err)
+		}
+	}
+
+	// Initialize Auth Repository and Service
+	authRepo := auth.NewRepository(db)
+	authService := auth.NewService(authRepo, db, cfg.JWTSecret)
+
 	// Initialize Fiber App
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  5 * time.Second,
@@ -45,68 +57,39 @@ func main() {
 
 	// Secure CORS settings (TD-002)
 	allowOrigins := strings.Join(cfg.AllowedOrigins, ",")
-	if allowOrigins == "" {
-		allowOrigins = "http://localhost:5173"
-	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: allowOrigins,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+		AllowOrigins:     allowOrigins,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowCredentials: true,
 	}))
 
 	// Security Headers (Helmet)
 	app.Use(helmet.New())
 
-	// Liveness Probe (TD-008)
-	app.Get("/health/liveness", func(c *fiber.Ctx) error {
+	// Health Probes (TD-008)
+	healthHandler := health.NewHandler(db, cfg.Env)
+	app.Get("/health/liveness", healthHandler.Liveness)
+	app.Get("/health/readiness", healthHandler.Readiness)
+	app.Get("/health", healthHandler.LegacyHealth)
+
+	// Auth Routes
+	api := app.Group("/api/v1")
+	isDev := cfg.Env == "development" || cfg.Env == "test"
+	authHandler := auth.NewHandler(authService, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry, isDev)
+	api.Post("/auth/signin", authHandler.SignIn)
+	api.Post("/auth/refresh", authHandler.Refresh)
+	api.Post("/auth/signout", authHandler.SignOut)
+	api.Get("/auth/me", auth.RequireAuth(cfg.JWTSecret), authHandler.Me)
+
+	// Protected Admin Routes
+	admin := api.Group("/admin", auth.RequireAuth(cfg.JWTSecret), auth.RequireRole("admin"))
+	admin.Get("/dashboard", func(c *fiber.Ctx) error {
+		userID := c.Locals("user_id").(string)
 		return c.JSON(fiber.Map{
-			"status":      "OK",
-			"environment": cfg.Env,
-			"timestamp":   time.Now().Format(time.RFC3339),
+			"message": "Welcome to the admin dashboard",
+			"user_id": userID,
 		})
-	})
-
-	// Readiness Probe (TD-008)
-	app.Get("/health/readiness", func(c *fiber.Ctx) error {
-		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
-		defer cancel()
-
-		start := time.Now()
-		err := db.DB.PingContext(ctx)
-		duration := time.Since(start)
-
-		// Slow operation warning (TD-009)
-		if duration > 100*time.Millisecond {
-			log.Printf("Warning: Slow database ping took %v (threshold: 100ms)", duration)
-		}
-
-		if err != nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"status": "UNREADY",
-				"error":  "database is not reachable",
-			})
-		}
-
-		// Retrieve database stats for observability (TD-009)
-		stats := db.Stats()
-
-		return c.JSON(fiber.Map{
-			"status":  "READY",
-			"db":      "CONNECTED",
-			"latency": duration.String(),
-			"pool": fiber.Map{
-				"open_connections": stats.OpenConnections,
-				"in_use":           stats.InUse,
-				"idle":             stats.Idle,
-				"wait_count":       stats.WaitCount,
-				"wait_duration_ms": stats.WaitDuration.Milliseconds(),
-			},
-		})
-	})
-
-	// Legacy Health route redirects to readiness
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.Redirect("/health/readiness", fiber.StatusMovedPermanently)
 	})
 
 	// Periodic DB Connection Pool Stats Logging (TD-009)

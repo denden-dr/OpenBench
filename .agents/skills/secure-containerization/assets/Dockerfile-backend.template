@@ -1,0 +1,32 @@
+# Stage 1: Build binary using official pinned stable Go image
+FROM golang:1.24-alpine AS builder
+
+RUN apk update && apk add --no-cache git ca-certificates
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Build a fully static, optimized binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main ./cmd/api/main.go
+
+# Stage 2: Minimal runtime using stable Alpine Linux
+FROM alpine:3.20
+
+# Create dedicated non-root user and group
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
+# Switch context to the non-root user (BE-007)
+USER appuser
+
+EXPOSE 8080
+
+CMD ["./main"]

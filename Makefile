@@ -1,4 +1,20 @@
-.PHONY: dev-db-up dev-db-down test-env-build test-env-up test-env-down run-backend test-backend test-unit test-integration clean
+.PHONY: dev dev-db-up dev-db-down test-env-build test-env-up test-env-down run-backend run-frontend run-frontend-mock test-frontend test-backend test-unit test-integration clean
+
+# --- Integrated Development Launch ---
+dev:
+	@echo "Starting development database..."
+	$(MAKE) dev-db-up
+	@echo "Waiting for database health check..."
+	@until [ "$$(podman inspect --format='{{.State.Health.Status}}' openbench-postgres-dev 2>/dev/null)" = "healthy" ]; do \
+		sleep 1; \
+	done
+	@echo "Database is ready. Running migrations..."
+	$(MAKE) migrate-up
+	@echo "Starting Go backend and SvelteKit frontend..."
+	@trap 'kill 0' EXIT; \
+	(cd apps/backend && go run ./cmd/api/main.go) & \
+	(cd apps/frontend && npm run dev) & \
+	wait
 
 # --- Development Environment (Database only) ---
 dev-db-up:
@@ -21,6 +37,16 @@ test-env-down:
 run-backend:
 	cd apps/backend && go run ./cmd/api/main.go
 
+# --- Local SvelteKit Frontend Commands ---
+run-frontend:
+	cd apps/frontend && npm run dev
+
+run-frontend-mock:
+	cd apps/frontend && npm run dev:mock
+
+test-frontend:
+	cd apps/frontend && npm run test
+
 test-backend: test-unit test-integration
 
 test-unit:
@@ -39,11 +65,39 @@ test-integration:
 	@until [ "$$(podman inspect --format='{{.State.Health.Status}}' openbench-postgres-test 2>/dev/null)" = "healthy" ]; do \
 		sleep 1; \
 	done
-	@echo "Database is ready. Running integration tests..."
+	@sleep 2
+	@echo "Database is ready. Running migrations..."
+	$(MAKE) migrate-up-test
+	@echo "Migrations applied. Running integration tests..."
 	cd apps/backend && APP_ENV=test go test -count=1 -tags=integration ./...
 	@echo "Tearing down test database..."
 	podman stop openbench-postgres-test || true
 	podman rm -f -v openbench-postgres-test || true
+
+# --- Database Migrations ---
+migrate-up:
+	@if [ -f apps/backend/.env ]; then \
+		export $$(cat apps/backend/.env | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" up
+
+migrate-down:
+	@if [ -f apps/backend/.env ]; then \
+		export $$(cat apps/backend/.env | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down 1
+
+migrate-up-test:
+	@if [ -f apps/backend/.env.test ]; then \
+		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" up
+
+migrate-down-test:
+	@if [ -f apps/backend/.env.test ]; then \
+		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down 1
 
 # --- Cleanup ---
 clean:

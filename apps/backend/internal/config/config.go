@@ -28,10 +28,13 @@ type DatabaseConfig struct {
 }
 
 type AppConfig struct {
-	Env            string
-	Port           string
-	AllowedOrigins []string
-	DB             DatabaseConfig
+	Env              string
+	Port             string
+	AllowedOrigins   []string
+	DB               DatabaseConfig
+	JWTSecret        string
+	JWTAccessExpiry  time.Duration
+	JWTRefreshExpiry time.Duration
 }
 
 // DSN returns the connection string for pgx/stdlib driver
@@ -45,6 +48,14 @@ func LoadConfig() (*AppConfig, error) {
 	env := os.Getenv("APP_ENV")
 	if env == "" {
 		env = "development"
+	}
+	env = strings.ToLower(strings.TrimSpace(env))
+	if env == "dev" {
+		env = "development"
+	}
+
+	if env != "development" && env != "test" && env != "production" {
+		return nil, fmt.Errorf("invalid APP_ENV %q: must be one of 'development', 'test', or 'production'", env)
 	}
 
 	var envFile string
@@ -103,6 +114,9 @@ func LoadConfig() (*AppConfig, error) {
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 30*time.Minute),
 			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 15*time.Minute),
 		},
+		JWTSecret:        getEnv("JWT_SECRET", "change_me_to_a_secure_random_string"),
+		JWTAccessExpiry:  getEnvAsDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
+		JWTRefreshExpiry: getEnvAsDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
 	}
 
 	// Validate Configuration (BE-004)
@@ -112,6 +126,9 @@ func LoadConfig() (*AppConfig, error) {
 		}
 		if cfg.DB.SSLMode == "disable" {
 			return nil, fmt.Errorf("insecure database SSL mode (DB_SSLMODE=disable) is not allowed in environment %q", cfg.Env)
+		}
+		if cfg.JWTSecret == "" || cfg.JWTSecret == "change_me_to_a_secure_random_string" {
+			return nil, fmt.Errorf("JWT secret (JWT_SECRET) must be set to a secure custom value in environment %q", cfg.Env)
 		}
 	}
 
