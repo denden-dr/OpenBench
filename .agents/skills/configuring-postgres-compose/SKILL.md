@@ -1,6 +1,6 @@
 ---
 name: configuring-postgres-compose
-description: Use when configuring PostgreSQL database environments, including docker-compose setups, container teardowns, Go database connection pools, pings, retries, and stats. Do not use for MySQL, SQLite, or other non-PostgreSQL databases.
+description: Use when setting up or debugging PostgreSQL containers, connection pooling, or docker-compose database services. Do not use for MySQL, SQLite, or other databases.
 version: 1.0.0
 ---
 
