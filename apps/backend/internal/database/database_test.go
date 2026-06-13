@@ -4,41 +4,43 @@ package database_test
 
 import (
 	"context"
+	"log"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/denden-dr/openbench/apps/backend/internal/config"
-	"github.com/denden-dr/openbench/apps/backend/internal/database"
+	"github.com/denden-dr/openbench/apps/backend/internal/pkg/testutil"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestDatabaseConnection(t *testing.T) {
-	// Set the environment to test (TD-006)
-	t.Setenv("APP_ENV", "test")
+type DatabaseConnectionTestSuite struct {
+	testutil.IntegrationSuite
+}
 
-	// Load configuration (it will automatically find .env.test by traversing up)
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		t.Fatalf("Failed to load config: %v", err)
-	}
+func TestDatabaseConnectionSuite(t *testing.T) {
+	suite.Run(t, new(DatabaseConnectionTestSuite))
+}
 
-	// Attempt database connection
-	db, err := database.NewConnection(&cfg.DB)
-	if err != nil {
-		t.Fatalf("Failed to connect to database: %v. Make sure the podman test db container is running.", err)
-	}
-	defer db.Close()
-
-	// Verify query execution
+func (s *DatabaseConnectionTestSuite) TestDatabaseConnection() {
+	db := s.DB
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	var result int
-	err = db.DB.QueryRowContext(ctx, "SELECT 1").Scan(&result)
+	err := db.DB.QueryRowContext(ctx, "SELECT 1").Scan(&result)
+	s.Require().NoError(err)
+	s.Equal(1, result)
+}
+
+func TestMain(m *testing.M) {
+	tdb, err := testutil.SetupTestDB()
 	if err != nil {
-		t.Fatalf("Failed to execute test query: %v", err)
+		log.Fatalf("Failed to setup integration test database: %v", err)
 	}
 
-	if result != 1 {
-		t.Errorf("Expected query to return 1, got %d", result)
-	}
+	code := m.Run()
+
+	tdb.Terminate()
+
+	os.Exit(code)
 }
