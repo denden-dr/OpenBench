@@ -1,0 +1,60 @@
+package main
+
+import (
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+)
+
+func main() {
+	app := fiber.New(fiber.Config{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	})
+
+	// Security Middleware
+	app.Use(recover.New()) // Capture panics
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000", // Restrict origins
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+
+	// Setup routes
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	// Channel to capture server startup errors (BE-001)
+	serverErrors := make(chan error, 1)
+
+	// Listen in goroutine
+	go func() {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		serverErrors <- app.Listen(":" + port)
+	}()
+
+	// Graceful shutdown channel
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Block until a signal or startup error occurs (Fail-Fast)
+	select {
+	case err := <-serverErrors:
+		log.Fatalf("Server startup failed: %v", err)
+	case <-quit:
+		log.Println("Shutting down server gracefully...")
+		if err := app.Shutdown(); err != nil {
+			log.Fatalf("Server forced to shutdown: %v", err)
+		}
+		log.Println("Server exited cleanly")
+	}
+}

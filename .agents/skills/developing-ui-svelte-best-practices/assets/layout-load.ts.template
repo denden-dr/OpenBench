@@ -1,0 +1,10 @@
+// src/routes/admin/+layout.ts
+import { redirect } from '@sveltejs/kit';
+import { authService } from '$lib/services/auth';
+
+export async function load() {
+  const session = await authService.checkSession();
+  if (!session || session.role !== 'admin') {
+    throw redirect(307, '/auth/signin');
+  }
+}

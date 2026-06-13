@@ -1,6 +1,7 @@
 ---
 name: initializing-go-fiber-api
-description: Use when initializing a Go web application using the Fiber framework, configuring security middleware (CORS, Recover, Helmet), and implementing graceful shutdown.
+description: Use when initializing a Go web application using the Fiber framework, configuring security middleware (CORS, Recover, Helmet), and implementing graceful shutdown. Do not use for Gin, Chi, Echo, or other non-Fiber web frameworks.
+version: 1.1.0
 ---
 
 # Initializing Go Fiber API
@@ -13,72 +14,12 @@ Go Fiber is an Express-inspired web framework for Go. When setting up a Fiber AP
 - Hardening an existing Fiber application with security headers, recovery logic, or CORS.
 - Adding graceful shutdown handling to a Go service.
 
-## Core Pattern
-Always capture the server startup errors on a channel and block the main execution using a `select` statement. This ensures the application crashes immediately if the port bind fails (Fail-Fast), rather than running silently in a hang state.
+## Step-by-Step Instructions
 
-### Graceful Shutdown and Middleware Pattern
-```go
-package main
-
-import (
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/recover"
-)
-
-func main() {
-	app := fiber.New(fiber.Config{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	})
-
-	// Security Middleware
-	app.Use(recover.New()) // Capture panics
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000", // Restrict origins
-		AllowHeaders: "Origin, Content-Type, Accept",
-	}))
-
-	// Setup routes
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
-
-	// Channel to capture server startup errors (BE-001)
-	serverErrors := make(chan error, 1)
-
-	// Listen in goroutine
-	go func() {
-		port := os.Getenv("PORT")
-		if port == "" {
-			port = "8080"
-		}
-		serverErrors <- app.Listen(":" + port)
-	}()
-
-	// Graceful shutdown channel
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
-	// Block until a signal or startup error occurs (Fail-Fast)
-	select {
-	case err := <-serverErrors:
-		log.Fatalf("Server startup failed: %v", err)
-	case <-quit:
-		log.Println("Shutting down server gracefully...")
-		if err := app.Shutdown(); err != nil {
-			log.Fatalf("Server forced to shutdown: %v", err)
-		}
-		log.Println("Server exited cleanly")
-	}
-}
-```
+1. **Initialize Fiber App**: Read `assets/server.go.template` to understand the standard Fiber initialization flow, establishing appropriate read/write timeouts to protect against slowloris attacks.
+2. **Register Security Middlewares**: Configure `recover.New()` first to capture unhandled panics, and configure `cors.New(...)` with strict, explicit domain origins. When using cookie-based authentication, ensure CORS config sets `AllowCredentials: true` and lists explicit origins, as browsers reject cookie transfer on wildcard `*` origins.
+3. **Implement Fail-Fast Port Binding**: Instantiate a buffered error channel of size 1 (e.g. `make(chan error, 1)`), run `app.Listen` inside a goroutine, and write any returned listener errors to the error channel.
+4. **Implement Graceful Shutdown**: Establish an OS signal interrupt channel listening for `SIGINT` and `SIGTERM`. Block using a `select` statement that monitors both the startup error channel and the OS signal channel. If an OS signal is caught, trigger `app.Shutdown()` to allow active requests to finish cleanly.
 
 ## Common Mistakes
 - **Hanging Startup**: Running `app.Listen` inside a goroutine without returning its errors, which leaves the main process alive but unable to serve traffic when port bind fails (BE-001).

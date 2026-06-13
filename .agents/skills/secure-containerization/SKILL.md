@@ -1,6 +1,7 @@
 ---
 name: secure-containerization
-description: Use when containerizing applications (Go, SvelteKit, Node.js) with Docker or Podman, ensuring non-root execution, pinned image tags, multi-stage builds, and dockerignore configurations.
+description: Use when containerizing applications (Go, SvelteKit, Node.js) with Docker or Podman, ensuring non-root execution, pinned image tags, multi-stage builds, and dockerignore configurations. Do not use for virtual machine orchestration or Kubernetes configuration files.
+version: 1.0.0
 ---
 
 # Secure Containerization
@@ -13,95 +14,12 @@ Container security is crucial for production deployments. Running containers as 
 - Setting up or reviewing container build files.
 - Configuring `.dockerignore` files to prevent secret leakage.
 
-## Core Patterns
+## Step-by-Step Instructions
 
-### 1. The `.dockerignore` File
-To prevent local `.env` files, build caches, git history, or local `node_modules` from leaking into docker image layers, always place a `.dockerignore` file in the service context root.
-
-Example backend `.dockerignore`:
-```ignore
-.env
-.env.test
-.git
-tmp
-dist
-node_modules
-```
-
-### 2. Multi-Stage Builds & Non-Root User Execution
-Separate compilation dependencies from runtime dependencies. In the final stage, configure the container to run as a restricted, non-root user.
-
-#### Go Backend Dockerfile Example
-```dockerfile
-# Stage 1: Build binary using official pinned stable Go image
-FROM golang:1.24-alpine AS builder
-
-RUN apk update && apk add --no-cache git ca-certificates
-
-WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . .
-
-# Build a fully static, optimized binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main ./cmd/api/main.go
-
-# Stage 2: Minimal runtime using stable Alpine Linux
-FROM alpine:3.20
-
-# Create dedicated non-root user and group
-RUN apk --no-cache add ca-certificates tzdata && \
-    addgroup -S appgroup && adduser -S appuser -G appgroup
-
-WORKDIR /app
-
-COPY --from=builder /app/main .
-
-# Switch context to the non-root user (BE-007)
-USER appuser
-
-EXPOSE 8080
-
-CMD ["./main"]
-```
-
-#### SvelteKit / Node.js Frontend Dockerfile Example
-```dockerfile
-# Stage 1: Build application assets
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-# Stage 2: Pinned production runtime
-FROM node:20-alpine
-
-WORKDIR /app
-RUN chown node:node /app
-
-# Switch context to node's pre-existing non-root user
-USER node
-
-# Copy manifests and install production-only dependencies
-COPY --chown=node:node package*.json ./
-RUN npm ci --omit=dev
-
-# Copy built artifacts with correct node user ownership
-COPY --chown=node:node --from=builder /app/build ./build
-
-EXPOSE 3000
-ENV PORT=3000
-ENV NODE_ENV=production
-
-CMD ["node", "build"]
-```
+1. **Configure `.dockerignore`**: Ensure a `.dockerignore` file is placed in the service context root, excluding local `.env` files, build caches, git history, and local dependencies.
+2. **Implement Backend Containerization**: Read `assets/Dockerfile-backend.template` and construct the Go backend Dockerfile, utilizing multi-stage builds, static compilation, and user restriction mappings.
+3. **Implement Frontend Containerization**: Read `assets/Dockerfile-frontend.template` and construct the Node/SvelteKit frontend Dockerfile, leveraging multi-stage assets building and node non-root group context.
+4. **Enforce Non-Root Execution**: Verify the final Dockerfile switches execution context to a restricted non-root user (`USER appuser` or `USER node`) to prevent breakout vulnerabilities.
 
 ## Common Mistakes
 - **No `.dockerignore`**: Leaving local `.env` files in the build folder, causing them to be copied by `COPY . .` and permanently baked into the image history.

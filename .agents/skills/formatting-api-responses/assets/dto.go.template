@@ -1,0 +1,12 @@
+package auth
+
+type SignInRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
+type SignInResponse struct {
+	Role   string `json:"role"`
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+}
