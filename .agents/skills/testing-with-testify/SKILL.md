@@ -101,10 +101,11 @@ For auto-generating interface mocks, read `references/mockery-generation.md`. Ke
   test-integration:
   	cd apps/backend && TESTCONTAINERS_RYUK_DISABLED=$(TESTCONTAINERS_RYUK_DISABLED) go test -count=1 -tags=integration ./...
   ```
-  If Ryuk must be disabled, also add a Makefile cleanup target as fallback:
+  If Ryuk must be disabled, also add a Makefile cleanup target as fallback. **⚠ WARNING: this is a destructive last-resort command.** Scope the filter to project-specific container names to avoid removing unrelated Testcontainers from other projects sharing the same daemon:
   ```makefile
+  # Scoped to OpenBench test containers only — will NOT affect other projects
   clean-test-containers:
-  	docker rm -f $$(docker ps -q --filter "label=org.testcontainers=true") 2>/dev/null || true
+  	$(CONTAINER_RUNTIME) rm -f $$($(CONTAINER_RUNTIME) ps -aq --filter "name=openbench") 2>/dev/null || true
   ```
 - **Container Orphans on Crash**: When Ryuk is disabled and the test process is killed before `TestMain` calls `tdb.Terminate()`, containers are left running indefinitely. Always keep Ryuk enabled as the primary cleanup mechanism; `Terminate()` in `TestMain` is the secondary cleanup.
 - **Migration Pool Contention**: Running migrations using the same pool as the test code (`pgxMigrate.WithInstance(db.DB.DB, ...)`) holds a connection throughout the migration, reducing effective pool capacity for tests. Always create a separate database connection for migrations and close it before tests begin:
