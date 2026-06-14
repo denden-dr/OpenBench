@@ -15,7 +15,20 @@ TESTCONTAINERS_RYUK_DISABLED ?= false
 
 # Container tooling defaults to Podman when available, with Docker fallback.
 CONTAINER_RUNTIME ?= $(shell if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo podman; fi)
-COMPOSE ?= $(shell if command -v podman-compose >/dev/null 2>&1; then echo podman-compose; elif docker compose version >/dev/null 2>&1; then echo docker compose; elif command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo podman-compose; fi)
+
+# Derive COMPOSE from CONTAINER_RUNTIME to prevent mixing Docker and Podman commands.
+ifeq ($(CONTAINER_RUNTIME),podman)
+  COMPOSE ?= $(shell if command -v podman-compose >/dev/null 2>&1; then echo podman-compose; else echo podman-compose; fi)
+else
+  COMPOSE ?= $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo docker-compose; fi)
+endif
+
+# Fail-fast check to ensure CONTAINER_RUNTIME and COMPOSE use the same engine.
+ifneq ($(findstring podman,$(CONTAINER_RUNTIME)),$(findstring podman,$(COMPOSE)))
+  ifneq ($(findstring docker,$(CONTAINER_RUNTIME)),$(findstring docker,$(COMPOSE)))
+    $(error CONTAINER_RUNTIME ($(CONTAINER_RUNTIME)) and COMPOSE ($(COMPOSE)) must point to the same container engine!)
+  endif
+endif
 COMPOSE_DEV = $(COMPOSE) --env-file apps/backend/.env
 COMPOSE_TEST = $(COMPOSE) -f docker-compose-test.yml --profile frontend
 DEV_DB_CONTAINER = openbench-postgres-dev

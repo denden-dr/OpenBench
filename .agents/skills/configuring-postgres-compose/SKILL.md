@@ -28,3 +28,17 @@ PostgreSQL in Docker Compose and Go should be configured for security, persisten
 - **No Observability**: Storing the DB connection globally without exposing `db.DB.Stats()` to track pool exhaustion.
 - **No Ping Verification**: Running `sqlx.Open` without verifying connection viability using `.PingContext()`.
 - **No Application-Level Readiness Wait**: Using `pg_isready` to verify database health but not waiting for the backend API (`/api/health`) and frontend dev server to be ready before running E2E tests. Makefile targets that orchestrate test environments must include wait steps for all services, not just the database.
+- **Mixing Container Runtimes in Makefile**: When both Docker and Podman are installed, `CONTAINER_RUNTIME` and `COMPOSE` must be derived from the same source — never auto-detect them independently. If `CONTAINER_RUNTIME=docker`, then `COMPOSE` must resolve to `docker compose` (not `podman-compose`). Derive `COMPOSE` from `CONTAINER_RUNTIME`, or add a fail-fast guard that aborts when they point at different daemons. Example:
+  ```makefile
+  # ✗ BAD: each variable detected independently — can mix podman-compose with docker inspect
+  CONTAINER_RUNTIME ?= $(shell command -v podman || echo docker)
+  COMPOSE ?= $(shell command -v podman-compose || echo docker compose)
+
+  # ✓ GOOD: COMPOSE derived from CONTAINER_RUNTIME
+  CONTAINER_RUNTIME ?= $(shell if command -v podman >/dev/null 2>&1; then echo podman; else echo docker; fi)
+  ifeq ($(CONTAINER_RUNTIME),podman)
+    COMPOSE ?= podman-compose
+  else
+    COMPOSE ?= docker compose
+  endif
+  ```
