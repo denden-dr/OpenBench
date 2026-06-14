@@ -10,12 +10,23 @@
         migrate-up migrate-down migrate-test-up migrate-test-down \
         fmt clean
 
+# Default: Ryuk enabled by default, developer overrides via env (opt-out)
+TESTCONTAINERS_RYUK_DISABLED ?= false
+
+# Container tooling defaults to Podman when available, with Docker fallback.
+CONTAINER_RUNTIME ?= $(shell if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo podman; fi)
+COMPOSE ?= $(shell if command -v podman-compose >/dev/null 2>&1; then echo podman-compose; elif docker compose version >/dev/null 2>&1; then echo docker compose; elif command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo podman-compose; fi)
+COMPOSE_DEV = $(COMPOSE) --env-file apps/backend/.env
+COMPOSE_TEST = $(COMPOSE) -f docker-compose-test.yml --profile frontend
+DEV_DB_CONTAINER = openbench-postgres-dev
+TEST_DB_CONTAINER = openbench-postgres-test
+
 # --- Integrated Development Launch ---
 dev:
 	@echo "==> Starting development database..."
 	$(MAKE) dev-db-up
 	@echo "==> Waiting for database health check..."
-	@until [ "$$(podman inspect --format='{{.State.Health.Status}}' openbench-postgres-dev 2>/dev/null)" = "healthy" ]; do \
+	@until [ "$$($(CONTAINER_RUNTIME) inspect --format='{{.State.Health.Status}}' $(DEV_DB_CONTAINER) 2>/dev/null)" = "healthy" ]; do \
 		sleep 1; \
 	done
 	@echo "==> Running database migrations..."
@@ -28,10 +39,10 @@ dev:
 
 # --- Local Services (Dev) ---
 dev-db-up:
-	podman-compose --env-file apps/backend/.env up -d
+	$(COMPOSE_DEV) up -d
 
 dev-db-down:
-	podman-compose --env-file apps/backend/.env down
+	$(COMPOSE_DEV) down
 
 run-backend:
 	cd apps/backend && go run ./cmd/api/main.go
@@ -44,22 +55,22 @@ run-frontend-mock:
 
 # --- Containerized Test Environment ---
 compose-test-build:
-	podman-compose -f docker-compose-test.yml --profile frontend build
+	$(COMPOSE_TEST) build
 
 compose-test-up:
-	podman-compose -f docker-compose-test.yml --profile frontend up -d postgres-test
+	$(COMPOSE_TEST) up -d postgres-test
 	@echo "==> Waiting for test database to be ready..."
-	@until [ "$$(podman inspect --format='{{.State.Health.Status}}' openbench-postgres-test 2>/dev/null)" = "healthy" ]; do \
+	@until [ "$$($(CONTAINER_RUNTIME) inspect --format='{{.State.Health.Status}}' $(TEST_DB_CONTAINER) 2>/dev/null)" = "healthy" ]; do \
 		sleep 1; \
 	done
 	@sleep 2
 	@echo "==> Database ready. Running test migrations..."
 	$(MAKE) migrate-test-up
 	@echo "==> Starting test environment frontend services..."
-	podman-compose -f docker-compose-test.yml --profile frontend up -d
+	$(COMPOSE_TEST) up -d
 
 compose-test-down:
-	podman-compose -f docker-compose-test.yml --profile frontend down
+	$(COMPOSE_TEST) down
 
 # --- Backend Testing Suite ---
 test-backend: test-unit test-integration
@@ -76,7 +87,7 @@ test-unit:
 
 test-integration:
 	@echo "==> Running integration tests using Testcontainers..."
-	cd apps/backend && go test -count=1 -tags=integration ./...
+	cd apps/backend && TESTCONTAINERS_RYUK_DISABLED=$(TESTCONTAINERS_RYUK_DISABLED) go test -count=1 -tags=integration ./...
 
 # --- Frontend Testing Suite ---
 test-frontend:
@@ -93,6 +104,10 @@ test-frontend-dev-env:
 test-frontend-test-env:
 	@echo "==> Booting containerized test environment..."
 	$(MAKE) compose-test-up
+	@echo "==> Waiting for backend-api-test to be ready..."
+	@until curl -sf http://127.0.0.1:8081/health/readiness >/dev/null 2>&1; do sleep 1; done
+	@echo "==> Waiting for frontend-web-test to be ready..."
+	@until curl -sf http://127.0.0.1:3001/auth/signin >/dev/null 2>&1; do sleep 1; done
 	@echo "==> Running Playwright E2E tests against test environment..."
 	cd apps/frontend && npm run test:e2e:env || ( $(MAKE) compose-test-down && exit 1 )
 	@echo "==> Tearing down containerized test environment..."
@@ -129,14 +144,16 @@ fmt:
 
 clean:
 	@echo "==> Stopping and cleaning up dev databases..."
-	@podman stop openbench-postgres-dev || true
-	@podman rm -f -v openbench-postgres-dev || true
+	@$(CONTAINER_RUNTIME) stop $(DEV_DB_CONTAINER) || true
+	@$(CONTAINER_RUNTIME) rm -f -v $(DEV_DB_CONTAINER) || true
 	@echo "==> Stopping and cleaning up test databases..."
-	@podman stop openbench-postgres-test || true
-	@podman rm -f -v openbench-postgres-test || true
+	@$(CONTAINER_RUNTIME) stop $(TEST_DB_CONTAINER) || true
+	@$(CONTAINER_RUNTIME) rm -f -v $(TEST_DB_CONTAINER) || true
 	@echo "==> Tearing down active compose sessions..."
-	podman-compose --env-file apps/backend/.env down || true
-	podman-compose -f docker-compose-test.yml --profile frontend down || true
-	@podman pod rm -f pod_openbench || true
-	@podman pod rm -f pod_openbench-test || true
-	podman volume rm openbench_postgres_data || true
+	$(COMPOSE_DEV) down || true
+	$(COMPOSE_TEST) down || true
+	@if [ "$(CONTAINER_RUNTIME)" = "podman" ]; then \
+		$(CONTAINER_RUNTIME) pod rm -f pod_openbench || true; \
+		$(CONTAINER_RUNTIME) pod rm -f pod_openbench-test || true; \
+	fi
+	$(CONTAINER_RUNTIME) volume rm openbench_postgres_data || true

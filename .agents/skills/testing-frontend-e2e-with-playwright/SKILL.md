@@ -69,6 +69,7 @@ test('should login', async ({ page }) => {
 - **Vite Dev Server Resource Starvation**: Running Vite dev servers with high parallel workers (`fullyParallel: true`) can cause compilation timeouts. Set `workers: 1` and `fullyParallel: false` for dev-run E2E.
 - **Hydration Race Condition**: Triggers raw form submission (e.g. appends `?email=...` to browser URL) because Svelte's client JS hasn't attached event handlers yet.
 - **Mismatched Mock Environment Variables**: Exporting `MOCK_API=true` in the npm script but reading `PUBLIC_MOCK_API` in SvelteKit code. SvelteKit client-side code requires the `PUBLIC_` prefix to access env vars via `$env/static/public`. Always verify that the variable name exported in the script matches exactly what the code imports.
+- **No Service Readiness Wait**: Running Playwright immediately after `docker-compose up` without verifying that backend and frontend are accepting requests, causing `ECONNREFUSED` or early test failures.
 
 ---
 
@@ -86,5 +87,38 @@ Every environment variable that controls mock mode MUST use the prefix appropria
 test.beforeAll(() => {
   const isMock = process.env.PUBLIC_MOCK_API === 'true';
   if (!isMock) throw new Error('Tests must run in mock mode. Check env var name alignment.');
+});
+```
+
+---
+
+## Service Readiness Before Test Execution
+
+Makefile or CI scripts that run Playwright MUST wait for all services (backend API, frontend, database) to be ready before starting the test runner.
+
+### Pattern: Wait-for-service in Makefile
+```makefile
+.PHONY: wait-for-services
+wait-for-services:
+	@echo "Waiting for backend..."
+	@until curl -sf http://localhost:3000/api/health > /dev/null 2>&1; do sleep 1; done
+	@echo "Waiting for frontend..."
+	@until curl -sf http://localhost:5173 > /dev/null 2>&1; do sleep 1; done
+	@echo "All services ready."
+
+test-frontend-e2e: wait-for-services
+	cd apps/frontend && npx playwright test
+```
+
+### Alternative: Playwright webServer config
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+    timeout: 30_000,  // fail fast if service doesn't come up
+  },
 });
 ```

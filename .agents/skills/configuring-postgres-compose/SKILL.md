@@ -27,3 +27,4 @@ PostgreSQL in Docker Compose and Go should be configured for security, persisten
 - **Hanging Networks**: Relying only on `compose down` under Podman. Always stop and force-remove containers by name first.
 - **No Observability**: Storing the DB connection globally without exposing `db.DB.Stats()` to track pool exhaustion.
 - **No Ping Verification**: Running `sqlx.Open` without verifying connection viability using `.PingContext()`.
+- **No Application-Level Readiness Wait**: Using `pg_isready` to verify database health but not waiting for the backend API (`/api/health`) and frontend dev server to be ready before running E2E tests. Makefile targets that orchestrate test environments must include wait steps for all services, not just the database.
