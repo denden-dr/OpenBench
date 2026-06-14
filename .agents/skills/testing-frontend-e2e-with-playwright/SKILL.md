@@ -68,3 +68,23 @@ test('should login', async ({ page }) => {
 ## Common Mistakes
 - **Vite Dev Server Resource Starvation**: Running Vite dev servers with high parallel workers (`fullyParallel: true`) can cause compilation timeouts. Set `workers: 1` and `fullyParallel: false` for dev-run E2E.
 - **Hydration Race Condition**: Triggers raw form submission (e.g. appends `?email=...` to browser URL) because Svelte's client JS hasn't attached event handlers yet.
+- **Mismatched Mock Environment Variables**: Exporting `MOCK_API=true` in the npm script but reading `PUBLIC_MOCK_API` in SvelteKit code. SvelteKit client-side code requires the `PUBLIC_` prefix to access env vars via `$env/static/public`. Always verify that the variable name exported in the script matches exactly what the code imports.
+
+---
+
+## Environment Variable Alignment for Mock Mode
+
+Every environment variable that controls mock mode MUST use the prefix appropriate to the framework:
+- **SvelteKit**: `PUBLIC_` prefix for client-side variables accessed via `$env/static/public`
+- **Vite (non-SvelteKit)**: `VITE_` prefix for variables accessed via `import.meta.env`
+
+### Checklist before writing/modifying mock scripts:
+1. Identify the variable **read** by the frontend code (grep `$env/static/public` or `import.meta.env`).
+2. Ensure the npm script exports **the exact same name**.
+3. Add an assertion at the start of the test suite to verify mock mode is active:
+```typescript
+test.beforeAll(() => {
+  const isMock = process.env.PUBLIC_MOCK_API === 'true';
+  if (!isMock) throw new Error('Tests must run in mock mode. Check env var name alignment.');
+});
+```

@@ -27,3 +27,4 @@ Use when:
 - **Standard SELECT in Transactions**: Querying a state record using a plain `SELECT` inside a transaction, allowing concurrent sessions to read the same stale state and duplicate side-effects.
 - **Mismatched JSON tags**: Returning fields in Go without the correct `json` struct tag or with mismatching case, causing the frontend fields to be initialized as `undefined` or `""`.
 - **Diverging Seed Credentials**: Updating database seeder credentials but forgetting to update the frontend mock equivalents, confusing local developer verification.
+- **Mismatched Environment Variable Names**: Exporting `MOCK_API=true` in npm scripts but reading `PUBLIC_MOCK_API` or `VITE_MOCK_API` in the frontend code. SvelteKit requires the `PUBLIC_` prefix for client-accessible env vars. Always verify that the variable name in the npm script matches the name imported by the frontend service code.
