@@ -93,8 +93,30 @@ For auto-generating interface mocks, read `references/mockery-generation.md`. Ke
 | **Boolean State** (Validity checks) | `assert.True(t, condition)` | Logs failure, continues executing test |
 
 ## Common Mistakes
-- **Ryuk Permission Errors**: Rootless Podman/Docker runtimes fail with Ryuk enabled. The `testutil` package automatically sets `TESTCONTAINERS_RYUK_DISABLED=true`.
-- **Postgres Container Leaks**: Because Ryuk is disabled, failing to define a `TestMain` function that calls `tdb.Terminate()` leaves active containers running indefinitely in the background.
+- **Ryuk Should Stay Enabled by Default**: Ryuk is a safety net that cleans up containers when the test process crashes or is killed. Do not disable it globally **at any layer** — not in Go helper code, not in Makefile targets, and not in CI scripts. Only disable for runtimes that technically cannot run it (rootless Podman), and make it opt-in by **allowing the caller** to set `TESTCONTAINERS_RYUK_DISABLED=true` in their shell environment. Makefile targets should declare a default and pass it through:
+  ```makefile
+  # Top of Makefile: Ryuk enabled by default, developer overrides via env
+  TESTCONTAINERS_RYUK_DISABLED ?= false
+
+  test-integration:
+  	cd apps/backend && TESTCONTAINERS_RYUK_DISABLED=$(TESTCONTAINERS_RYUK_DISABLED) go test -count=1 -tags=integration ./...
+  ```
+  If Ryuk must be disabled, also add a Makefile cleanup target as fallback:
+  ```makefile
+  clean-test-containers:
+  	docker rm -f $$(docker ps -q --filter "label=org.testcontainers=true") 2>/dev/null || true
+  ```
+- **Container Orphans on Crash**: When Ryuk is disabled and the test process is killed before `TestMain` calls `tdb.Terminate()`, containers are left running indefinitely. Always keep Ryuk enabled as the primary cleanup mechanism; `Terminate()` in `TestMain` is the secondary cleanup.
+- **Migration Pool Contention**: Running migrations using the same pool as the test code (`pgxMigrate.WithInstance(db.DB.DB, ...)`) holds a connection throughout the migration, reducing effective pool capacity for tests. Always create a separate database connection for migrations and close it before tests begin:
+  ```go
+  // ✓ Good: separate connection for migrations
+  migrationDB, _ := sql.Open("postgres", dsn)
+  defer migrationDB.Close()
+  driver, _ := pgxMigrate.WithInstance(migrationDB, &pgxMigrate.Config{})
+  m, _ := migrate.NewWithDatabaseInstance("file://migrations", "postgres", driver)
+  m.Up()
+  // main pool remains fully available for tests
+  ```
 - **Unmet Mock Expectations**: Forgetting to assert mock expectations. Use `mocks.New<Interface>(t)` which registers `t.Cleanup` automatically, or manually add `t.Cleanup(func() { mockSQL.ExpectationsWereMet() })`.
 - **Out-of-Sync Mocks**: Modifying an interface and forgetting to run `go generate ./...`.
 - **Nil Pointer Panic**: Using `assert.NoError` on an error return and immediately dereferencing the return variable. Always use `require.NoError`.

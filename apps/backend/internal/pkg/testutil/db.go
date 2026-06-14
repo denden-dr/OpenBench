@@ -42,11 +42,6 @@ var (
 func SetupTestDB() (*TestDB, error) {
 	var initErr error
 	once.Do(func() {
-		// Disable Ryuk (reaper) by default for compatibility with rootless Podman environments
-		if os.Getenv("TESTCONTAINERS_RYUK_DISABLED") == "" {
-			_ = os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-		}
-
 		ctx := context.Background()
 
 		dbName := "openbench_test"
@@ -106,18 +101,21 @@ func SetupTestDB() (*TestDB, error) {
 			ConnMaxIdleTime: 5 * time.Minute,
 		}
 
-		// Connect using the production connection logic to maintain driver parity
-		db, err := database.NewConnection(dbCfg)
+		// Connect to the test database for migrations using a separate, temporary pool
+		migrationDBCfg := *dbCfg
+		migrationDBCfg.MaxOpenConns = 1
+		migrationDBCfg.MaxIdleConns = 1
+		migrationDB, err := database.NewConnection(&migrationDBCfg)
 		if err != nil {
 			pgContainer.Terminate(ctx)
-			initErr = fmt.Errorf("failed to connect to test database: %w", err)
+			initErr = fmt.Errorf("failed to connect to test database for migrations: %w", err)
 			return
 		}
 
 		// Run migrations using golang-migrate
-		driver, err := pgxMigrate.WithInstance(db.DB.DB, &pgxMigrate.Config{})
+		driver, err := pgxMigrate.WithInstance(migrationDB.DB.DB, &pgxMigrate.Config{})
 		if err != nil {
-			db.Close()
+			migrationDB.Close()
 			pgContainer.Terminate(ctx)
 			initErr = fmt.Errorf("failed to create migration driver: %w", err)
 			return
@@ -128,16 +126,29 @@ func SetupTestDB() (*TestDB, error) {
 			"pgx", driver,
 		)
 		if err != nil {
-			db.Close()
+			migrationDB.Close()
 			pgContainer.Terminate(ctx)
 			initErr = fmt.Errorf("failed to create migrate instance: %w", err)
 			return
 		}
 
 		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-			db.Close()
+			_, _ = m.Close()
+			migrationDB.Close()
 			pgContainer.Terminate(ctx)
 			initErr = fmt.Errorf("failed to run migrations up: %w", err)
+			return
+		}
+
+		// Close migration tools and connections cleanly to return connection to database
+		_, _ = m.Close()
+		migrationDB.Close()
+
+		// Connect using the production connection logic to maintain driver parity for the test suite
+		db, err := database.NewConnection(dbCfg)
+		if err != nil {
+			pgContainer.Terminate(ctx)
+			initErr = fmt.Errorf("failed to connect to test database: %w", err)
 			return
 		}
 
