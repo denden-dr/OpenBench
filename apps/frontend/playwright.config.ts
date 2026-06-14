@@ -25,8 +25,15 @@ const config = defineConfig({
 	],
 });
 
-// Only start a local dev server if we aren't testing an external/composed environment
-if (!process.env.BASE_URL) {
+// Start a local dev server or wait for composed environment to be ready
+if (process.env.BASE_URL) {
+	config.webServer = {
+		command: 'echo "Waiting for external environment..."',
+		url: baseURL,
+		reuseExistingServer: true,
+		timeout: 60000,
+	};
+} else {
 	config.webServer = {
 		command: playMode === 'dev' ? 'npm run dev' : 'npm run dev:mock',
 		url: 'http://localhost:5173',
