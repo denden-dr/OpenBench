@@ -17,6 +17,9 @@ export default defineConfig({
 	resolve: {
 		conditions: ['browser']
 	},
+	optimizeDeps: {
+		include: ['lucide-svelte']
+	},
 	server: {
 		proxy: {
 			'/api': {

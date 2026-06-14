@@ -7,70 +7,65 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/auth"
-	"github.com/denden-dr/openbench/apps/backend/internal/config"
-	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/response"
+	"github.com/denden-dr/openbench/apps/backend/internal/pkg/testutil"
 	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestAuthIntegration(t *testing.T) {
-	t.Setenv("APP_ENV", "test")
+type AuthHandlerTestSuite struct {
+	testutil.IntegrationSuite
+	app       *fiber.App
+	jwtSecret string
+}
 
-	cfg, err := config.LoadConfig()
-	require.NoError(t, err)
+func TestAuthHandlerSuite(t *testing.T) {
+	suite.Run(t, new(AuthHandlerTestSuite))
+}
 
-	db, err := database.NewConnection(&cfg.DB)
-	require.NoError(t, err)
-	defer db.Close()
+func (s *AuthHandlerTestSuite) SetupTest() {
+	s.IntegrationSuite.SetupTest() // Clean tables dynamically
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Clear tables before running tests
-	_, err = db.DB.ExecContext(ctx, "DELETE FROM refresh_tokens")
-	require.NoError(t, err)
-	_, err = db.DB.ExecContext(ctx, "DELETE FROM users")
-	require.NoError(t, err)
-
-	// Seed test users
+	// Seed basic users for testing
+	ctx := context.Background()
 	userPasswordHash, err := auth.HashPassword("UserPassword123!")
-	require.NoError(t, err)
-	_, err = db.DB.ExecContext(ctx, "INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)", "user@openbench.dev", userPasswordHash, "user")
-	require.NoError(t, err)
+	s.Require().NoError(err)
+	_, err = s.DB.DB.ExecContext(ctx, "INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)", "user@openbench.dev", userPasswordHash, "user")
+	s.Require().NoError(err)
 
 	adminPasswordHash, err := auth.HashPassword("AdminPassword123!")
-	require.NoError(t, err)
-	_, err = db.DB.ExecContext(ctx, "INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)", "admin_test@openbench.dev", adminPasswordHash, "admin")
-	require.NoError(t, err)
+	s.Require().NoError(err)
+	_, err = s.DB.DB.ExecContext(ctx, "INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)", "admin_test@openbench.dev", adminPasswordHash, "admin")
+	s.Require().NoError(err)
 
-	// Set up Fiber test application
-	app := fiber.New()
+	// Initalize Fiber application
+	s.app = fiber.New()
+	s.jwtSecret = "test_jwt_secret_key_123_456_789"
 
-	jwtSecret := cfg.JWTSecret
 	accessExpiry := 5 * time.Minute
 	refreshExpiry := 24 * time.Hour
 
-	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, db, jwtSecret)
+	authRepo := auth.NewRepository(s.DB)
+	authService := auth.NewService(authRepo, s.DB, s.jwtSecret)
 	authHandler := auth.NewHandler(authService, accessExpiry, refreshExpiry, true)
 
 	// Register test routes
-	app.Post("/api/v1/auth/signin", authHandler.SignIn)
-	app.Post("/api/v1/auth/refresh", authHandler.Refresh)
-	app.Post("/api/v1/auth/signout", authHandler.SignOut)
-	app.Get("/api/v1/auth/me", auth.RequireAuth(jwtSecret), authHandler.Me)
+	s.app.Post("/api/v1/auth/signin", authHandler.SignIn)
+	s.app.Post("/api/v1/auth/refresh", authHandler.Refresh)
+	s.app.Post("/api/v1/auth/signout", authHandler.SignOut)
+	s.app.Get("/api/v1/auth/me", auth.RequireAuth(s.jwtSecret), authHandler.Me)
 
 	// User-only route
-	app.Get("/api/v1/user/profile", auth.RequireAuth(jwtSecret), func(c *fiber.Ctx) error {
+	s.app.Get("/api/v1/user/profile", auth.RequireAuth(s.jwtSecret), func(c *fiber.Ctx) error {
 		userID := c.Locals("user_id").(string)
 		role := c.Locals("user_role").(string)
 		return c.JSON(fiber.Map{
@@ -80,18 +75,24 @@ func TestAuthIntegration(t *testing.T) {
 	})
 
 	// Admin-only route
-	app.Get("/api/v1/admin/dashboard", auth.RequireAuth(jwtSecret), auth.RequireRole("admin"), func(c *fiber.Ctx) error {
+	s.app.Get("/api/v1/admin/dashboard", auth.RequireAuth(s.jwtSecret), auth.RequireRole("admin"), func(c *fiber.Ctx) error {
 		userID := c.Locals("user_id").(string)
 		return c.JSON(fiber.Map{
 			"message": "Welcome to the admin dashboard",
 			"user_id": userID,
 		})
 	})
+}
+
+func (s *AuthHandlerTestSuite) TestAuthFlow() {
+	var userAccessTokenCookie, userRefreshTokenCookie string
+	var adminAccessTokenCookie string
+	var nextRefreshTokenCookie string
 
 	// ==========================================
 	// Scenario A: Sign-In Flow
 	// ==========================================
-	t.Run("SignIn - Invalid Credentials", func(t *testing.T) {
+	s.Run("SignIn - Invalid Credentials", func() {
 		reqBody, _ := json.Marshal(auth.SignInRequest{
 			Email:    "user@openbench.dev",
 			Password: "WrongPassword!",
@@ -99,13 +100,12 @@ func TestAuthIntegration(t *testing.T) {
 		req := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	var userAccessTokenCookie, userRefreshTokenCookie string
-	t.Run("SignIn - Successful User Login", func(t *testing.T) {
+	s.Run("SignIn - Successful User Login", func() {
 		reqBody, _ := json.Marshal(auth.SignInRequest{
 			Email:    "user@openbench.dev",
 			Password: "UserPassword123!",
@@ -113,16 +113,16 @@ func TestAuthIntegration(t *testing.T) {
 		req := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, err := app.Test(req, 2000)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		resp, err := s.app.Test(req, 2000)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, resp.StatusCode)
 
 		var apiResp response.APIResponse[auth.SignInResponse]
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		require.NoError(t, err)
-		assert.Equal(t, "user", apiResp.Data.Role)
-		assert.Equal(t, "user@openbench.dev", apiResp.Data.Email)
-		assert.NotEmpty(t, apiResp.Data.UserID)
+		s.Require().NoError(err)
+		s.Assert().Equal("user", apiResp.Data.Role)
+		s.Assert().Equal("user@openbench.dev", apiResp.Data.Email)
+		s.Assert().NotEmpty(apiResp.Data.UserID)
 
 		// Extract cookies
 		cookies := resp.Header.Values("Set-Cookie")
@@ -135,11 +135,11 @@ func TestAuthIntegration(t *testing.T) {
 			}
 		}
 
-		assert.NotEmpty(t, userAccessTokenCookie)
-		assert.NotEmpty(t, userRefreshTokenCookie)
+		s.Assert().NotEmpty(userAccessTokenCookie)
+		s.Assert().NotEmpty(userRefreshTokenCookie)
 	})
 
-	t.Run("SignIn - Validation Failure (Empty Password)", func(t *testing.T) {
+	s.Run("SignIn - Validation Failure (Empty Password)", func() {
 		reqBody, _ := json.Marshal(auth.SignInRequest{
 			Email:    "user@openbench.dev",
 			Password: "",
@@ -147,52 +147,51 @@ func TestAuthIntegration(t *testing.T) {
 		req := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
 
 		var apiResp response.APIResponse[any]
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		require.NoError(t, err)
-		assert.Contains(t, apiResp.Error, "validation failed")
-		assert.Contains(t, apiResp.Error, "Password")
+		s.Require().NoError(err)
+		s.Assert().Contains(apiResp.Error, "validation failed")
+		s.Assert().Contains(apiResp.Error, "Password")
 	})
 
 	// ==========================================
 	// Scenario B: Middleware Access Controls
 	// ==========================================
-	t.Run("Middleware - RequireAuth Missing Token", func(t *testing.T) {
+	s.Run("Middleware - RequireAuth Missing Token", func() {
 		req := httptest.NewRequest("GET", "/api/v1/user/profile", nil)
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("Middleware - RequireAuth Valid Token", func(t *testing.T) {
+	s.Run("Middleware - RequireAuth Valid Token", func() {
 		req := httptest.NewRequest("GET", "/api/v1/user/profile", nil)
 		req.Header.Set("Cookie", fmt.Sprintf("access_token=%s", userAccessTokenCookie))
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, resp.StatusCode)
 
 		var body map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&body)
-		require.NoError(t, err)
-		assert.Equal(t, "user", body["role"])
+		s.Require().NoError(err)
+		s.Assert().Equal("user", body["role"])
 	})
 
-	t.Run("Middleware - RequireRole Insufficient Permissions", func(t *testing.T) {
+	s.Run("Middleware - RequireRole Insufficient Permissions", func() {
 		req := httptest.NewRequest("GET", "/api/v1/admin/dashboard", nil)
 		req.Header.Set("Cookie", fmt.Sprintf("access_token=%s", userAccessTokenCookie))
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusForbidden, resp.StatusCode)
 	})
 
-	var adminAccessTokenCookie string
-	t.Run("Middleware - RequireRole Valid Permissions", func(t *testing.T) {
+	s.Run("Middleware - RequireRole Valid Permissions", func() {
 		// Log in as admin
 		reqBody, _ := json.Marshal(auth.SignInRequest{
 			Email:    "admin_test@openbench.dev",
@@ -201,9 +200,9 @@ func TestAuthIntegration(t *testing.T) {
 		reqSignIn := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
 		reqSignIn.Header.Set("Content-Type", "application/json")
 
-		respSignIn, err := app.Test(reqSignIn)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, respSignIn.StatusCode)
+		respSignIn, err := s.app.Test(reqSignIn)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, respSignIn.StatusCode)
 
 		cookies := respSignIn.Header.Values("Set-Cookie")
 		for _, c := range cookies {
@@ -216,22 +215,21 @@ func TestAuthIntegration(t *testing.T) {
 		reqDashboard := httptest.NewRequest("GET", "/api/v1/admin/dashboard", nil)
 		reqDashboard.Header.Set("Cookie", fmt.Sprintf("access_token=%s", adminAccessTokenCookie))
 
-		respDashboard, err := app.Test(reqDashboard)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, respDashboard.StatusCode)
+		respDashboard, err := s.app.Test(reqDashboard)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, respDashboard.StatusCode)
 	})
 
 	// ==========================================
 	// Scenario C: Token Rotation & Security (RTR)
 	// ==========================================
-	var nextRefreshTokenCookie string
-	t.Run("RTR - Successful Token Rotation", func(t *testing.T) {
+	s.Run("RTR - Successful Token Rotation", func() {
 		req := httptest.NewRequest("POST", "/api/v1/auth/refresh", nil)
 		req.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", userRefreshTokenCookie))
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, resp.StatusCode)
 
 		cookies := resp.Header.Values("Set-Cookie")
 		for _, c := range cookies {
@@ -239,39 +237,39 @@ func TestAuthIntegration(t *testing.T) {
 				nextRefreshTokenCookie = strings.Split(strings.Split(c, ";")[0], "=")[1]
 			}
 		}
-		assert.NotEmpty(t, nextRefreshTokenCookie)
-		assert.NotEqual(t, userRefreshTokenCookie, nextRefreshTokenCookie)
+		s.Assert().NotEmpty(nextRefreshTokenCookie)
+		s.Assert().NotEqual(userRefreshTokenCookie, nextRefreshTokenCookie)
 	})
 
-	t.Run("RTR - Reuse Old Token (Replay Attack & Revocation)", func(t *testing.T) {
-		// Update used_at to be older than the 5-second grace period (e.g., 10 seconds ago)
+	s.Run("RTR - Reuse Old Token (Replay Attack & Revocation)", func() {
+		ctx := context.Background()
 		hashedOldToken := auth.HashSha256(userRefreshTokenCookie)
-		_, err = db.DB.ExecContext(ctx, "UPDATE refresh_tokens SET used_at = $1 WHERE token_hash = $2", time.Now().Add(-10*time.Second), hashedOldToken)
-		require.NoError(t, err)
+		_, err := s.DB.DB.ExecContext(ctx, "UPDATE refresh_tokens SET used_at = $1 WHERE token_hash = $2", time.Now().Add(-10*time.Second), hashedOldToken)
+		s.Require().NoError(err)
 
 		// Attempt to use the original userRefreshTokenCookie which has already been rotated (used)
 		req := httptest.NewRequest("POST", "/api/v1/auth/refresh", nil)
 		req.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", userRefreshTokenCookie))
 
-		resp, err := app.Test(req)
-		require.NoError(t, err)
+		resp, err := s.app.Test(req)
+		s.Require().NoError(err)
 		// Should fail
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		s.Assert().Equal(http.StatusUnauthorized, resp.StatusCode)
 
 		var apiResp response.APIResponse[any]
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		require.NoError(t, err)
-		assert.Contains(t, apiResp.Error, "compromise detected")
+		s.Require().NoError(err)
+		s.Assert().Contains(apiResp.Error, "compromise detected")
 
 		// Confirm that the nextRefreshTokenCookie is now revoked in the database due to breach action
 		hashedNextToken := auth.HashSha256(nextRefreshTokenCookie)
 		var isRevoked bool
-		err = db.DB.GetContext(ctx, &isRevoked, "SELECT is_revoked FROM refresh_tokens WHERE token_hash = $1", hashedNextToken)
-		require.NoError(t, err)
-		assert.True(t, isRevoked, "Token family must be revoked")
+		err = s.DB.DB.GetContext(ctx, &isRevoked, "SELECT is_revoked FROM refresh_tokens WHERE token_hash = $1", hashedNextToken)
+		s.Require().NoError(err)
+		s.Assert().True(isRevoked, "Token family must be revoked")
 	})
 
-	t.Run("RTR - Grace Period Validation", func(t *testing.T) {
+	s.Run("RTR - Grace Period Validation", func() {
 		// 1. Log in again to get a fresh refresh token
 		reqBody, _ := json.Marshal(auth.SignInRequest{
 			Email:    "user@openbench.dev",
@@ -279,8 +277,8 @@ func TestAuthIntegration(t *testing.T) {
 		})
 		reqSignIn := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
 		reqSignIn.Header.Set("Content-Type", "application/json")
-		respSignIn, err := app.Test(reqSignIn)
-		require.NoError(t, err)
+		respSignIn, err := s.app.Test(reqSignIn)
+		s.Require().NoError(err)
 
 		var rawToken string
 		cookies := respSignIn.Header.Values("Set-Cookie")
@@ -289,56 +287,56 @@ func TestAuthIntegration(t *testing.T) {
 				rawToken = strings.Split(strings.Split(c, ";")[0], "=")[1]
 			}
 		}
-		require.NotEmpty(t, rawToken)
+		s.Require().NotEmpty(rawToken)
 
 		// 2. Refresh it to rotate (first call)
 		reqRef1 := httptest.NewRequest("POST", "/api/v1/auth/refresh", nil)
 		reqRef1.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", rawToken))
-		respRef1, err := app.Test(reqRef1)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, respRef1.StatusCode)
+		respRef1, err := s.app.Test(reqRef1)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, respRef1.StatusCode)
 
 		// 3. Immediately refresh using the same old token again (within the 5s grace period)
 		reqRef2 := httptest.NewRequest("POST", "/api/v1/auth/refresh", nil)
 		reqRef2.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", rawToken))
-		respRef2, err := app.Test(reqRef2)
-		require.NoError(t, err)
+		respRef2, err := s.app.Test(reqRef2)
+		s.Require().NoError(err)
 		// Should succeed during the grace period!
-		assert.Equal(t, http.StatusOK, respRef2.StatusCode)
+		s.Assert().Equal(http.StatusOK, respRef2.StatusCode)
 
 		var apiResp response.APIResponse[any]
 		err = json.NewDecoder(respRef2.Body).Decode(&apiResp)
-		require.NoError(t, err)
-		assert.Contains(t, apiResp.Message, "grace period")
+		s.Require().NoError(err)
+		s.Assert().Contains(apiResp.Message, "grace period")
 	})
 
-	t.Run("Session Info & SignOut Flow", func(t *testing.T) {
+	s.Run("Session Info & SignOut Flow", func() {
 		// Get Me info without token
 		reqMeFail := httptest.NewRequest("GET", "/api/v1/auth/me", nil)
-		respMeFail, err := app.Test(reqMeFail)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, respMeFail.StatusCode)
+		respMeFail, err := s.app.Test(reqMeFail)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusUnauthorized, respMeFail.StatusCode)
 
 		// Get Me info with token
 		reqMeSuccess := httptest.NewRequest("GET", "/api/v1/auth/me", nil)
 		reqMeSuccess.Header.Set("Cookie", fmt.Sprintf("access_token=%s", userAccessTokenCookie))
-		respMeSuccess, err := app.Test(reqMeSuccess)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, respMeSuccess.StatusCode)
+		respMeSuccess, err := s.app.Test(reqMeSuccess)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, respMeSuccess.StatusCode)
 
 		var apiResp response.APIResponse[auth.MeResponse]
 		err = json.NewDecoder(respMeSuccess.Body).Decode(&apiResp)
-		require.NoError(t, err)
-		assert.Equal(t, "user", apiResp.Data.Role)
-		assert.Equal(t, "user@openbench.dev", apiResp.Data.Email)
-		assert.NotEmpty(t, apiResp.Data.UserID)
+		s.Require().NoError(err)
+		s.Assert().Equal("user", apiResp.Data.Role)
+		s.Assert().Equal("user@openbench.dev", apiResp.Data.Email)
+		s.Assert().NotEmpty(apiResp.Data.UserID)
 
 		// SignOut
 		reqSignOut := httptest.NewRequest("POST", "/api/v1/auth/signout", nil)
 		reqSignOut.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", userRefreshTokenCookie))
-		respSignOut, err := app.Test(reqSignOut)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, respSignOut.StatusCode)
+		respSignOut, err := s.app.Test(reqSignOut)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, respSignOut.StatusCode)
 
 		// Verify cookies were cleared in the header
 		var hasAccessCleared, hasRefreshCleared bool
@@ -351,7 +349,22 @@ func TestAuthIntegration(t *testing.T) {
 				hasRefreshCleared = true
 			}
 		}
-		assert.True(t, hasAccessCleared)
-		assert.True(t, hasRefreshCleared)
+		s.Assert().True(hasAccessCleared)
+		s.Assert().True(hasRefreshCleared)
 	})
+}
+
+func TestMain(m *testing.M) {
+	// Setup the global database container once for all integration tests in this package
+	tdb, err := testutil.SetupTestDB()
+	if err != nil {
+		log.Fatalf("Failed to setup integration test database: %v", err)
+	}
+
+	code := m.Run()
+
+	// Terminate the container
+	tdb.Terminate()
+
+	os.Exit(code)
 }

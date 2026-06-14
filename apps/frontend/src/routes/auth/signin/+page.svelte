@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Card, Button, Input } from '$lib';
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
@@ -8,9 +9,12 @@
   let password = $state('');
   let error = $state('');
   let loading = $state(false);
+  let hydrated = $state(false);
 
-  // Focus tracking for decorative effects
-  let isFocused = $state(false);
+  onMount(() => {
+    hydrated = true;
+  });
+
 
   async function handleSignIn(e: SubmitEvent) {
     e.preventDefault();
@@ -43,7 +47,7 @@
   <meta name="description" content="Sign in to the OpenBench Repair Shop administration portal." />
 </svelte:head>
 
-<main class="min-h-screen flex items-center justify-center p-4 bg-neubrutalism-bg select-none">
+<main class="min-h-screen flex items-center justify-center p-4 bg-neubrutalism-bg select-none" data-hydrated={hydrated}>
   <div class="w-full max-w-md">
     
     <!-- Brand / Header Section -->

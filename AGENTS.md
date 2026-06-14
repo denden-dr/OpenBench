@@ -2,40 +2,40 @@
 
 ## Project Structure & Module Organization
 
-This repository is a small monorepo. Backend code lives in `apps/backend`, with the Fiber entrypoint at `cmd/api/main.go` and internal packages under `internal/` (`config`, `database`). Tests sit beside packages, e.g. `internal/database/database_test.go`.
+OpenBench is a monorepo with a Go/Fiber API in `apps/backend` and a SvelteKit frontend in `apps/frontend`. Backend entrypoint code lives in `apps/backend/cmd/api/main.go`; domain packages live under `apps/backend/internal/`, including `auth`, `config`, `database`, `health`, and shared `pkg` helpers. SQL migrations are in `apps/backend/migrations`.
 
-Frontend code lives in `apps/frontend` using SvelteKit. Routes are in `src/routes`, shared code/assets are in `src/lib`, and static files are in `static`. Root compose files and `Makefile` manage local services. Track active fixes in `issue.md` and non-urgent debt in `docs/tech-debt.md`.
+Frontend routes are in `apps/frontend/src/routes`, shared components and services are in `apps/frontend/src/lib`, static assets are in `apps/frontend/static`, and browser E2E specs are in `apps/frontend/tests`. Root-level `docker-compose*.yml` files and `Makefile` targets coordinate local and test environments.
 
 ## Build, Test, and Development Commands
 
-- `make dev-db-up`: start the development PostgreSQL service via Podman Compose.
-- `make dev-db-down`: stop the development database.
-- `make run-backend`: run the Go API locally from `apps/backend`.
-- `make test-backend`: run backend Go tests with `go test -v ./...`.
-- `make test-env-build`: build the test compose images.
-- `make test-env-up` / `make test-env-down`: manage the test environment.
-- `cd apps/frontend && npm run dev`: start SvelteKit dev server.
+- `make dev`: start the dev database, run migrations, then launch backend and frontend.
+- `make dev-db-up` / `make dev-db-down`: start or stop the local PostgreSQL service.
+- `make run-backend`: run the API from `apps/backend`.
+- `make run-frontend`: run SvelteKit against the API.
+- `make run-frontend-mock`: run SvelteKit with `MOCK_API=true`.
+- `make test-backend`: run Go unit and integration test targets.
+- `make test-frontend`: run frontend Vitest tests.
+- `make test-frontend-mock`: run Playwright E2E tests in mock mode.
 - `cd apps/frontend && npm run check`: run SvelteKit and TypeScript checks.
-- `cd apps/frontend && npm run build`: build the frontend.
 
 ## Coding Style & Naming Conventions
 
-Use `gofmt` for Go files before committing. Keep Go package names lowercase and short, and keep implementation under `internal/` unless it must be public. Use existing `DB_` and `APP_` env prefixes.
+Format Go with `gofmt`; `make test-unit` enforces formatting for backend source. Keep Go package names short, lowercase, and scoped under `internal/` unless public reuse is required. Use `*_test.go` for Go tests and `TestXxx` test names.
 
-For Svelte, keep route files in SvelteKit form such as `+page.svelte` and `+layout.svelte`. Prefer TypeScript for frontend logic.
+Use SvelteKit route conventions such as `+page.svelte` and `+layout.svelte`. Prefer TypeScript for frontend logic, colocate component tests near components as `*.test.ts`, and use existing service/component patterns before adding new abstractions.
 
 ## Testing Guidelines
 
-Backend tests use Go's standard `testing` package. Name tests `TestXxx` and place them in `*_test.go` files beside the package under test. Current database tests require PostgreSQL, so rerun with `go test -count=1 ./...` for environment-sensitive behavior.
+Backend tests use Go `testing`, `testify`, SQL mocks, and Testcontainers for PostgreSQL integration coverage. Run `make test-unit` for fast checks and `make test-integration` when database behavior changes.
 
-Frontend validation currently uses `npm run check`; add dedicated component or integration tests when frontend behavior becomes non-trivial.
+Frontend tests use Vitest with Testing Library for components and Playwright for E2E flows. Run `npm run test:e2e:ui` from `apps/frontend` when debugging browser tests interactively.
 
 ## Commit & Pull Request Guidelines
 
-History follows Conventional Commits with optional scopes, for example `feat(frontend): ...`, `fix(backend): ...`, `test(backend): ...`, and `refactor: ...`. Keep commits focused.
+Git history follows Conventional Commits with optional scopes, for example `feat(frontend): ...`, `chore(backend): ...`, and `docs: ...`. Keep commits focused on one logical change.
 
-Pull requests should include a short summary, linked issue or debt item when applicable, commands run, and screenshots for visible frontend changes. Call out config, database, or security-impacting changes explicitly.
+Pull requests should include a concise summary, linked issue when relevant, commands run, and screenshots for visible UI changes. Call out migrations, environment changes, or security-sensitive behavior explicitly.
 
 ## Security & Configuration Tips
 
-Do not commit real `.env` files or secrets. Use `apps/backend/.env.example` as a template, keep local credentials out of images, and prefer localhost-only service exposure during development.
+Do not commit real `.env` files or secrets. Start from `apps/backend/.env.example` and `apps/frontend/.env.example`, and keep local credentials restricted to development or test environments.
