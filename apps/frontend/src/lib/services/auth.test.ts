@@ -40,7 +40,7 @@ describe('authService Unit Tests', () => {
   it('should throw an error on failed sign in', async () => {
     const mockResponse = {
       ok: false,
-      json: async () => ({ error: 'Invalid email or password' })
+      json: async () => ({ code: 400, message: 'Invalid email or password', data: null })
     };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
 
@@ -84,7 +84,7 @@ describe('authService Unit Tests', () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: async () => ({ error: 'Authentication required' })
+        json: async () => ({ code: 401, message: 'Authentication required', data: null })
       })
       .mockResolvedValueOnce({
         ok: true,

@@ -39,3 +39,13 @@ Pull requests should include a concise summary, linked issue when relevant, comm
 ## Security & Configuration Tips
 
 Do not commit real `.env` files or secrets. Start from `apps/backend/.env.example` and `apps/frontend/.env.example`, and keep local credentials restricted to development or test environments.
+
+## Agent Skills & Guidelines
+
+This repository relies on several curated Agent Skills to enforce consistent architecture and styling. AI Agents MUST consult these skills before implementing changes:
+
+- **Frontend & UI**: `frontend-svelte5-architecture` and `openbench-ui-design-system`
+- **Backend & Integration**: `backend-go-architecture` and `fullstack-api-integration`
+- **Quality & Workflow**: `openbench-testing-strategy` and `openbench-workflow-and-ops`
+
+The full catalog and detailed instructions are located in `.agents/skills/CATALOG.md`.

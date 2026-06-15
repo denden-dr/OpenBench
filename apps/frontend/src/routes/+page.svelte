@@ -3,7 +3,7 @@
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { Shield, ArrowRight, Wrench, Settings, ClipboardCheck } from 'lucide-svelte';
+  import { Shield, ArrowRight, Wrench, Settings, ClipboardCheck, Search } from 'lucide-svelte';
 
   let isAuthenticated = $state(false);
   let isChecking = $state(true);
@@ -70,7 +70,29 @@
         </Card>
       </div>
 
-      <!-- Main Action Callout -->
+      <!-- Track Device Callout (For customers) -->
+      <Card bgColor="bg-white" class="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-left flex flex-col gap-1">
+          <h2 class="font-display font-bold text-xl uppercase tracking-tight text-neubrutalism-charcoal">
+            Public Repair Tracker
+          </h2>
+          <p class="font-sans text-sm text-neubrutalism-charcoal opacity-70">
+            Track the status of your gadget in real time using your unique Ticket ID (UUID).
+          </p>
+        </div>
+
+        <a href="/tracker" class="w-full md:w-auto shrink-0">
+          <Button 
+            bgColor="bg-neubrutalism-green"
+            class="w-full md:w-auto flex items-center justify-center gap-2 group py-3 px-6 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm"
+          >
+            <span>TRACK STATUS</span>
+            <Search class="w-5 h-5" />
+          </Button>
+        </a>
+      </Card>
+
+      <!-- Main Action Callout (For Admins) -->
       <Card bgColor="bg-white" class="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="text-left flex flex-col gap-1">
           <h2 class="font-display font-bold text-xl uppercase tracking-tight text-neubrutalism-charcoal">

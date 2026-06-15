@@ -1,0 +1,322 @@
+import type { MockTicket, MockProduct, MockSale, MockWarranty, MockUser } from './types';
+import {
+  initialTickets,
+  initialInventory,
+  initialSales,
+  initialWarranties,
+  initialUsers
+} from './seed';
+
+const KEYS = {
+  TICKETS: 'openbench_mock_tickets',
+  INVENTORY: 'openbench_mock_inventory',
+  SALES: 'openbench_mock_sales',
+  WARRANTIES: 'openbench_mock_warranties',
+  USERS: 'openbench_mock_users'
+};
+
+function getTickets(): MockTicket[] {
+  if (typeof window === 'undefined') return initialTickets;
+  const stored = localStorage.getItem(KEYS.TICKETS);
+  if (!stored) {
+    localStorage.setItem(KEYS.TICKETS, JSON.stringify(initialTickets));
+    return initialTickets;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(KEYS.TICKETS, JSON.stringify(initialTickets));
+    return initialTickets;
+  }
+}
+
+function saveTickets(tickets: MockTicket[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.TICKETS, JSON.stringify(tickets));
+  }
+}
+
+function getInventory(): MockProduct[] {
+  if (typeof window === 'undefined') return initialInventory;
+  const stored = localStorage.getItem(KEYS.INVENTORY);
+  if (!stored) {
+    localStorage.setItem(KEYS.INVENTORY, JSON.stringify(initialInventory));
+    return initialInventory;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(KEYS.INVENTORY, JSON.stringify(initialInventory));
+    return initialInventory;
+  }
+}
+
+function saveInventory(inventory: MockProduct[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.INVENTORY, JSON.stringify(inventory));
+  }
+}
+
+function getSales(): MockSale[] {
+  if (typeof window === 'undefined') return initialSales;
+  const stored = localStorage.getItem(KEYS.SALES);
+  if (!stored) {
+    localStorage.setItem(KEYS.SALES, JSON.stringify(initialSales));
+    return initialSales;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(KEYS.SALES, JSON.stringify(initialSales));
+    return initialSales;
+  }
+}
+
+function saveSales(sales: MockSale[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.SALES, JSON.stringify(sales));
+  }
+}
+
+function getWarranties(): MockWarranty[] {
+  if (typeof window === 'undefined') return initialWarranties;
+  const stored = localStorage.getItem(KEYS.WARRANTIES);
+  if (!stored) {
+    localStorage.setItem(KEYS.WARRANTIES, JSON.stringify(initialWarranties));
+    return initialWarranties;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(KEYS.WARRANTIES, JSON.stringify(initialWarranties));
+    return initialWarranties;
+  }
+}
+
+function saveWarranties(warranties: MockWarranty[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.WARRANTIES, JSON.stringify(warranties));
+  }
+}
+
+function getUsers(): MockUser[] {
+  if (typeof window === 'undefined') return initialUsers;
+  const stored = localStorage.getItem(KEYS.USERS);
+  if (!stored) {
+    localStorage.setItem(KEYS.USERS, JSON.stringify(initialUsers));
+    return initialUsers;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(KEYS.USERS, JSON.stringify(initialUsers));
+    return initialUsers;
+  }
+}
+
+function saveUsers(users: MockUser[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+  }
+}
+
+// SIMULATE network latency
+const LATENCY = 400;
+const delay = () => new Promise(resolve => setTimeout(resolve, LATENCY));
+
+export const mockDbService = {
+  // TICKETS API
+  async getTickets(): Promise<MockTicket[]> {
+    await delay();
+    return getTickets();
+  },
+
+  async getTicket(id: string): Promise<MockTicket | null> {
+    await delay();
+    const tickets = getTickets();
+    return tickets.find(t => t.id === id) || null;
+  },
+
+  async getTicketByNumber(ticketNumber: string): Promise<MockTicket | null> {
+    await delay();
+    const tickets = getTickets();
+    return tickets.find(t => t.ticket_number.toLowerCase() === ticketNumber.toLowerCase()) || null;
+  },
+
+  async createTicket(ticket: Omit<MockTicket, 'id' | 'ticket_number' | 'created_at'>): Promise<MockTicket> {
+    await delay();
+    const tickets = getTickets();
+
+    // Generate simple sequential ticket number
+    const count = tickets.length + 1;
+    const ticket_number = `OB-202606-${count.toString().padStart(4, '0')}`;
+
+    const newTicket: MockTicket = {
+      ...ticket,
+      id: crypto.randomUUID(),
+      ticket_number,
+      created_at: new Date().toISOString()
+    };
+
+    tickets.unshift(newTicket);
+    saveTickets(tickets);
+    return newTicket;
+  },
+
+  async updateTicket(id: string, updates: Partial<MockTicket>): Promise<MockTicket> {
+    await delay();
+    const tickets = getTickets();
+    const idx = tickets.findIndex(t => t.id === id);
+    if (idx === -1) throw new Error('Ticket not found.');
+
+    const oldTicket = tickets[idx];
+    const updatedTicket = { ...oldTicket, ...updates };
+
+    // If status changes to 'picked_up', automatically trigger warranty and update payment/device details
+    if (updates.status === 'picked_up' && oldTicket.status !== 'picked_up') {
+      updatedTicket.device_position = 'picked_up';
+      updatedTicket.payment_status = 'paid';
+
+      const durationDays = 30; // 30 days default warranty
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(startDate.getDate() + durationDays);
+
+      updatedTicket.warranty_expiry_date = endDate.toISOString();
+
+      // Push warranty record
+      const warranties = getWarranties();
+      const warranty: MockWarranty = {
+        id: `war-${warranties.length + 1}`,
+        ticket_id: id,
+        ticket_number: oldTicket.ticket_number,
+        customer_name: oldTicket.customer_name,
+        device_info: `${oldTicket.brand_phone} ${oldTicket.model_phone}`,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        status: 'active'
+      };
+
+      warranties.unshift(warranty);
+      saveWarranties(warranties);
+    }
+
+    tickets[idx] = updatedTicket;
+    saveTickets(tickets);
+    return updatedTicket;
+  },
+
+  // INVENTORY API
+  async getInventory(): Promise<MockProduct[]> {
+    await delay();
+    return getInventory();
+  },
+
+  async getProduct(id: string): Promise<MockProduct | null> {
+    await delay();
+    return getInventory().find(p => p.id === id) || null;
+  },
+
+  async createProduct(product: Omit<MockProduct, 'id'>): Promise<MockProduct> {
+    await delay();
+    const inventory = getInventory();
+    const newProduct: MockProduct = {
+      ...product,
+      id: `prod-${inventory.length + 1}`
+    };
+    inventory.push(newProduct);
+    saveInventory(inventory);
+    return newProduct;
+  },
+
+  async updateProduct(id: string, updates: Partial<MockProduct>): Promise<MockProduct> {
+    await delay();
+    const inventory = getInventory();
+    const idx = inventory.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Product not found.');
+
+    const updated = { ...inventory[idx], ...updates };
+    inventory[idx] = updated;
+    saveInventory(inventory);
+    return updated;
+  },
+
+  async deleteProduct(id: string): Promise<void> {
+    await delay();
+    let inventory = getInventory();
+    inventory = inventory.filter(p => p.id !== id);
+    saveInventory(inventory);
+  },
+
+  // SALES (POS) API
+  async getSales(): Promise<MockSale[]> {
+    await delay();
+    return getSales();
+  },
+
+  async createSale(sale: Omit<MockSale, 'id' | 'invoice_number' | 'created_at'>): Promise<MockSale> {
+    await delay();
+    const sales = getSales();
+
+    // Generate Invoice Number
+    const count = sales.length + 1;
+    const invoice_number = `OB-INV-202606-${count.toString().padStart(4, '0')}`;
+
+    const newSale: MockSale = {
+      ...sale,
+      id: `sale-${count}`,
+      invoice_number,
+      created_at: new Date().toISOString()
+    };
+
+    // Reduce inventory stocks accordingly
+    const inventory = getInventory();
+    for (const item of sale.items) {
+      const pIdx = inventory.findIndex(p => p.id === item.productId);
+      if (pIdx !== -1) {
+        inventory[pIdx].stock = Math.max(0, inventory[pIdx].stock - item.qty);
+      }
+    }
+    saveInventory(inventory);
+
+    sales.unshift(newSale);
+    saveSales(sales);
+    return newSale;
+  },
+
+  // WARRANTIES API
+  async getWarranties(): Promise<MockWarranty[]> {
+    await delay();
+    return getWarranties();
+  },
+
+  // USERS / AUTH API
+  async getUserByEmail(email: string): Promise<MockUser | null> {
+    await delay();
+    const users = getUsers();
+    return users.find(u => u.email.toLowerCase() === email.trim().toLowerCase()) || null;
+  },
+
+  saveActiveSession(session: any): void {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('openbench_session', JSON.stringify(session));
+    }
+  },
+
+  getActiveSession(): any | null {
+    if (typeof window === 'undefined') return null;
+    const data = sessionStorage.getItem('openbench_session');
+    if (!data) return null;
+    try {
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
+  },
+
+  clearActiveSession(): void {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('openbench_session');
+    }
+  }
+};

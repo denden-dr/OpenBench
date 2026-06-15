@@ -4,18 +4,31 @@ This catalog indexes all specialized skills configured in this repository. These
 
 ## Skills Directory
 
-| Skill | Domain | Version | Description (Trigger Conditions) |
-| :--- | :--- | :--- | :--- |
-| [`aligning-frontend-and-backend-contracts`](./aligning-frontend-and-backend-contracts/SKILL.md) | Fullstack | 1.0.0 | Use when implementing API contracts between Go backend and Svelte frontend, verifying database row locking for state transitions, and aligning seeder/mock user credentials. |
-| [`configuring-postgres-compose`](./configuring-postgres-compose/SKILL.md) | Infrastructure | 1.0.0 | Use when setting up or debugging PostgreSQL containers, connection pooling, or docker-compose database services. |
-| [`developing-ui-svelte-best-practices`](./developing-ui-svelte-best-practices/SKILL.md) | Frontend | 1.1.0 | Use when creating or modifying Svelte 5 UI components, route guards, or Vitest component tests. |
-| [`implementing-repository-pattern`](./implementing-repository-pattern/SKILL.md) | Backend | 2.0.0 | Use when adding new domain packages to the Go backend, refactoring handler-to-database coupling, or initializing the Fiber server. |
-| [`managing-multi-environment-config`](./managing-multi-environment-config/SKILL.md) | Infrastructure | 1.0.0 | Use when setting up environment-based configurations in a Go application, managing different environments (development, testing, production) using .env files, and loading variables cleanly. |
-| [`practicing-atomic-commits`](./practicing-atomic-commits/SKILL.md) | Process | 1.0.0 | Use when staging and committing code changes to Git, or when git history needs to be clean, readable, and easy to roll back. |
-| [`requesting-code-review`](./requesting-code-review/SKILL.md) | Process | 1.2.0 | Use when performing code reviews in the repository, either scoped to feature diffs or across the entire codebase to verify monorepo health, security, testing robustness, and config alignment. |
-| [`secure-containerization`](./secure-containerization/SKILL.md) | Infrastructure | 1.0.0 | Use when containerizing applications (Go, SvelteKit, Node.js) with Docker or Podman, ensuring non-root execution, pinned image tags, multi-stage builds, and dockerignore configurations. |
-| [`testing-frontend-e2e-with-playwright`](./testing-frontend-e2e-with-playwright/SKILL.md) | Testing | 1.1.0 | Use when SvelteKit browser tests are flaky, timing out on external resources (fonts/APIs), or failing due to client-side hydration race conditions. |
-| [`testing-with-testify`](./testing-with-testify/SKILL.md) | Testing | 2.0.0 | Use when Go backend unit or database integration tests are failing, slow, resource-leaking, require mock dependencies, or need mock auto-generation with mockery. |
+### Frontend & UI
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`frontend-svelte5-architecture`](./frontend-svelte5-architecture/SKILL.md) | 1.0.0 | Use when creating/refactoring Svelte 5 components, building interactive forms, handling global state services, formatting inputs, slicing large pages, and handling client-side routing. |
+| [`openbench-ui-design-system`](./openbench-ui-design-system/SKILL.md) | 1.0.0 | Use when styling components, building dashboard layouts, managing viewport constraints, or applying the Neubrutalism design language with Tailwind CSS v4. |
+
+### Backend
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`backend-go-architecture`](./backend-go-architecture/SKILL.md) | 1.0.0 | Use when building Go domain logic, handlers, repository layers, managing database transactions, securing JWT/cookie sessions, and building secure public trackers. |
+
+### Fullstack & Integration
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`fullstack-api-integration`](./fullstack-api-integration/SKILL.md) | 1.0.0 | Use when implementing API contracts between Go and Svelte, mocking endpoints in the frontend for development, or aligning seed data and payload structures. |
+
+### Testing
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`openbench-testing-strategy`](./openbench-testing-strategy/SKILL.md) | 1.0.0 | Use when writing or debugging Playwright E2E tests for the frontend, or Go unit/integration tests with Testify and Testcontainers. |
+
+### Workflow & Ops
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`openbench-workflow-and-ops`](./openbench-workflow-and-ops/SKILL.md) | 1.0.0 | Use when setting up dev environments, Docker/Podman compose, securing container builds, committing code (Atomic Commits), or performing code reviews. |
 
 ---
 
@@ -31,6 +44,14 @@ Supporting resources for skills must be organized as follows:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 3.0.0 | 2026-06-15 | **Massive Consolidation**: Merged 18 scattered skills into 6 core, comprehensive skills (`frontend-svelte5-architecture`, `openbench-ui-design-system`, `backend-go-architecture`, `fullstack-api-integration`, `openbench-testing-strategy`, `openbench-workflow-and-ops`) to streamline AI agent context and focus. |
 | 2.0.0 | 2026-06-13 | Merged `formatting-api-responses` and `initializing-go-fiber-api` → `implementing-repository-pattern` |
 | 2.0.0 | 2026-06-13 | Merged `mocking-with-mockery` → `testing-with-testify` |
 | 1.2.0 | 2026-06-13 | Merged `documenting-technical-debt` → `requesting-code-review` |
+| 1.0.0 | 2026-06-14 | Created `securing-public-trackers-with-uuids`, `mocking-fullstack-endpoints-in-frontend`, `managing-forms-and-types-in-svelte5` |
+| 2.0.0 | 2026-06-14 | Merged `securing-cookie-auth-handlers` + `implementing-token-rotation-security` → `securing-auth-sessions` |
+| 2.0.0 | 2026-06-14 | Merged `configuring-postgres-compose` + `managing-multi-environment-config` → `managing-dev-environment` |
+| 2.0.0 | 2026-06-14 | Merged `managing-forms-and-types-in-svelte5` → `developing-ui-svelte-best-practices` v2.0 |
+| 1.0.0 | 2026-06-14 | Created `slicing-svelte5-components` |
+| 2.1.0 | 2026-06-14 | Updated `developing-ui-svelte-best-practices` with `$effect` and `svelte.ts` patterns |
+| 1.0.0 | 2026-06-14 | Created `svelte5-global-state-services`, `handling-formatted-inputs-svelte`, `neubrutalism-ui-design-system`, `responsive-dashboard-layouts` |

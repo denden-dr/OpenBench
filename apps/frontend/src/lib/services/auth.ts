@@ -1,23 +1,35 @@
 /**
  * Real authentication service for OpenBench frontend interacting with Go Fiber API.
- * Supports fallback to mockAuthService when mock mode is enabled.
  */
 
 import { env } from '$env/dynamic/public';
-import { mockAuthService } from './mockAuth';
 
 export const isMockEnabled = () => {
+  // Try Vite's built-in env mode variables first (populated based on --mode)
+  try {
+    if (import.meta.env.PUBLIC_MOCK_API !== undefined) {
+      return import.meta.env.PUBLIC_MOCK_API === 'true';
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    if (env.PUBLIC_MOCK_API !== undefined && env.PUBLIC_MOCK_API !== '') {
+      return env.PUBLIC_MOCK_API === 'true';
+    }
+  } catch {
+    // ignore env access errors
+  }
+
   if (typeof window !== 'undefined') {
     const override = localStorage.getItem('MOCK_API');
     if (override !== null) {
       return override === 'true';
     }
   }
-  // Try reading dynamic public runtime env or build-time injected environment variable
+
   try {
-    if (env.PUBLIC_MOCK_API !== undefined) {
-      return env.PUBLIC_MOCK_API === 'true';
-    }
     return import.meta.env.VITE_MOCK_API === 'true';
   } catch {
     return false;
@@ -38,7 +50,6 @@ export interface UserSession {
   userId: string;
 }
 
-// In-memory or sessionStorage cached session for synchronous check
 let cachedSession: UserSession | null = null;
 
 if (typeof window !== 'undefined') {
@@ -54,20 +65,9 @@ if (typeof window !== 'undefined') {
 
 export const authService = {
   /**
-   * Authenticates user against backend API or mock service.
+   * Authenticates user against backend API.
    */
   async signIn(email: string, password: string): Promise<UserSession> {
-    if (isMockEnabled()) {
-      const mockSession = await mockAuthService.signIn(email, password);
-      const session: UserSession = {
-        email: mockSession.email,
-        role: mockSession.role,
-        userId: 'mock-admin-id'
-      };
-      cachedSession = session;
-      return session;
-    }
-
     const response = await fetch(`${getApiUrl()}/api/v1/auth/signin`, {
       method: 'POST',
       headers: {
@@ -80,7 +80,7 @@ export const authService = {
     const resBody = await response.json();
 
     if (!response.ok) {
-      throw new Error(resBody.error || 'Invalid email or password.');
+      throw new Error(resBody.message || 'Invalid email or password.');
     }
 
     const session: UserSession = {
@@ -101,12 +101,6 @@ export const authService = {
    * Calls sign out endpoint and clears local session cache.
    */
   async signOut(): Promise<void> {
-    if (isMockEnabled()) {
-      await mockAuthService.signOut();
-      this.clearLocalSession();
-      return;
-    }
-
     try {
       await fetch(`${getApiUrl()}/api/v1/auth/signout`, {
         method: 'POST',
@@ -123,10 +117,6 @@ export const authService = {
    * Refreshes access token using refresh token cookie.
    */
   async refresh(): Promise<void> {
-    if (isMockEnabled()) {
-      return;
-    }
-
     const response = await fetch(`${getApiUrl()}/api/v1/auth/refresh`, {
       method: 'POST',
       credentials: 'include'
@@ -134,7 +124,7 @@ export const authService = {
 
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.error || 'Failed to refresh token.');
+      throw new Error(data.message || 'Failed to refresh token.');
     }
   },
 
@@ -143,21 +133,6 @@ export const authService = {
    * Returns null if unauthenticated.
    */
   async checkSession(): Promise<UserSession | null> {
-    if (isMockEnabled()) {
-      const mockSession = mockAuthService.getSession();
-      if (mockSession) {
-        const session: UserSession = {
-          email: mockSession.email,
-          role: mockSession.role,
-          userId: 'mock-admin-id'
-        };
-        cachedSession = session;
-        return session;
-      }
-      this.clearLocalSession();
-      return null;
-    }
-
     try {
       let response = await fetch(`${getApiUrl()}/api/v1/auth/me`, {
         method: 'GET',
@@ -165,11 +140,9 @@ export const authService = {
       });
 
       if (!response.ok) {
-        // Try refreshing if token is expired (401)
         if (response.status === 401) {
           try {
             await this.refresh();
-            // Retry fetch /me after successful refresh
             response = await fetch(`${getApiUrl()}/api/v1/auth/me`, {
               method: 'GET',
               credentials: 'include'
@@ -217,24 +190,10 @@ export const authService = {
   },
 
   getSession(): UserSession | null {
-    if (isMockEnabled()) {
-      const mockSession = mockAuthService.getSession();
-      if (mockSession) {
-        return {
-          email: mockSession.email,
-          role: mockSession.role,
-          userId: 'mock-admin-id'
-        };
-      }
-      return null;
-    }
     return cachedSession;
   },
 
   isAdminAuthenticated(): boolean {
-    if (isMockEnabled()) {
-      return mockAuthService.isAdminAuthenticated();
-    }
     return cachedSession !== null && cachedSession.role === 'admin';
   }
 };

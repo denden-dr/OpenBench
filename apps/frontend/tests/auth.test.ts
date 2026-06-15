@@ -90,7 +90,7 @@ test.describe('Authentication Flow', () => {
 		await expect(page).toHaveURL('/admin');
 
 		// 4. Verify admin dashboard welcome header
-		const welcomeHeader = page.locator('h1');
+		const welcomeHeader = page.locator('h1').filter({ hasText: 'Welcome to the Workbench' });
 		await expect(welcomeHeader).toContainText('Welcome to the Workbench, Admin!');
 
 		// 5. Log out
