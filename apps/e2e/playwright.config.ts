@@ -1,7 +1,6 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
-
 const baseURL = process.env.BASE_URL || 'http://localhost:5173';
 const playMode = process.env.PLAYWRIGHT_MODE || 'mock';
 
@@ -35,7 +34,7 @@ if (process.env.BASE_URL) {
 	};
 } else {
 	config.webServer = {
-		command: playMode === 'dev' ? 'npm run dev' : 'npm run dev:mock',
+		command: playMode === 'dev' ? 'npm --prefix ../frontend run dev' : 'npm --prefix ../frontend run dev:mock',
 		url: 'http://localhost:5173',
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
