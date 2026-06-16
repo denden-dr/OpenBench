@@ -7,11 +7,14 @@
         run-backend run-frontend run-frontend-mock \
         test-backend test-unit test-integration test-frontend \
         test-frontend-mock test-frontend-dev-env test-frontend-test-env \
+        test-e2e-mock test-e2e-dev test-e2e-env \
         migrate-up migrate-down migrate-test-up migrate-test-down \
         fmt clean
 
 # Default: Ryuk enabled by default, developer overrides via env (opt-out)
 TESTCONTAINERS_RYUK_DISABLED ?= false
+TEST_ENV_COMMAND_TIMEOUT ?= 180
+TEST_ENV_READINESS_TIMEOUT ?= 60
 
 # Container tooling defaults to Podman when available, with Docker fallback.
 CONTAINER_RUNTIME ?= $(shell if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo podman; fi)
@@ -71,16 +74,22 @@ compose-test-build:
 	$(COMPOSE_TEST) build
 
 compose-test-up:
-	$(COMPOSE_TEST) up -d postgres-test
+	timeout $(TEST_ENV_COMMAND_TIMEOUT) $(COMPOSE_TEST) up -d postgres-test
 	@echo "==> Waiting for test database to be ready..."
-	@until [ "$$($(CONTAINER_RUNTIME) inspect --format='{{.State.Health.Status}}' $(TEST_DB_CONTAINER) 2>/dev/null)" = "healthy" ]; do \
+	@elapsed=0; \
+	until [ "$$($(CONTAINER_RUNTIME) inspect --format='{{.State.Health.Status}}' $(TEST_DB_CONTAINER) 2>/dev/null)" = "healthy" ]; do \
+		if [ "$$elapsed" -ge "$(TEST_ENV_READINESS_TIMEOUT)" ]; then \
+			echo "ERROR: Timed out after $(TEST_ENV_READINESS_TIMEOUT)s waiting for $(TEST_DB_CONTAINER) to become healthy" >&2; \
+			exit 1; \
+		fi; \
 		sleep 1; \
+		elapsed=$$((elapsed + 1)); \
 	done
 	@sleep 2
 	@echo "==> Database ready. Running test migrations..."
 	$(MAKE) migrate-test-up
 	@echo "==> Starting test environment frontend services..."
-	$(COMPOSE_TEST) up -d
+	timeout $(TEST_ENV_COMMAND_TIMEOUT) $(COMPOSE_TEST) up -d
 
 compose-test-down:
 	$(COMPOSE_TEST) down
@@ -106,25 +115,44 @@ test-integration:
 test-frontend:
 	cd apps/frontend && npm run test
 
-test-frontend-mock:
+# --- E2E Browser Testing Suite ---
+test-e2e-mock:
 	@echo "==> Running Playwright E2E tests in Mock mode..."
-	cd apps/frontend && npm run test:e2e:mock
+	cd apps/e2e && npm run test:e2e:mock
 
-test-frontend-dev-env:
+test-e2e-dev:
 	@echo "==> Running Playwright E2E tests against Dev environment..."
-	cd apps/frontend && npm run test:e2e:dev
+	cd apps/e2e && npm run test:e2e:dev
 
-test-frontend-test-env:
-	@echo "==> Booting containerized test environment..."
-	$(MAKE) compose-test-up
-	@echo "==> Waiting for backend-api-test to be ready..."
-	@until curl -sf http://127.0.0.1:8081/health/readiness >/dev/null 2>&1; do sleep 1; done
-	@echo "==> Waiting for frontend-web-test to be ready..."
-	@until curl -sf http://127.0.0.1:3001/auth/signin >/dev/null 2>&1; do sleep 1; done
-	@echo "==> Running Playwright E2E tests against test environment..."
-	cd apps/frontend && npm run test:e2e:env || ( $(MAKE) compose-test-down && exit 1 )
-	@echo "==> Tearing down containerized test environment..."
-	$(MAKE) compose-test-down
+test-e2e-env:
+	@set -e; \
+	wait_for() { \
+		name="$$1"; \
+		url="$$2"; \
+		timeout="$(TEST_ENV_READINESS_TIMEOUT)"; \
+		elapsed=0; \
+		echo "==> Waiting for $$name to be ready..."; \
+		until curl -sf "$$url" >/dev/null 2>&1; do \
+			if [ "$$elapsed" -ge "$$timeout" ]; then \
+				echo "ERROR: Timed out after $${timeout}s waiting for $$name at $$url" >&2; \
+				return 1; \
+			fi; \
+			sleep 1; \
+			elapsed=$$((elapsed + 1)); \
+		done; \
+	}; \
+	echo "==> Booting containerized test environment..."; \
+	trap '$(MAKE) compose-test-down' EXIT INT TERM; \
+	$(MAKE) compose-test-up; \
+	wait_for backend-api-test http://127.0.0.1:8081/health/readiness; \
+	wait_for frontend-web-test http://127.0.0.1:3001/auth/signin; \
+	echo "==> Running Playwright E2E tests against test environment..."; \
+	cd apps/e2e && npm run test:e2e:env
+
+# --- Backward Compatibility Aliases ---
+test-frontend-mock: test-e2e-mock
+test-frontend-dev-env: test-e2e-dev
+test-frontend-test-env: test-e2e-env
 
 # --- Database Migrations ---
 migrate-up:

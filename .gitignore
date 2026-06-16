@@ -22,8 +22,8 @@ dist/
 /apps/frontend/.vercel/
 /apps/frontend/.netlify/
 /apps/frontend/.wrangler/
-/apps/frontend/playwright-report/
-/apps/frontend/test-results/
+playwright-report/
+test-results/
 apps/frontend/build_output.txt
 
 # Go / Backend
