@@ -27,6 +27,9 @@ When writing entries to this changelog, adhere to the following rules:
 ## [Unreleased]
 
 ### Added
+- Dedicated `apps/e2e` Playwright package with its own package metadata, TypeScript config, browser tests, and E2E scripts.
+- E2E Makefile targets: `test-e2e-mock`, `test-e2e-dev`, and `test-e2e-env`, with backward-compatible aliases for the old frontend E2E target names.
+- Project skill reference guides for frontend architecture, UI patterns, backend architecture, API contracts, testing strategy, and workflow/review operations.
 - Authentication module with sign-in, token rotation (RTR), sign-out, and session info
 - Database migrations for users and refresh_tokens tables
 - Dev seeder creating default admin account
@@ -45,6 +48,9 @@ When writing entries to this changelog, adhere to the following rules:
 - Frontend `.env.example` and `.env` files
 
 ### Changed
+- Playwright E2E ownership moved out of `apps/frontend` into `apps/e2e`, leaving the frontend package focused on SvelteKit, Vitest, and UI development.
+- `AGENTS.md` updated to document the new `apps/e2e` test location and E2E commands.
+- Agent skills were refactored into short runbooks with selectively loaded reference files for lower context overhead and clearer implementation guidance.
 - Home page rewritten from SvelteKit placeholder to feature landing page
 - Layout CSS expanded from bare Tailwind import to full neubrutalism theme
 - `vite.config.ts` switched to `vitest/config`, added proxy and test config
@@ -53,6 +59,14 @@ When writing entries to this changelog, adhere to the following rules:
 - Backend config normalizes `"dev"` → `"development"` and validates JWT/production settings
 - CORS fallback deduplicated — uses config default only
 - `docker-compose-test.yml` added `CORS_ALLOWED_ORIGINS`, `JWT_SECRET`, `PUBLIC_MOCK_API` env vars
+
+### Removed
+- Playwright scripts, configuration, and dependency ownership from `apps/frontend`.
+- Legacy Playwright test files from `apps/frontend/tests` after moving them to `apps/e2e/tests`.
+
+### Fixed
+- Bounded containerized E2E startup and readiness waits with clear timeout errors to prevent `make test-e2e-env` from hanging indefinitely.
+- Ensured `test-e2e-env` tears down the compose test environment through a shell trap on failure or interruption.
 
 ### Security
 - JWT access tokens with HMAC-SHA256 signing and algorithm-switching protection
