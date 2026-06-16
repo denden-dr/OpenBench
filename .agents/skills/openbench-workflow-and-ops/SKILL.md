@@ -1,42 +1,30 @@
 ---
 name: openbench-workflow-and-ops
-description: Use when setting up dev environments, Docker/Podman compose, securing container builds, committing code (Atomic Commits), or performing code reviews.
-version: 1.0.0
+description: Operate the OpenBench monorepo safely. Use when setting up local dev, Docker/Podman compose, environment config, container builds, Makefile workflows, commits, pull-request readiness, code reviews, security checks, or technical-debt tracking.
 ---
 
 # OpenBench Workflow & Ops
 
-## Overview
-Guidelines for local development environments, container security, atomic Git commits, and code review audits.
+## Operating Rule
 
-## Dev Environment & Compose
-1. **Docker Compose**: Manage PostgreSQL via Compose with proper health checks (`pg_isready`). Include Makefile teardown targets.
-2. **Config Loader**: Load environment variables (`.env`, `.env.test`) securely based on `APP_ENV`. Implement production safety gates to reject empty database passwords or `DB_SSLMODE=disable` outside local environments.
-3. **Go Connection Pooling**: Configure `sqlx` pooling with explicit context timeouts during retries. Expose `db.DB.Stats()` for observability.
+Prefer existing Makefile and compose targets. Keep environment, container, and commit changes explicit and scoped.
 
-## Secure Containerization
-1. **`.dockerignore`**: Exclude `.env`, `.git`, and `node_modules` from the context.
-2. **Multi-Stage Builds**: Use multi-stage Dockerfiles for Go backend (static binaries) and Node/SvelteKit frontend (building assets vs running).
-3. **Non-Root Execution**: Use `USER appuser` or `USER node` at the end of the Dockerfile to prevent root-breakout vulnerabilities. Use pinned image tags (e.g., `golang:1.23-alpine` instead of `latest`).
+## Workflow
 
-## Practicing Atomic Commits
-1. **Single Logical Change**: A commit must represent a single, compilable change with passing tests.
-2. **Interactive Staging**: Use `git add -p` to stage specific hunks and avoid "while-I'm-here" commits.
-3. **Conventional Commits**: Format messages as `type(scope): description`.
-4. **Check Before Commit**: Do not blindly `git add .`. Do not mix refactoring and feature additions in a single commit.
+1. Inspect the Makefile and compose files before inventing commands.
+2. For environment changes, update examples and safety gates without committing real secrets.
+3. For container changes, keep builds multi-stage, pinned, and non-root.
+4. For reviews, lead with concrete findings and file/line references.
+5. For commits, stage only the logical change and use Conventional Commits.
+6. Record deliberate, deferrable compromises in `docs/tech-debt.md` when that file exists; record active blocking bugs in `hotissue.md` when that convention exists.
 
-## Code Review Workflows
-1. **Feature-Scoped or Full Audit**: Always review code across Architecture, Security, Testing, Best-Practices, and Performance.
-2. **Reference Checklist**: Adhere to `references/review-checklist.md`.
-3. **Track Technical Debt**: Log deferrable compromises in `docs/tech-debt.md`. Document active bugs in `hotissue.md`.
-4. **Key Verification Areas**:
-   - No hardcoded secrets.
-   - Svelte 5 runes properly utilized; dead code eliminated.
-   - DB connection pool limits respected.
+## Load References
 
-## Common Mistakes to Avoid
-- Storing global DB connections without stats observability.
-- Committing sensitive `.env` files.
-- Running containers as root.
-- Baking local `node_modules` into container images.
-- Committing broken code or using commit messages with "and" (`feat A and B`).
+- Read `references/review-checklist.md` for review, commit readiness, environment/config, Docker, Makefile, or release-prep work.
+
+## Hard Checks
+
+- Do not commit `.env` files or secrets.
+- Do not use broad `git add .` when unrelated work exists.
+- Do not run containers as root in final production images.
+- Do not use unpinned `latest` base images.

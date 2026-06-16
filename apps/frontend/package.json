@@ -12,15 +12,9 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui",
-		"test:e2e:mock": "PLAYWRIGHT_MODE=mock playwright test",
-		"test:e2e:dev": "PLAYWRIGHT_MODE=dev playwright test",
-		"test:e2e:env": "BASE_URL=http://localhost:3001 playwright test"
+		"test:watch": "vitest"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.60.0",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
