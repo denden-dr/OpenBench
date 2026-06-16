@@ -1,36 +1,30 @@
 ---
 name: fullstack-api-integration
-description: Use when implementing API contracts between Go and Svelte, mocking endpoints in the frontend for development, or aligning seed data and payload structures.
-version: 1.0.0
+description: Keep OpenBench Go API contracts, Svelte services, mock API behavior, seed data, and frontend payload types aligned. Use when adding or changing endpoints, response envelopes, JSON tags, TypeScript interfaces, MOCK_API behavior, auth fetches, or seeded credentials.
 ---
 
 # Fullstack API Integration & Mocking
 
-## Overview
-Patterns for synchronizing Svelte frontends with Go backends, defining consistent payload contracts, and building a robust client-side mock layer (`MOCK_API`) for parallel development.
+## Operating Rule
 
-## Step-by-Step Instructions
+Treat the backend response shape as the contract source and keep the frontend service, mock service, seed data, and tests in sync in the same change.
 
-### Part A — Aligning Contracts
-1. **Align Payload Contracts**: Ensure JSON struct tags in Go exactly match TypeScript interfaces in Svelte.
-2. **Handle API Response Envelopes**: Svelte fetch consumers must always parse payloads through the standard backend envelope structure (`response.data`).
-3. **Synchronize Seed & Mock Profiles**: Keep the backend seed credentials (e.g., `seeder.go`) exactly aligned with frontend mock credentials (`mockAuth.ts`).
-4. **Match Cookie Flags**: When Go sets/clears auth cookies, ensure the frontend handles cross-origin fetch correctly (`credentials: 'include'`).
+## Workflow
 
-### Part B — Mocking Endpoints in Frontend
-1. **Dynamic Mock Toggle**: Wrap the environment toggle in an `isMockEnabled()` check. Priority: `localStorage.getItem('MOCK_API')` -> `env.PUBLIC_MOCK_API` -> `import.meta.env.VITE_MOCK_API`.
-2. **Structure the Mock Environment**:
-   - Centralize all mock assets inside a dedicated `src/lib/services/mocks/` directory to prevent root-level clutter.
-   - Split responsibilities into discrete files: `types.ts` (interfaces), `seed.ts` (static arrays), `db.ts` (data logic), `auth.ts` (auth logic), and `network.ts` (fetch interceptor).
-   - Use distinct `localStorage` keys per entity (e.g., `openbench_mock_tickets`, `openbench_mock_inventory`) to avoid JSON serialization bottlenecks and accidental cross-domain wipes.
-3. **Simulate Network Latency**: Every mock method MUST include an artificial delay (300–600ms) to trigger loading states and expose async bugs.
-4. **Mirror Real Signatures**: Mock service methods must match real API signatures so transitioning requires swapping only the implementation body.
-5. **Separate Auth from Data**: Keep auth simulation (`mockAuth.ts`) and `sessionStorage` separate from data CRUD (`mockDb.ts`) and `localStorage`.
-6. **Simulate Business Logic & Errors**: Replicate critical business rules (e.g., stock depletion, status transitions) and include error scenarios to test UI feedback.
+1. Start from the Go DTO or response struct and confirm its JSON tags.
+2. Update the corresponding TypeScript interface and service parser in `apps/frontend/src/lib/services`.
+3. Parse successful responses through `response.data`; parse errors through the response envelope message/error fields.
+4. Preserve `credentials: 'include'` for auth-protected requests.
+5. Mirror the endpoint in `src/lib/services/mocks` when mock mode must support the workflow.
+6. Update seed data, mock tests, real service tests, and E2E assumptions together.
 
-## Common Mistakes to Avoid
-- Mismatched JSON tags causing frontend fields to be initialized as `undefined`.
-- Exporting `MOCK_API=true` in npm but reading `PUBLIC_MOCK_API` in code. Variable names must align perfectly.
-- Synchronous mock returns hiding loading states.
-- Using placeholder seed data ("test", "foo") instead of realistic data.
-- Shared storage keys between Auth and Data mocks, causing accidental wipes.
+## Load References
+
+- Read `references/api-contracts.md` before changing endpoints, mock behavior, seed credentials, API env variables, or payload naming.
+
+## Hard Checks
+
+- Do not add a frontend field name that lacks a matching Go JSON tag or mapping.
+- Do not return synchronous mock data for async workflows.
+- Do not use one storage key for unrelated mock domains.
+- Do not assume the skill text is the source of truth when current code and tests define an established contract; reconcile and update both if they disagree.
