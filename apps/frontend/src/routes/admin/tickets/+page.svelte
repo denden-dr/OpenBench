@@ -21,7 +21,7 @@
     try {
       const data = await ticketService.getTickets();
       if (currentFetchId === fetchId) {
-        tickets = data;
+        tickets = data ?? [];
         isLoading = false;
       }
     } catch (err) {
@@ -46,12 +46,13 @@
   let filteredTickets = $derived(
     tickets.filter(ticket => {
       // 1. Tab filter
-      const isArchived = ticket.status === 'picked_up' || ticket.status === 'cancelled';
+      const displayStatus = getDisplayStatus(ticket);
+      const isArchived = displayStatus === 'completed' || displayStatus === 'cancelled';
       if (activeTab === 'active' && isArchived) return false;
       if (activeTab === 'archive' && !isArchived) return false;
 
       // 2. Status filter dropdown
-      if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
+      if (statusFilter !== 'all' && displayStatus !== statusFilter) return false;
 
       // 3. Search query
       if (searchQuery.trim() !== '') {
@@ -71,9 +72,8 @@
     switch (status) {
       case 'ready_for_pickup': return 'bg-neubrutalism-green';
       case 'in_repair': return 'bg-neubrutalism-yellow';
-      case 'diagnosing': return 'bg-neubrutalism-pink text-white';
       case 'received': return 'bg-zinc-200';
-      case 'picked_up': return 'bg-zinc-100 text-zinc-500';
+      case 'completed': return 'bg-zinc-100 text-zinc-500';
       case 'cancelled': return 'bg-rose-100 text-rose-600 border-rose-300';
       default: return 'bg-white';
     }
@@ -86,6 +86,12 @@
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const getDisplayStatus = (t: Ticket) => {
+    return t.status === 'completed' && t.device_position === 'warehouse'
+      ? 'ready_for_pickup'
+      : t.status;
   };
 </script>
 
@@ -120,13 +126,13 @@
       class="px-6 py-3 border-2 border-b-0 border-neubrutalism-charcoal transition-all text-sm uppercase tracking-wider {activeTab === 'active' ? 'bg-neubrutalism-green border-b-4 border-b-neubrutalism-green -mb-1 translate-y-0.5' : 'bg-white hover:bg-zinc-50'}"
       onclick={() => switchTab('active')}
     >
-      Active Repairs ({tickets.filter(t => t.status !== 'picked_up' && t.status !== 'cancelled').length})
+      Active Repairs ({tickets.filter(t => getDisplayStatus(t) !== 'completed' && getDisplayStatus(t) !== 'cancelled').length})
     </button>
     <button 
       class="px-6 py-3 border-2 border-l-0 border-b-0 border-neubrutalism-charcoal transition-all text-sm uppercase tracking-wider {activeTab === 'archive' ? 'bg-neubrutalism-pink text-white border-b-4 border-b-neubrutalism-pink -mb-1 translate-y-0.5' : 'bg-white hover:bg-zinc-50'}"
       onclick={() => switchTab('archive')}
     >
-      Archive ({tickets.filter(t => t.status === 'picked_up' || t.status === 'cancelled').length})
+      Archive ({tickets.filter(t => getDisplayStatus(t) === 'completed' || getDisplayStatus(t) === 'cancelled').length})
     </button>
   </div>
 
@@ -156,11 +162,10 @@
         <option value="all">ALL STATUS</option>
         {#if activeTab === 'active'}
           <option value="received">RECEIVED</option>
-          <option value="diagnosing">DIAGNOSING</option>
           <option value="in_repair">IN REPAIR</option>
           <option value="ready_for_pickup">READY FOR PICKUP</option>
         {:else}
-          <option value="picked_up">PICKED UP (COMPLETED)</option>
+          <option value="completed">COMPLETED</option>
           <option value="cancelled">CANCELLED</option>
         {/if}
       </select>
@@ -225,8 +230,8 @@
               <!-- Right side actions & status -->
               <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 shrink-0 border-t-2 md:border-t-0 border-dashed border-zinc-200 pt-3 md:pt-0">
                 <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs font-bold py-1 px-3 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase tracking-wide {getStatusColor(ticket.status)}">
-                    {getStatusText(ticket.status)}
+                  <span class="font-mono text-xs font-bold py-1 px-3 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase tracking-wide {getStatusColor(getDisplayStatus(ticket))}">
+                    {getStatusText(getDisplayStatus(ticket))}
                   </span>
                 </div>
 

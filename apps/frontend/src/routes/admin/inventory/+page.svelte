@@ -36,8 +36,15 @@
   });
 
   async function loadInventory() {
-    products = await inventoryService.getInventory();
-    isLoading = false;
+    try {
+      products = await inventoryService.getInventory();
+    } catch (err: any) {
+      console.error('Error loading inventory:', err);
+      errorMessage = 'Failed to load inventory: ' + err.message;
+      products = [];
+    } finally {
+      isLoading = false;
+    }
   }
 
   // Filter products reactively

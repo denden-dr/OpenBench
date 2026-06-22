@@ -12,7 +12,7 @@
   let searchQuery = $state('');
 
   onMount(async () => {
-    warranties = await warrantyService.getWarranties();
+    warranties = await warrantyService.getWarranties() ?? [];
     isLoading = false;
   });
 

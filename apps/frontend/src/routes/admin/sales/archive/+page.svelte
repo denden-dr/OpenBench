@@ -1,6 +1,7 @@
 <script lang="ts">
   import { saleService, type Sale } from '$lib/services/sales';
   import { onMount } from 'svelte';
+  import { toastService } from '$lib/services/toast.svelte';
 
   import ArchiveHeader from './components/ArchiveHeader.svelte';
   import ArchiveStats from './components/ArchiveStats.svelte';
@@ -20,8 +21,15 @@
   });
 
   async function loadSales() {
-    sales = await saleService.getSales();
-    isLoading = false;
+    try {
+      sales = await saleService.getSales();
+    } catch (err: any) {
+      console.error('Error loading sales archive:', err);
+      toastService.error('Failed to load sales: ' + err.message);
+      sales = [];
+    } finally {
+      isLoading = false;
+    }
   }
 
   // Filter sales reactively

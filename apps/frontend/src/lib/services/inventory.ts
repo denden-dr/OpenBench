@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { apiFetch as fetch } from './api';
 
 const getApiUrl = () => {
   try {
@@ -23,7 +24,7 @@ export const inventoryService = {
     const res = await fetch(`${getApiUrl()}/api/v1/admin/inventory`, { credentials: 'include' });
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || 'Failed to fetch inventory');
-    return body.data;
+    return body.data ?? [];
   },
 
   async getProduct(id: string): Promise<Product> {

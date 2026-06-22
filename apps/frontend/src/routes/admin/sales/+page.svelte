@@ -36,10 +36,17 @@
   });
 
   async function loadProducts() {
-    // Load products and show retail accessories primarily, but also allow spare parts
-    const data = await inventoryService.getInventory();
-    products = data;
-    isLoading = false;
+    try {
+      // Load products and show retail accessories primarily, but also allow spare parts
+      const data = await inventoryService.getInventory();
+      products = data;
+    } catch (err: any) {
+      console.error('Error loading inventory:', err);
+      toastService.error('Failed to load inventory: ' + err.message);
+      products = [];
+    } finally {
+      isLoading = false;
+    }
   }
 
   // Filter products for catalog search
