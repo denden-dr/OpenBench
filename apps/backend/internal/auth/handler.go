@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/response"
@@ -9,17 +10,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Handler handles auth HTTP requests
-type Handler struct {
-	service       Service
+// AuthHandler handles auth HTTP requests
+type AuthHandler struct {
+	service       AuthService
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 	isDev         bool
 }
 
 // NewHandler creates a new auth Handler instance
-func NewHandler(service Service, accessExpiry, refreshExpiry time.Duration, isDev bool) *Handler {
-	return &Handler{
+func NewHandler(service AuthService, accessExpiry, refreshExpiry time.Duration, isDev bool) *AuthHandler {
+	return &AuthHandler{
 		service:       service,
 		accessExpiry:  accessExpiry,
 		refreshExpiry: refreshExpiry,
@@ -28,7 +29,7 @@ func NewHandler(service Service, accessExpiry, refreshExpiry time.Duration, isDe
 }
 
 // SignIn handles user login authentication
-func (h *Handler) SignIn(c *fiber.Ctx) error {
+func (h *AuthHandler) SignIn(c *fiber.Ctx) error {
 	var req SignInRequest
 	if err := c.BodyParser(&req); err != nil {
 		return response.Error(c, fiber.StatusBadRequest, "Invalid request body", err)
@@ -81,7 +82,7 @@ func (h *Handler) SignIn(c *fiber.Ctx) error {
 }
 
 // Refresh handles Token Rotation (RTR)
-func (h *Handler) Refresh(c *fiber.Ctx) error {
+func (h *AuthHandler) Refresh(c *fiber.Ctx) error {
 	rawToken := c.Cookies("refresh_token")
 	if rawToken == "" {
 		return response.Error(c, fiber.StatusUnauthorized, "Refresh token required", errors.New("refresh token required"))
@@ -113,18 +114,14 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 				SameSite: sameSite,
 				Path:     "/",
 			})
-			return response.Error(c, fiber.StatusUnauthorized, "Token compromise detected, session revoked", err)
+			return response.Error(c, fiber.StatusUnauthorized, "Invalid or expired refresh token", nil)
 		}
-		if errors.Is(err, ErrInvalidRefreshToken) {
-			return response.Error(c, fiber.StatusUnauthorized, "Invalid refresh token", err)
+		if errors.Is(err, ErrInvalidRefreshToken) || errors.Is(err, ErrSessionRevoked) || errors.Is(err, ErrTokenExpired) {
+			log.Printf("[Auth] Refresh token rejected: %v", err)
+			return response.Error(c, fiber.StatusUnauthorized, "Invalid or expired refresh token", nil)
 		}
-		if errors.Is(err, ErrSessionRevoked) {
-			return response.Error(c, fiber.StatusUnauthorized, "Session is revoked", err)
-		}
-		if errors.Is(err, ErrTokenExpired) {
-			return response.Error(c, fiber.StatusUnauthorized, "Refresh token expired", err)
-		}
-		return response.Error(c, fiber.StatusInternalServerError, "Internal server error", err)
+		log.Printf("[Auth] Internal error during refresh: %v", err)
+		return response.Error(c, fiber.StatusInternalServerError, "Internal server error", nil)
 	}
 
 	secure := !h.isDev
@@ -172,7 +169,7 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 }
 
 // SignOut clears authentication cookies and revokes the active refresh token
-func (h *Handler) SignOut(c *fiber.Ctx) error {
+func (h *AuthHandler) SignOut(c *fiber.Ctx) error {
 	rawToken := c.Cookies("refresh_token")
 	if rawToken != "" {
 		_ = h.service.SignOut(c.UserContext(), rawToken)
@@ -208,7 +205,7 @@ func (h *Handler) SignOut(c *fiber.Ctx) error {
 }
 
 // Me returns the current authenticated user's ID, role and email
-func (h *Handler) Me(c *fiber.Ctx) error {
+func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	userID, okID := c.Locals("user_id").(string)
 	_, okRole := c.Locals("user_role").(string)
 	if !okID || !okRole {

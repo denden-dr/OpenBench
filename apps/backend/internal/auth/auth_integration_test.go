@@ -155,7 +155,42 @@ func (s *AuthHandlerTestSuite) TestAuthFlow() {
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
 		s.Require().NoError(err)
 		s.Assert().Contains(apiResp.Error, "validation failed")
-		s.Assert().Contains(apiResp.Error, "Password")
+		s.Assert().Contains(apiResp.Error, "password")
+	})
+
+	s.Run("SignIn - Production Secure Cookies", func() {
+		// Create a local app with isDev = false to test secure cookie generation
+		prodApp := fiber.New()
+		authRepo := auth.NewRepository(s.DB)
+		authService := auth.NewService(authRepo, s.DB, s.jwtSecret)
+		prodAuthHandler := auth.NewHandler(authService, 5*time.Minute, 24*time.Hour, false) // isDev = false
+		prodApp.Post("/api/v1/auth/signin", prodAuthHandler.SignIn)
+
+		reqBody, _ := json.Marshal(auth.SignInRequest{
+			Email:    "user@openbench.dev",
+			Password: "UserPassword123!",
+		})
+		req := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewBuffer(reqBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := prodApp.Test(req, 2000)
+		s.Require().NoError(err)
+		s.Assert().Equal(http.StatusOK, resp.StatusCode)
+
+		cookies := resp.Header.Values("Set-Cookie")
+		s.Require().NotEmpty(cookies, "Expected cookies to be set")
+
+		var hasAccessSecure, hasRefreshSecure bool
+		for _, c := range cookies {
+			if strings.HasPrefix(c, "access_token=") && (strings.Contains(c, "Secure") || strings.Contains(c, "secure")) {
+				hasAccessSecure = true
+			}
+			if strings.HasPrefix(c, "refresh_token=") && (strings.Contains(c, "Secure") || strings.Contains(c, "secure")) {
+				hasRefreshSecure = true
+			}
+		}
+		s.Assert().True(hasAccessSecure, "Access token cookie must have Secure flag in production: %v", cookies)
+		s.Assert().True(hasRefreshSecure, "Refresh token cookie must have Secure flag in production: %v", cookies)
 	})
 
 	// ==========================================
@@ -259,7 +294,8 @@ func (s *AuthHandlerTestSuite) TestAuthFlow() {
 		var apiResp response.APIResponse[any]
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
 		s.Require().NoError(err)
-		s.Assert().Contains(apiResp.Error, "compromise detected")
+		s.Assert().Contains(apiResp.Message, "Invalid or expired refresh token", "Should return generic message")
+		s.Assert().Empty(apiResp.Error, "Should omit internal error details to prevent leakage")
 
 		// Confirm that the nextRefreshTokenCookie is now revoked in the database due to breach action
 		hashedNextToken := auth.HashSha256(nextRefreshTokenCookie)

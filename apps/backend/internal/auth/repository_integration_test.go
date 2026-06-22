@@ -15,7 +15,7 @@ import (
 
 type AuthRepositoryTestSuite struct {
 	testutil.IntegrationSuite
-	repo auth.Repository
+	repo auth.AuthRepository
 }
 
 func TestAuthRepositorySuite(t *testing.T) {
@@ -170,5 +170,86 @@ func (s *AuthRepositoryTestSuite) TestRefreshTokenQueries() {
 		updated, err := s.repo.GetRefreshTokenByID(ctx, nil, newTokenID)
 		s.Require().NoError(err)
 		s.Assert().True(updated.IsRevoked)
+	})
+
+	// 8. Test PurgeExpiredTokens
+	s.Run("PurgeExpiredTokens", func() {
+		// Insert one expired token
+		expiredTokenID := uuid.New().String()
+		expiredTokenHash := auth.HashSha256("expired_token")
+		expiredRecord := &auth.RefreshTokenRecord{
+			ID:        expiredTokenID,
+			FamilyID:  familyID,
+			UserID:    userID,
+			TokenHash: expiredTokenHash,
+			ExpiresAt: time.Now().Add(-5 * time.Minute),
+		}
+		err = s.repo.CreateRefreshToken(ctx, nil, expiredRecord)
+		s.Require().NoError(err)
+
+		// Insert one active unrevoked token
+		activeTokenID := uuid.New().String()
+		activeTokenHash := auth.HashSha256("active_token")
+		activeRecord := &auth.RefreshTokenRecord{
+			ID:        activeTokenID,
+			FamilyID:  familyID,
+			UserID:    userID,
+			TokenHash: activeTokenHash,
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		}
+		err = s.repo.CreateRefreshToken(ctx, nil, activeRecord)
+		s.Require().NoError(err)
+
+		// Insert one revoked token with expires_at in the future (should NOT be purged)
+		revokedFutureTokenID := uuid.New().String()
+		revokedFutureTokenHash := auth.HashSha256("revoked_future_token")
+		revokedFutureRecord := &auth.RefreshTokenRecord{
+			ID:        revokedFutureTokenID,
+			FamilyID:  familyID,
+			UserID:    userID,
+			TokenHash: revokedFutureTokenHash,
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		}
+		err = s.repo.CreateRefreshToken(ctx, nil, revokedFutureRecord)
+		s.Require().NoError(err)
+		err = s.repo.RevokeTokenByHash(ctx, revokedFutureTokenHash)
+		s.Require().NoError(err)
+
+		// Insert one revoked token with expires_at older than 7 days (should be purged)
+		revokedOldTokenID := uuid.New().String()
+		revokedOldTokenHash := auth.HashSha256("revoked_old_token")
+		revokedOldRecord := &auth.RefreshTokenRecord{
+			ID:        revokedOldTokenID,
+			FamilyID:  familyID,
+			UserID:    userID,
+			TokenHash: revokedOldTokenHash,
+			ExpiresAt: time.Now().Add(-8 * 24 * time.Hour),
+		}
+		err = s.repo.CreateRefreshToken(ctx, nil, revokedOldRecord)
+		s.Require().NoError(err)
+		err = s.repo.RevokeTokenByHash(ctx, revokedOldTokenHash)
+		s.Require().NoError(err)
+
+		// Run Purge
+		err = s.repo.PurgeExpiredTokens(ctx)
+		s.Require().NoError(err)
+
+		// The expired one should be gone
+		_, err = s.repo.GetRefreshTokenByID(ctx, nil, expiredTokenID)
+		s.Assert().Error(err) // should not exist
+
+		// The active one should still be there
+		activeGot, err := s.repo.GetRefreshTokenByID(ctx, nil, activeTokenID)
+		s.Require().NoError(err)
+		s.Assert().Equal(activeTokenID, activeGot.ID)
+
+		// The revoked future token should still be there
+		revokedFutureGot, err := s.repo.GetRefreshTokenByID(ctx, nil, revokedFutureTokenID)
+		s.Require().NoError(err)
+		s.Assert().Equal(revokedFutureTokenID, revokedFutureGot.ID)
+
+		// The revoked old token should be gone
+		_, err = s.repo.GetRefreshTokenByID(ctx, nil, revokedOldTokenID)
+		s.Assert().Error(err) // should not exist
 	})
 }
