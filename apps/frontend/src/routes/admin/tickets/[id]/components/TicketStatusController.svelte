@@ -5,11 +5,13 @@
   let {
     status = $bindable('received'),
     devicePosition = $bindable('warehouse'),
+    warrantyDurationDays = $bindable(30),
     isSubmitting,
     isEditing = false
   }: {
-    status: 'received' | 'diagnosing' | 'in_repair' | 'ready_for_pickup' | 'picked_up' | 'cancelled';
+    status: 'received' | 'in_repair' | 'completed' | 'cancelled';
     devicePosition: 'warehouse' | 'picked_up';
+    warrantyDurationDays: number;
     isSubmitting: boolean;
     isEditing?: boolean;
   } = $props();
@@ -30,26 +32,41 @@
       class="w-full bg-white border-4 border-neubrutalism-charcoal px-3 py-2 font-mono text-xs shadow-neubrutalism-sm focus:outline-none"
     >
       <option value="received">RECEIVED</option>
-      <option value="diagnosing">DIAGNOSING</option>
       <option value="in_repair">IN REPAIR</option>
-      <option value="ready_for_pickup">READY FOR PICKUP</option>
-      <option value="picked_up">PICKED UP (COMPLETED)</option>
+      <option value="completed">COMPLETED</option>
       <option value="cancelled">CANCELLED</option>
     </select>
   </div>
 
-  {#if status === 'picked_up'}
+  {#if devicePosition === 'picked_up'}
     <div class="bg-amber-100 border-2 border-amber-400 p-3 font-mono text-[10px] text-amber-800 leading-snug">
-      <strong>NOTE:</strong> Setting status to PICKED UP will automatically trigger active warranty registration (30 days) and update payment status to PAID.
+      <strong>NOTE:</strong> Setting device location to PICKED UP will automatically trigger active warranty registration ({warrantyDurationDays} days) and update payment status to PAID (if completed).
     </div>
   {/if}
+
+  <div class="flex flex-col gap-1.5 mt-2">
+    <label for="warranty-select" class="font-mono text-[10px] font-bold uppercase text-zinc-500">Warranty Duration</label>
+    <select
+      id="warranty-select"
+      bind:value={warrantyDurationDays}
+      disabled={!isEditing || isSubmitting}
+      class="w-full bg-white border-4 border-neubrutalism-charcoal px-3 py-2 font-mono text-xs shadow-neubrutalism-sm focus:outline-none"
+    >
+      <option value={0}>NO WARRANTY</option>
+      <option value={7}>7 DAYS</option>
+      <option value={14}>14 DAYS</option>
+      <option value={30}>30 DAYS</option>
+      <option value={90}>90 DAYS</option>
+      <option value={180}>180 DAYS</option>
+    </select>
+  </div>
 
   <div class="flex flex-col gap-1.5 mt-2">
     <label for="pos-select" class="font-mono text-[10px] font-bold uppercase text-zinc-500">Device Location Status</label>
     <select 
       id="pos-select" 
       bind:value={devicePosition}
-      disabled={!isEditing || isSubmitting || status === 'picked_up'}
+      disabled={!isEditing || isSubmitting || devicePosition === 'picked_up'}
       class="w-full bg-white border-4 border-neubrutalism-charcoal px-3 py-2 font-mono text-xs shadow-neubrutalism-sm focus:outline-none"
     >
       <option value="warehouse">IN WAREHOUSE / STORE</option>
