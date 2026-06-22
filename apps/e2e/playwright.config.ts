@@ -1,8 +1,9 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.BASE_URL || 'http://localhost:5173';
 const playMode = process.env.PLAYWRIGHT_MODE || 'mock';
+const defaultPort = playMode === 'dev' ? 5173 : 5174;
+const baseURL = process.env.BASE_URL || `http://localhost:${defaultPort}`;
 
 const config = defineConfig({
 	testDir: './tests',
@@ -32,10 +33,17 @@ if (process.env.BASE_URL) {
 		reuseExistingServer: true,
 		timeout: 60000,
 	};
+} else if (playMode === 'dev') {
+	config.webServer = {
+		command: 'npm --prefix ../frontend run dev',
+		url: 'http://localhost:5173',
+		reuseExistingServer: !process.env.CI,
+		timeout: 120000,
+	};
 } else {
 	config.webServer = {
-		command: playMode === 'dev' ? 'npm --prefix ../frontend run dev' : 'npm --prefix ../frontend run dev:mock',
-		url: 'http://localhost:5173',
+		command: 'npm --prefix ../frontend run dev:mock -- --port 5174',
+		url: 'http://localhost:5174',
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
 	};
