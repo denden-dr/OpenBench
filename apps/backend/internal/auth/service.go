@@ -19,7 +19,7 @@ var (
 	ErrTokenExpired        = errors.New("refresh token expired")
 )
 
-type Service interface {
+type AuthService interface {
 	SignIn(ctx context.Context, email, password string, accessExpiry, refreshExpiry time.Duration) (*SignInResult, error)
 	Refresh(ctx context.Context, rawRefreshToken string, accessExpiry, refreshExpiry time.Duration) (*RefreshResult, error)
 	SignOut(ctx context.Context, rawRefreshToken string) error
@@ -27,12 +27,12 @@ type Service interface {
 }
 
 type authService struct {
-	repo      Repository
+	repo      AuthRepository
 	db        *database.Database
 	jwtSecret string
 }
 
-func NewService(repo Repository, db *database.Database, jwtSecret string) Service {
+func NewService(repo AuthRepository, db *database.Database, jwtSecret string) AuthService {
 	return &authService{
 		repo:      repo,
 		db:        db,

@@ -27,7 +27,7 @@ Use SvelteKit route conventions such as `+page.svelte` and `+layout.svelte`. Pre
 
 ## Testing Guidelines
 
-Backend tests use Go `testing`, `testify`, SQL mocks, and Testcontainers for PostgreSQL integration coverage. Run `make test-unit` for fast checks and `make test-integration` when database behavior changes.
+Backend tests use Go `testing`, `testify`, SQL mocks, and Testcontainers for PostgreSQL integration coverage. Run `make test-unit` for fast checks and `make test-integration` when database behavior changes. For rootless container engines (like Podman), you must disable the Testcontainers Ryuk sidecar by setting `TESTCONTAINERS_RYUK_DISABLED=true` in your environment before running backend integration tests.
 
 Frontend tests use Vitest with Testing Library for components. E2E browser tests use Playwright in `apps/e2e` for E2E flows. Run `npm run test:e2e:ui` from `apps/e2e` when debugging browser tests interactively.
 
@@ -50,3 +50,23 @@ This repository relies on several curated Agent Skills to enforce consistent arc
 - **Quality & Workflow**: `openbench-testing-strategy` and `openbench-workflow-and-ops`
 
 The full catalog and detailed instructions are located in `.agents/skills/CATALOG.md`.
+
+## Knowledge Graph (graphify)
+
+OpenBench can use a pre-built knowledge graph in `graphify-out/` when those artifacts are present. Use it before answering codebase questions, or regenerate it with the graphify skill if the directory is missing:
+
+- `graphify-out/graph.json` — raw graph data (655 nodes, 837 edges, 67 communities)
+- `graphify-out/GRAPH_REPORT.md` — full audit report with god nodes, surprising connections, community labels
+- `graphify-out/graph.html` — interactive HTML visualization
+- `graphify-out/cache/` — semantic extraction cache for incremental updates
+
+**Query the graph:**
+- `/graphify query "<question>"` — BFS traversal for broad context
+- `/graphify query "<question>" --dfs` — DFS to trace specific paths
+- `/graphify explain "<node>"` — explain a single node and its connections
+- `/graphify path "<nodeA>" "<nodeB>"` — shortest path between two concepts
+
+**Update the graph after code changes:**
+- `/graphify --update` — incremental re-extraction (only changed files)
+
+**Key communities:** When the graph artifacts are current, expected major communities include Auth Infrastructure, API DTOs & Types, Frontend Mock Services, Ticket Service, Shared UI Components, Database & Integration Tests, and Admin UI Components. See `GRAPH_REPORT.md` for the generated community list.

@@ -57,7 +57,7 @@
     <select 
       id="pay-status" 
       bind:value={paymentStatus}
-      disabled={!isEditing || isSubmitting || status === 'picked_up'}
+      disabled={!isEditing || isSubmitting}
       class="w-full bg-white border-4 border-neubrutalism-charcoal px-3 py-2 font-mono text-xs shadow-neubrutalism-sm focus:outline-none"
     >
       <option value="none">UNPAID</option>
@@ -79,4 +79,22 @@
       <option value="qris">QRIS DIGITAL</option>
     </select>
   </div>
+
+  {#if status === 'completed' && (paymentStatus !== 'paid' || !paymentMethod || (paymentMethod !== 'cash' && paymentMethod !== 'qris'))}
+    <div class="flex flex-col gap-2 mt-2 p-3 bg-amber-50 border-2 border-amber-300 font-mono text-[10px] text-amber-800 leading-snug">
+      <div class="font-bold flex items-center gap-1 text-amber-900">
+        <span>⚠️ PRASYARAT COMPLETED:</span>
+      </div>
+      {#if paymentStatus !== 'paid'}
+        <p class="flex items-center gap-1 text-red-700">
+          • Status pembayaran harus diatur ke <strong>PAID (Lunas)</strong>.
+        </p>
+      {/if}
+      {#if !paymentMethod || (paymentMethod !== 'cash' && paymentMethod !== 'qris')}
+        <p class="flex items-center gap-1 text-red-700">
+          • Metode pembayaran harus dipilih (<strong>CASH</strong> atau <strong>QRIS</strong>).
+        </p>
+      {/if}
+    </div>
+  {/if}
 </Card>

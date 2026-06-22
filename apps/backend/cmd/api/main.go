@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -12,6 +13,7 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/health"
+	"github.com/denden-dr/openbench/apps/backend/internal/ticket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -44,6 +46,12 @@ func main() {
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo, db, cfg.JWTSecret)
 
+	// Initialize Ticket Repository and Services
+	ticketRepo := ticket.NewRepository(db)
+	publicTicketService := ticket.NewService(ticketRepo, db)
+	adminTicketService := ticket.NewAdminService(ticketRepo, db)
+	ticketHandler := ticket.NewHandler(adminTicketService, publicTicketService)
+
 	// Initialize Fiber App
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  5 * time.Second,
@@ -60,7 +68,7 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     allowOrigins,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
-		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
 
@@ -71,6 +79,7 @@ func main() {
 	healthHandler := health.NewHandler(db, cfg.Env)
 	app.Get("/health/liveness", healthHandler.Liveness)
 	app.Get("/health/readiness", healthHandler.Readiness)
+	app.Get("/health/metrics", healthHandler.Metrics)
 	app.Get("/health", healthHandler.LegacyHealth)
 
 	// Auth Routes
@@ -82,6 +91,9 @@ func main() {
 	api.Post("/auth/signout", authHandler.SignOut)
 	api.Get("/auth/me", auth.RequireAuth(cfg.JWTSecret), authHandler.Me)
 
+	// Public Ticket Tracker Route
+	api.Get("/tracker/:id", ticketHandler.GetPublicTrackerTicket)
+
 	// Protected Admin Routes
 	admin := api.Group("/admin", auth.RequireAuth(cfg.JWTSecret), auth.RequireRole("admin"))
 	admin.Get("/dashboard", func(c *fiber.Ctx) error {
@@ -91,15 +103,23 @@ func main() {
 			"user_id": userID,
 		})
 	})
+	admin.Get("/tickets", ticketHandler.ListTickets)
+	admin.Post("/tickets", ticketHandler.CreateTicket)
+	admin.Get("/tickets/:id", ticketHandler.GetTicket)
+	admin.Patch("/tickets/:id", ticketHandler.UpdateTicket)
+	admin.Post("/tickets/:id/emergency", ticketHandler.EmergencyUpdateTicket)
+	admin.Get("/warranties", ticketHandler.ListWarranties)
 
-	// Periodic DB Connection Pool Stats Logging (TD-009)
+	// Periodic expired refresh token cleanup (TD-003)
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			stats := db.Stats()
-			log.Printf("[DB Stats] OpenConnections=%d, InUse=%d, Idle=%d, WaitCount=%d, WaitDuration=%v, MaxIdleClosed=%d, MaxLifetimeClosed=%d",
-				stats.OpenConnections, stats.InUse, stats.Idle, stats.WaitCount, stats.WaitDuration, stats.MaxIdleClosed, stats.MaxLifetimeClosed)
+			if err := authRepo.PurgeExpiredTokens(context.Background()); err != nil {
+				log.Printf("[Cleanup] Failed to purge expired tokens: %v", err)
+			} else {
+				log.Println("[Cleanup] Expired/revoked refresh tokens purged successfully")
+			}
 		}
 	}()
 

@@ -9,6 +9,7 @@
         test-frontend-mock test-frontend-dev-env test-frontend-test-env \
         test-e2e-mock test-e2e-dev test-e2e-env \
         migrate-up migrate-down migrate-test-up migrate-test-down \
+        generate-api-types generate-api-go generate-api-ts \
         fmt clean
 
 # Default: Ryuk enabled by default, developer overrides via env (opt-out)
@@ -74,21 +75,7 @@ compose-test-build:
 	$(COMPOSE_TEST) build
 
 compose-test-up:
-	timeout $(TEST_ENV_COMMAND_TIMEOUT) $(COMPOSE_TEST) up -d postgres-test
-	@echo "==> Waiting for test database to be ready..."
-	@elapsed=0; \
-	until [ "$$($(CONTAINER_RUNTIME) inspect --format='{{.State.Health.Status}}' $(TEST_DB_CONTAINER) 2>/dev/null)" = "healthy" ]; do \
-		if [ "$$elapsed" -ge "$(TEST_ENV_READINESS_TIMEOUT)" ]; then \
-			echo "ERROR: Timed out after $(TEST_ENV_READINESS_TIMEOUT)s waiting for $(TEST_DB_CONTAINER) to become healthy" >&2; \
-			exit 1; \
-		fi; \
-		sleep 1; \
-		elapsed=$$((elapsed + 1)); \
-	done
-	@sleep 2
-	@echo "==> Database ready. Running test migrations..."
-	$(MAKE) migrate-test-up
-	@echo "==> Starting test environment frontend services..."
+	@echo "==> Starting containerized test environment (database, migration, api, frontend)..."
 	timeout $(TEST_ENV_COMMAND_TIMEOUT) $(COMPOSE_TEST) up -d
 
 compose-test-down:
@@ -142,7 +129,7 @@ test-e2e-env:
 		done; \
 	}; \
 	echo "==> Booting containerized test environment..."; \
-	trap '$(MAKE) compose-test-down' EXIT INT TERM; \
+	trap '$(MAKE) -C $(CURDIR) compose-test-down' EXIT INT TERM; \
 	$(MAKE) compose-test-up; \
 	wait_for backend-api-test http://127.0.0.1:8081/health/readiness; \
 	wait_for frontend-web-test http://127.0.0.1:3001/auth/signin; \
@@ -178,6 +165,17 @@ migrate-test-down:
 		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
 	fi; \
 	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down 1
+
+# --- API Contract Code Generation ---
+generate-api-types: generate-api-go generate-api-ts
+
+generate-api-go:
+	@echo "==> Generating Go types from OpenAPI spec..."
+	cd apps/backend && go generate ./internal/pkg/api/
+
+generate-api-ts:
+	@echo "==> Generating TypeScript types from OpenAPI spec..."
+	cd apps/frontend && npm run generate-api-types
 
 # --- Utilities & Cleanup ---
 fmt:

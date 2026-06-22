@@ -155,6 +155,24 @@ func (_m *Repository) GetUserByID(ctx context.Context, id string) (*auth.User, e
 	return r0, r1
 }
 
+// PurgeExpiredTokens provides a mock function with given fields: ctx
+func (_m *Repository) PurgeExpiredTokens(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PurgeExpiredTokens")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // RevokeTokenByHash provides a mock function with given fields: ctx, tokenHash
 func (_m *Repository) RevokeTokenByHash(ctx context.Context, tokenHash string) error {
 	ret := _m.Called(ctx, tokenHash)

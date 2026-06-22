@@ -2,6 +2,7 @@
   import { Button } from '$lib';
   import { ticketService, type Ticket } from '$lib/services/ticket';
   import { page } from '$app/state'; // SvelteKit v2 / Svelte 5 state-based routing
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { ShieldAlert, ShieldCheck, ArrowLeft, Save, X, RotateCcw } from 'lucide-svelte';
 
@@ -27,10 +28,11 @@
   let damageDescription = $state('');
   let repairAction = $state('');
   let cost = $state<number>(0);
-  let status = $state<'received' | 'diagnosing' | 'in_repair' | 'ready_for_pickup' | 'picked_up' | 'cancelled'>('received');
+  let status = $state<'received' | 'in_repair' | 'completed' | 'cancelled'>('received');
   let devicePosition = $state<'warehouse' | 'picked_up'>('warehouse');
   let paymentStatus = $state<'none' | 'requesting' | 'paid'>('none');
   let paymentMethod = $state<'cash' | 'qris' | undefined>(undefined);
+  let warrantyDurationDays = $state(30);
 
   let successMessage = $state('');
   let errorMessage = $state('');
@@ -54,6 +56,7 @@
         devicePosition = data.device_position;
         paymentStatus = data.payment_status;
         paymentMethod = data.payment_method;
+        warrantyDurationDays = data.warranty_duration_days !== undefined ? data.warranty_duration_days : 30;
       } else {
         errorMessage = 'Repair ticket not found.';
       }
@@ -77,6 +80,26 @@
       return;
     }
 
+    if (devicePosition === 'picked_up') {
+      if (status !== 'completed' && status !== 'cancelled') {
+        errorMessage = 'Service status must be COMPLETED or CANCELLED when device location status is PICKED UP.';
+        isSubmitting = false;
+        return;
+      }
+      if (status === 'completed') {
+        if (paymentStatus !== 'paid') {
+          errorMessage = 'Payment status must be set to PAID when status is COMPLETED.';
+          isSubmitting = false;
+          return;
+        }
+        if (!paymentMethod || (paymentMethod !== 'cash' && paymentMethod !== 'qris')) {
+          errorMessage = 'Payment method must be set to CASH or QRIS when status is COMPLETED.';
+          isSubmitting = false;
+          return;
+        }
+      }
+    }
+
     try {
       const updated = await ticketService.updateTicket(ticketId, {
         customer_name: customerName.trim(),
@@ -88,15 +111,17 @@
         repair_action: repairAction.trim(),
         cost: cost,
         status: status,
-        device_position: status === 'picked_up' ? 'picked_up' : devicePosition,
-        payment_status: status === 'picked_up' ? 'paid' : paymentStatus,
-        payment_method: paymentMethod
+        device_position: devicePosition,
+        payment_status: paymentStatus,
+        payment_method: paymentMethod,
+        warranty_duration_days: warrantyDurationDays
       });
 
       ticket = updated;
       
       // Update form fields to match database trigger overrides (like picked_up automatic rules)
       devicePosition = updated.device_position;
+      status = updated.status;
       paymentStatus = updated.payment_status;
       if (updated.payment_method) {
         paymentMethod = updated.payment_method;
@@ -126,6 +151,7 @@
       devicePosition = ticket.device_position;
       paymentStatus = ticket.payment_status;
       paymentMethod = ticket.payment_method;
+      warrantyDurationDays = ticket.warranty_duration_days !== undefined ? ticket.warranty_duration_days : 30;
     }
     isEditing = false;
   }
@@ -134,9 +160,8 @@
     switch (statusVal) {
       case 'ready_for_pickup': return 'bg-neubrutalism-green';
       case 'in_repair': return 'bg-neubrutalism-yellow';
-      case 'diagnosing': return 'bg-neubrutalism-pink text-white';
       case 'received': return 'bg-zinc-200';
-      case 'picked_up': return 'bg-zinc-100 text-zinc-500';
+      case 'completed': return 'bg-zinc-100 text-zinc-500';
       case 'cancelled': return 'bg-rose-100 text-rose-600 border-rose-300';
       default: return 'bg-white';
     }
@@ -167,15 +192,26 @@
     </a>
 
     {#if !isEditing}
-      <Button 
-        bgColor="bg-neubrutalism-pink" 
-        onclick={() => showConfirmModal = true}
-        class="py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 shadow-neubrutalism-sm text-white border-2 border-neubrutalism-charcoal"
-      >
-        <span class="text-white">EMERGENCY EDIT</span>
-      </Button>
+      <div class="flex gap-2">
+        {#if devicePosition !== 'picked_up'}
+          <Button
+            bgColor="bg-neubrutalism-yellow"
+            onclick={() => isEditing = true}
+            class="py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 shadow-neubrutalism-sm border-2 border-neubrutalism-charcoal"
+          >
+            <span>EDIT TICKET</span>
+          </Button>
+        {/if}
+        <Button
+          bgColor="bg-neubrutalism-pink"
+          onclick={() => showConfirmModal = true}
+          class="py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 shadow-neubrutalism-sm text-white border-2 border-neubrutalism-charcoal"
+        >
+          <span class="text-white">EMERGENCY EDIT</span>
+        </Button>
+      </div>
     {:else}
-      <div class="font-mono text-[10px] font-extrabold bg-neubrutalism-pink text-white border-2 border-neubrutalism-charcoal px-3 py-1.5 shadow-neubrutalism-sm uppercase tracking-wide animate-pulse">
+      <div class="font-mono text-[10px] font-extrabold bg-neubrutalism-yellow text-neubrutalism-charcoal border-2 border-neubrutalism-charcoal px-3 py-1.5 shadow-neubrutalism-sm uppercase tracking-wide animate-pulse">
         EDITING ACTIVE
       </div>
     {/if}
@@ -242,6 +278,7 @@
         <TicketStatusController
           bind:status
           bind:devicePosition
+          bind:warrantyDurationDays
           {isSubmitting}
           {isEditing}
         />
@@ -256,7 +293,7 @@
         />
 
         <!-- Warranty display (Read-Only) -->
-        {#if ticket.warranty_expiry_date || status === 'picked_up'}
+        {#if ticket.warranty_expiry_date || devicePosition === 'picked_up'}
           <WarrantyDetailsCard
             {ticket}
             {status}
@@ -331,8 +368,8 @@
             <Button 
               bgColor="bg-neubrutalism-pink" 
               onclick={() => {
-                isEditing = true;
                 showConfirmModal = false;
+                goto(`/admin/tickets/${ticketId}/emergency`);
               }}
               class="py-2 px-4 text-xs font-bold text-white shadow-neubrutalism-sm"
             >

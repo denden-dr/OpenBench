@@ -9,10 +9,13 @@ export interface MockTicket {
   damage_description: string;
   repair_action: string;
   cost: number;
-  status: 'received' | 'diagnosing' | 'in_repair' | 'ready_for_pickup' | 'picked_up' | 'cancelled';
+  status: 'received' | 'in_repair' | 'completed' | 'cancelled';
+  ui_status?: 'received' | 'in_repair' | 'ready_for_pickup' | 'completed' | 'cancelled';
   device_position: 'warehouse' | 'picked_up';
   payment_status: 'none' | 'requesting' | 'paid';
   payment_method?: 'cash' | 'qris';
+  warranty_duration_days: number;
+  picked_up_at?: string;
   warranty_expiry_date?: string;
   created_at: string;
 }

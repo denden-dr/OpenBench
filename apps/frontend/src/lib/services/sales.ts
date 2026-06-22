@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { apiFetch as fetch } from './api';
 
 const getApiUrl = () => {
   try {
@@ -31,7 +32,7 @@ export const saleService = {
     const res = await fetch(`${getApiUrl()}/api/v1/admin/sales`, { credentials: 'include' });
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || 'Failed to fetch sales');
-    return body.data;
+    return body.data ?? [];
   },
 
   async createSale(sale: Omit<Sale, 'id' | 'invoice_number' | 'created_at'>): Promise<Sale> {

@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { apiFetch as fetch } from './api';
 
 const getApiUrl = () => {
   try {
@@ -24,6 +25,6 @@ export const warrantyService = {
     const res = await fetch(`${getApiUrl()}/api/v1/admin/warranties`, { credentials: 'include' });
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || 'Failed to fetch warranties');
-    return body.data;
+    return body.data ?? [];
   }
 };

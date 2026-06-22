@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupServiceTest(t *testing.T) (*mocks.Repository, auth.Service, sqlmock.Sqlmock) {
+func setupServiceTest(t *testing.T) (*mocks.Repository, auth.AuthService, sqlmock.Sqlmock) {
 	mockDB, mockSQL, err := sqlmock.New()
 	require.NoError(t, err)
 

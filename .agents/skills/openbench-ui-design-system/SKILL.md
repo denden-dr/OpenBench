@@ -26,4 +26,5 @@ Reuse the established OpenBench component language. Inspect `apps/frontend/src/l
 - Do not create `tailwind.config.js` for theme tokens.
 - Do not use generic hover colors on active colored navigation states.
 - Do not nest cards inside cards.
+- Do not leave skeleton or loading UI visible after a successful empty response.
 - Do not let page-level dashboard wrappers create double-page scroll unless the route intentionally needs it.

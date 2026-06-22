@@ -17,6 +17,19 @@ services:
       retries: 5
     restart: "no"
 
+  migration-test:
+    image: docker.io/migrate/migrate:v4.17.0
+    container_name: openbench-migration-test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend/migrations:/migrations:z
+    command:
+      - -path=/migrations
+      - -database=postgres://postgres:test_password@postgres-test:5432/openbench_test_db?sslmode=disable
+      - up
+
   backend-api-test:
     build:
       context: ./apps/backend
@@ -25,6 +38,8 @@ services:
     depends_on:
       postgres-test:
         condition: service_healthy
+      migration-test:
+        condition: service_completed_successfully
     environment:
       - APP_ENV=test
       - PORT=8080

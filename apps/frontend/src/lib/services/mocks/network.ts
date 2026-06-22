@@ -6,12 +6,18 @@ let originalFetch: typeof window.fetch | null = null;
 
 // Helper to construct a Standard Response Envelope
 function createResponse(code: number, message: string, data: any): Response {
+  const body: any = {
+    code,
+    message
+  };
+
+  // Mirror backend's omitempty behavior
+  if (data !== null && data !== undefined && (!Array.isArray(data) || data.length > 0)) {
+    body.data = data;
+  }
+
   return new Response(
-    JSON.stringify({
-      code,
-      message,
-      data
-    }),
+    JSON.stringify(body),
     {
       status: code,
       headers: {
@@ -93,6 +99,15 @@ export function initMockNetwork() {
         const updated = await mockDbService.updateTicket(id, body);
         return createResponse(200, 'Ticket updated successfully', updated);
       }
+
+      // POST /admin/tickets/:id/emergency
+      const emergencyMatch = path.match(/^\/admin\/tickets\/([a-f0-9-]+)\/emergency$/i);
+      if (emergencyMatch && method === 'POST') {
+        const id = emergencyMatch[1];
+        const body = JSON.parse(init?.body as string || '{}');
+        const updated = await mockDbService.updateTicket(id, body);
+        return createResponse(200, 'Ticket updated successfully (emergency)', updated);
+      }
       
       // Public Tracker Lookup: GET /tracker/:id
       const trackerMatch = path.match(/^\/tracker\/([a-f0-9-]+)$/i);
@@ -102,12 +117,38 @@ export function initMockNetwork() {
         if (!ticket) {
           return createResponse(404, 'Ticket not found', null);
         }
+
+        const maskName = (name: string): string => {
+          return name.split(' ').map(word => {
+            if (!word) return '';
+            const len = word.length;
+            if (len <= 4) {
+              return word[0] + '*'.repeat(len - 1);
+            } else {
+              return word.slice(0, 3) + '*'.repeat(len - 3);
+            }
+          }).join(' ');
+        };
+
+        const maskPhone = (phone: string): string => {
+          const len = phone.length;
+          if (len <= 3) return phone;
+          return '*'.repeat(len - 3) + phone.slice(-3);
+        };
+
         // Only return non-sensitive fields for the public tracker
         const publicInfo = {
-          ticket_number: ticket.ticket_number,
+          id: ticket.id,
+          customer_name_masked: maskName(ticket.customer_name),
+          customer_phone_masked: maskPhone(ticket.customer_phone),
           brand_phone: ticket.brand_phone,
           model_phone: ticket.model_phone,
+          damage_description: ticket.damage_description,
+          repair_action: ticket.repair_action,
           status: ticket.status,
+          warranty_duration_days: ticket.warranty_duration_days,
+          picked_up_at: ticket.picked_up_at,
+          warranty_expiry_date: ticket.warranty_expiry_date,
           created_at: ticket.created_at
         };
         return createResponse(200, 'Success', publicInfo);

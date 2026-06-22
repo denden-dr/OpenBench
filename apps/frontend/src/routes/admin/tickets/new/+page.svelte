@@ -12,8 +12,10 @@
   let modelPhone = $state('');
   let serialNumber = $state('');
   let damageDescription = $state('');
+  let repairAction = $state('');
   let cost = $state<number>(0);
   let displayCost = $state(formatCurrencyInput(0));
+  let warrantyDurationDays = $state(30);
 
   function handleCostInput(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -63,13 +65,11 @@
         customer_phone: customerPhone.trim(),
         brand_phone: brandPhone.trim(),
         model_phone: modelPhone.trim(),
-        serial_number: serialNumber.trim() || 'N/A',
+        serial_number: serialNumber.trim() || undefined,
         damage_description: damageDescription.trim(),
-        repair_action: '',
+        repair_action: repairAction.trim() || undefined,
         cost: cost,
-        status: 'received',
-        device_position: 'warehouse',
-        payment_status: 'none'
+        warranty_duration_days: warrantyDurationDays
       });
 
       // Redirect back to tickets index
@@ -206,18 +206,49 @@
             ></textarea>
           </div>
 
-          <div class="flex flex-col gap-2 w-full">
-            <label for="est-cost" class="font-display font-bold text-sm text-neubrutalism-charcoal uppercase tracking-wider">Estimated Cost (IDR) *</label>
-            <input 
-              id="est-cost" 
-              type="text" 
-              placeholder="0"
-              required
-              value={displayCost} 
-              oninput={handleCostInput}
+          <div class="flex flex-col gap-1.5">
+            <label for="repair-action" class="font-display font-bold text-sm text-neubrutalism-charcoal uppercase tracking-wider">Repair Action</label>
+            <textarea
+              id="repair-action"
+              placeholder="Describe what action will be taken to fix the device (optional)..."
+              bind:value={repairAction}
               disabled={isSubmitting}
-              class="w-full border-4 border-neubrutalism-charcoal bg-white p-3 font-sans text-neubrutalism-charcoal rounded-none transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-neubrutalism-charcoal focus:bg-[#fefefe] focus:placeholder-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:border-dashed"
-            />
+              rows="2"
+              class="w-full border-4 border-neubrutalism-charcoal bg-white p-3 font-sans text-sm focus:outline-none focus:bg-zinc-50 focus:placeholder-transparent shadow-neubrutalism-sm"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2 w-full">
+              <label for="est-cost" class="font-display font-bold text-sm text-neubrutalism-charcoal uppercase tracking-wider">Estimated Cost (IDR) *</label>
+              <input
+                id="est-cost"
+                type="text"
+                placeholder="0"
+                required
+                value={displayCost}
+                oninput={handleCostInput}
+                disabled={isSubmitting}
+                class="w-full border-4 border-neubrutalism-charcoal bg-white p-3 font-sans text-neubrutalism-charcoal rounded-none transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-neubrutalism-charcoal focus:bg-[#fefefe] focus:placeholder-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:border-dashed"
+              />
+            </div>
+
+            <div class="flex flex-col gap-2 w-full">
+              <label for="warranty-select" class="font-display font-bold text-sm text-neubrutalism-charcoal uppercase tracking-wider">Warranty Duration</label>
+              <select
+                id="warranty-select"
+                bind:value={warrantyDurationDays}
+                disabled={isSubmitting}
+                class="w-full border-4 border-neubrutalism-charcoal bg-white p-3 font-sans text-sm focus:outline-none shadow-neubrutalism-sm rounded-none h-[52px]"
+              >
+                <option value={0}>No Warranty</option>
+                <option value={7}>7 Days</option>
+                <option value={14}>14 Days</option>
+                <option value={30}>30 Days</option>
+                <option value={90}>90 Days</option>
+                <option value={180}>180 Days</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

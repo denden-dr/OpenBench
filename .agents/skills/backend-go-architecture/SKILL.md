@@ -25,6 +25,9 @@ Keep backend changes in the existing layered shape: domain model, repository, se
 ## Hard Checks
 
 - Do not expose internal sequential IDs from unauthenticated endpoints.
+- Do not return an admin/internal DTO from a public unauthenticated endpoint; create a narrow public DTO.
 - Do not put transaction commits, rollbacks, or raw SQL in handlers.
+- Do not let response envelope tags such as `omitempty` remove successful list payloads that clients depend on.
+- Do not implement state-transition side effects by checking only the final state; compare previous and next state.
 - Do not use permissive production CORS.
 - Do not clear cookies with flags that differ from the set-cookie flags.

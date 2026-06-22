@@ -13,6 +13,12 @@
     getStatusText: (statusVal: string) => string;
     formatDate: (dateStr?: string) => string;
   } = $props();
+
+  let displayStatus = $derived(
+    ticket.status === 'completed' && ticket.device_position === 'warehouse'
+      ? 'ready_for_pickup'
+      : ticket.status
+  );
 </script>
 
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -21,8 +27,8 @@
       <span class="font-mono text-sm font-extrabold bg-zinc-200 px-2.5 py-1 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm">
         {ticket.ticket_number}
       </span>
-      <span class="font-mono text-xs font-bold py-1 px-3 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase {getStatusColor(ticket.status)}">
-        {getStatusText(ticket.status)}
+      <span class="font-mono text-xs font-bold py-1 px-3 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase {getStatusColor(displayStatus)}">
+        {getStatusText(displayStatus)}
       </span>
     </div>
     <h2 class="font-display font-extrabold text-2xl md:text-3xl uppercase tracking-tight mt-2">

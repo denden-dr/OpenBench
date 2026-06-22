@@ -11,9 +11,9 @@
   let isLoading = $state(true);
 
   // Compute stats reactively using Svelte 5 derived states
-  let activeTicketsCount = $derived(tickets.filter(t => t.status !== 'picked_up' && t.status !== 'cancelled').length);
-  let completedTodayCount = $derived(tickets.filter(t => t.status === 'picked_up').length);
-  let diagnosingCount = $derived(tickets.filter(t => t.status === 'diagnosing').length);
+  let activeTicketsCount = $derived(tickets.filter(t => getDisplayStatus(t) !== 'completed' && getDisplayStatus(t) !== 'cancelled').length);
+  let completedTodayCount = $derived(tickets.filter(t => getDisplayStatus(t) === 'completed').length);
+  let inRepairCount = $derived(tickets.filter(t => getDisplayStatus(t) === 'in_repair').length);
 
   onMount(async () => {
     tickets = await ticketService.getTickets();
@@ -24,15 +24,20 @@
     switch (status) {
       case 'ready_for_pickup': return 'bg-neubrutalism-green';
       case 'in_repair': return 'bg-neubrutalism-yellow';
-      case 'diagnosing': return 'bg-neubrutalism-pink text-white';
       case 'received': return 'bg-zinc-200';
-      case 'picked_up': return 'bg-zinc-100 text-zinc-500 line-through';
+      case 'completed': return 'bg-zinc-100 text-zinc-500 line-through';
       default: return 'bg-white';
     }
   };
 
   const getStatusText = (status: string) => {
     return status.replace(/_/g, ' ');
+  };
+
+  const getDisplayStatus = (t: Ticket) => {
+    return t.status === 'completed' && t.device_position === 'warehouse'
+      ? 'ready_for_pickup'
+      : t.status;
   };
 </script>
 
@@ -92,11 +97,11 @@
         <div class="absolute top-4 right-4 bg-neubrutalism-charcoal text-white p-2 border-2 border-neubrutalism-charcoal">
           <Clock class="w-5 h-5" />
         </div>
-        <span class="font-mono text-xs font-bold text-neubrutalism-charcoal opacity-70 uppercase tracking-widest">In Diagnosis</span>
-        <span class="font-mono text-5xl font-extrabold text-neubrutalism-charcoal mt-2">{diagnosingCount}</span>
+        <span class="font-mono text-xs font-bold text-neubrutalism-charcoal opacity-70 uppercase tracking-widest">In Repair</span>
+        <span class="font-mono text-5xl font-extrabold text-neubrutalism-charcoal mt-2">{inRepairCount}</span>
         <span class="font-sans text-xs text-neubrutalism-charcoal opacity-60 mt-2 flex items-center gap-1">
           <ClipboardList class="w-3.5 h-3.5 text-zinc-500" />
-          Awaiting technical diagnostics
+          Devices currently being repaired
         </span>
       </Card>
       
@@ -117,12 +122,12 @@
       </div>
       
       <div class="flex flex-col gap-4">
-        {#if tickets.filter(t => t.status !== 'picked_up').length === 0}
+        {#if tickets.filter(t => getDisplayStatus(t) !== 'completed' && getDisplayStatus(t) !== 'cancelled').length === 0}
           <Card bgColor="bg-white" class="p-8 text-center font-mono text-sm text-zinc-500">
             NO ACTIVE REPAIR TICKETS IN QUEUE
           </Card>
         {:else}
-          {#each tickets.filter(t => t.status !== 'picked_up').slice(0, 5) as ticket}
+          {#each tickets.filter(t => getDisplayStatus(t) !== 'completed' && getDisplayStatus(t) !== 'cancelled').slice(0, 5) as ticket}
             <Card bgColor="bg-white" class="hover:shadow-neubrutalism-lg transition-all">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div class="flex flex-col gap-1">
@@ -141,8 +146,8 @@
                 </div>
                 
                 <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                  <span class="font-mono text-[10px] sm:text-xs font-bold py-1 px-2.5 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase tracking-wide {getStatusColor(ticket.status)}">
-                    {getStatusText(ticket.status)}
+                  <span class="font-mono text-[10px] sm:text-xs font-bold py-1 px-2.5 border-2 border-neubrutalism-charcoal shadow-neubrutalism-sm uppercase tracking-wide {getStatusColor(getDisplayStatus(ticket))}">
+                    {getStatusText(getDisplayStatus(ticket))}
                   </span>
                   
                   <a href="/admin/tickets/{ticket.id}" class="inline-block">

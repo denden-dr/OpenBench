@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ticketService, type Ticket } from '$lib/services/ticket';
+  import { ticketService, type Ticket, type PublicTrackerTicket } from '$lib/services/ticket';
   import { onMount } from 'svelte';
 
   import TrackerHeader from './components/TrackerHeader.svelte';
@@ -8,9 +8,11 @@
   import TrackerHistory from './components/TrackerHistory.svelte';
 
   let ticketIdInput = $state('');
-  let searchedTicket = $state<Ticket | null>(null);
+  let searchedTicket = $state<PublicTrackerTicket | null>(null);
   let isLoading = $state(false);
   let errorMessage = $state('');
+  let hydrated = $state(false);
+  let abortController: AbortController | null = null;
 
   // Search history state
   interface HistoryItem {
@@ -22,6 +24,7 @@
 
   onMount(() => {
     loadHistory();
+    hydrated = true;
   });
 
   function loadHistory() {
@@ -35,12 +38,12 @@
     }
   }
 
-  function saveToHistory(ticket: Ticket) {
+  function saveToHistory(ticket: PublicTrackerTicket) {
     // Remove if already exists to move to top
     let history = searchHistory.filter(item => item.id !== ticket.id);
     
     // Add to top of list
-    const label = `${ticket.brand_phone} ${ticket.model_phone} (${ticket.ticket_number})`;
+    const label = `${ticket.brand_phone} ${ticket.model_phone} (${ticket.id.slice(0, 8)})`;
     history.unshift({
       id: ticket.id,
       label,
@@ -84,9 +87,14 @@
       return;
     }
 
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+
     isLoading = true;
     try {
-      const ticket = await ticketService.getPublicTrackerTicket(trimmedInput);
+      const ticket = await ticketService.getPublicTrackerTicket(trimmedInput, abortController.signal);
       if (ticket) {
         searchedTicket = ticket;
         saveToHistory(ticket);
@@ -94,6 +102,7 @@
         errorMessage = 'Ticket not found. Please double-check your Ticket ID.';
       }
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       errorMessage = err.message || 'Failed to retrieve tracking status data.';
     } finally {
       isLoading = false;
@@ -109,9 +118,8 @@
     switch (statusVal) {
       case 'ready_for_pickup': return 'bg-neubrutalism-green border-neubrutalism-charcoal';
       case 'in_repair': return 'bg-neubrutalism-yellow border-neubrutalism-charcoal';
-      case 'diagnosing': return 'bg-neubrutalism-pink text-white border-neubrutalism-charcoal';
       case 'received': return 'bg-zinc-200';
-      case 'picked_up': return 'bg-zinc-100 text-zinc-500 border-zinc-300';
+      case 'completed': return 'bg-zinc-100 text-zinc-500 border-zinc-300';
       case 'cancelled': return 'bg-rose-100 text-rose-600 border-rose-300';
       default: return 'bg-white';
     }
@@ -126,7 +134,7 @@
   <title>Track Ticket Status - OpenBench Tracker</title>
 </svelte:head>
 
-<main class="min-h-screen bg-neubrutalism-bg flex flex-col font-sans p-4 md:p-8">
+<main class="min-h-screen bg-neubrutalism-bg flex flex-col font-sans p-4 md:p-8" data-hydrated={hydrated}>
   <div class="max-w-2xl w-full mx-auto flex flex-col gap-6">
     
     <!-- Home Navigation & Title -->

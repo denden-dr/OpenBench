@@ -59,6 +59,8 @@ When writing entries to this changelog, adhere to the following rules:
 - Backend config normalizes `"dev"` → `"development"` and validates JWT/production settings
 - CORS fallback deduplicated — uses config default only
 - `docker-compose-test.yml` added `CORS_ALLOWED_ORIGINS`, `JWT_SECRET`, `PUBLIC_MOCK_API` env vars
+- Refactored Playwright E2E tests to dynamically manage tickets and capture generated UUIDs, allowing E2E suites to run successfully on both Mock and real environments (with empty databases).
+- Skipped E2E tests for non-integrated Inventory and Sales features.
 
 ### Removed
 - Playwright scripts, configuration, and dependency ownership from `apps/frontend`.
@@ -67,6 +69,8 @@ When writing entries to this changelog, adhere to the following rules:
 ### Fixed
 - Bounded containerized E2E startup and readiness waits with clear timeout errors to prevent `make test-e2e-env` from hanging indefinitely.
 - Ensured `test-e2e-env` tears down the compose test environment through a shell trap on failure or interruption.
+- Fixed Makefile `test-e2e-env` exit trap to run compose down relative to `$(CURDIR)` preventing command failure when exiting from `apps/e2e` subdirectory.
+- Fixed strict mode violation on "received" status locator in `tracker.test.ts` using exact text matching.
 
 ### Security
 - JWT access tokens with HMAC-SHA256 signing and algorithm-switching protection
