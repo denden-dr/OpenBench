@@ -30,6 +30,11 @@ This catalog indexes all specialized skills configured in this repository. These
 | :--- | :--- | :--- |
 | [`openbench-workflow-and-ops`](./openbench-workflow-and-ops/SKILL.md) | 1.1.2 | Use when setting up local dev, Docker/Podman compose, environment config, container builds, package-manager installs, Makefile workflows, commits, pull-request readiness, code reviews, security checks, or technical-debt tracking. |
 
+### Knowledge Graph
+| Skill | Version | Description (Trigger Conditions) |
+| :--- | :--- | :--- |
+| [`graphify`](./graphify/SKILL.md) | 1.0.0 | Use when answering questions about the codebase, documents, or project content with the pre-built `graphify-out/` knowledge graph when available, or when building/updating that graph. |
+
 ---
 
 ## Directory Conventions

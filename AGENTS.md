@@ -53,7 +53,7 @@ The full catalog and detailed instructions are located in `.agents/skills/CATALO
 
 ## Knowledge Graph (graphify)
 
-OpenBench has a pre-built knowledge graph in `graphify-out/`. Use it before answering codebase questions:
+OpenBench can use a pre-built knowledge graph in `graphify-out/` when those artifacts are present. Use it before answering codebase questions, or regenerate it with the graphify skill if the directory is missing:
 
 - `graphify-out/graph.json` — raw graph data (655 nodes, 837 edges, 67 communities)
 - `graphify-out/GRAPH_REPORT.md` — full audit report with god nodes, surprising connections, community labels
@@ -69,4 +69,4 @@ OpenBench has a pre-built knowledge graph in `graphify-out/`. Use it before answ
 **Update the graph after code changes:**
 - `/graphify --update` — incremental re-extraction (only changed files)
 
-**Key communities:** Auth Infrastructure, API DTOs & Types, Frontend Mock Services, Ticket Service, Shared UI Components, Database & Integration Tests, Admin UI Components, and 60+ smaller clusters. See `GRAPH_REPORT.md` for the full community list.
+**Key communities:** When the graph artifacts are current, expected major communities include Auth Infrastructure, API DTOs & Types, Frontend Mock Services, Ticket Service, Shared UI Components, Database & Integration Tests, and Admin UI Components. See `GRAPH_REPORT.md` for the generated community list.
