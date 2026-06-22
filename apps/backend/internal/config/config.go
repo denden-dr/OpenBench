@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -66,14 +65,17 @@ func LoadConfig() (*AppConfig, error) {
 		envFile = ".env"
 	}
 
-	// Find the environment file in current directory, one, or two levels up (TD-003)
+	// Find the environment file. If ENV_PATH is provided, use that.
+	// Otherwise, look only in the current working directory (TD-001)
 	var envFilePath string
-	if _, err := os.Stat(envFile); err == nil {
+	if customPath := os.Getenv("ENV_PATH"); customPath != "" {
+		if _, err := os.Stat(customPath); err == nil {
+			envFilePath = customPath
+		} else {
+			log.Printf("Warning: ENV_PATH is set to %q but file does not exist", customPath)
+		}
+	} else if _, err := os.Stat(envFile); err == nil {
 		envFilePath = envFile
-	} else if _, err := os.Stat(filepath.Join("..", envFile)); err == nil {
-		envFilePath = filepath.Join("..", envFile)
-	} else if _, err := os.Stat(filepath.Join("..", "..", envFile)); err == nil {
-		envFilePath = filepath.Join("..", "..", envFile)
 	}
 
 	// Load dotenv file if it exists, proceed with system env variables if not found
