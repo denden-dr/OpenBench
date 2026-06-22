@@ -1,0 +1,1423 @@
+openapi: "3.0.3"
+info:
+  title: OpenBench API
+  description: |
+    Repair shop management system — ticket tracking, inventory, POS sales, and warranty management.
+
+    Base URL: `http://localhost:8080` (dev) | `https://api.openbench.example.com` (prod)
+
+    ## Authentication
+
+    Auth uses HTTP-only cookies (`access_token`, `refresh_token`) with Token Rotation (RTR).
+    Protected endpoints require `credentials: 'include'` on the client side.
+
+    | Cookie | Type | Description |
+    |--------|------|-------------|
+    | `access_token` | JWT (short-lived) | Sent automatically on credentialed requests |
+    | `refresh_token` | Opaque (long-lived) | Rotated on each `/auth/refresh` call |
+
+    ## Response Envelope
+
+    Every response follows this shape:
+
+    ```json
+    {
+      "code": 200,
+      "message": "Success",
+      "data": { ... }
+    }
+    ```
+
+    Error responses omit `data` and include an `error` field with a technical message.
+  version: "0.1.0"
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.openbench.example.com
+    description: Production server
+
+paths:
+  # ────────────────────────────── HEALTH ──────────────────────────────
+  /health/liveness:
+    get:
+      operationId: livenessProbe
+      summary: Liveness probe
+      description: Returns basic status without database dependency.
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  environment:
+                    type: string
+                    example: "development"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-06-16T10:00:00Z"
+
+  /health/readiness:
+    get:
+      operationId: readinessProbe
+      summary: Readiness probe
+      description: Pings the PostgreSQL database and returns connection pool stats. Returns 503 if DB is unreachable.
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  environment:
+                    type: string
+                    example: "development"
+                  database:
+                    type: string
+                    example: "connected"
+                  pool:
+                    type: object
+                    properties:
+                      max_open:
+                        type: integer
+                      open_connections:
+                        type: integer
+                      in_use:
+                        type: integer
+                      idle:
+                        type: integer
+        "503":
+          description: Database unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  database:
+                    type: string
+                    example: "unreachable"
+
+  /health:
+    get:
+      operationId: legacyHealth
+      summary: Legacy health redirect
+      description: Redirects (301) to /health/readiness.
+      tags: [Health]
+      responses:
+        "301":
+          description: Redirect to /health/readiness
+
+  # ────────────────────────────── AUTH ────────────────────────────────
+  /api/v1/auth/signin:
+    post:
+      operationId: signIn
+      summary: Sign in
+      description: Authenticate with email and password. Sets `access_token` and `refresh_token` HTTP-only cookies.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInRequest"
+      responses:
+        "200":
+          description: Authentication successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: access_token and refresh_token HTTP-only cookies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_SignInData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  /api/v1/auth/refresh:
+    post:
+      operationId: refreshTokens
+      summary: Refresh auth tokens
+      description: Rotates the access/refresh token pair using the `refresh_token` cookie (Token Rotation / RTR).
+      tags: [Auth]
+      responses:
+        "200":
+          description: Tokens rotated successfully
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: New access_token and refresh_token cookies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Empty"
+        "401":
+          description: Invalid, expired, or compromised refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  /api/v1/auth/signout:
+    post:
+      operationId: signOut
+      summary: Sign out
+      description: Revokes the active refresh token and clears both auth cookies.
+      tags: [Auth]
+      responses:
+        "200":
+          description: Signed out successfully
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Cleared access_token and refresh_token cookies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Empty"
+
+  /api/v1/auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get current user session
+      description: Returns the authenticated user's profile. Frontend calls this to check session validity.
+      tags: [Auth]
+      security:
+        - CookieAuth: []
+      responses:
+        "200":
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_MeData"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  # ─────────────────────────── ADMIN DASHBOARD ────────────────────────
+  /api/v1/admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      summary: Admin dashboard
+      description: Placeholder admin dashboard endpoint.
+      tags: [Admin]
+      security:
+        - CookieAuth: []
+
+      responses:
+        "200":
+          description: Dashboard info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_DashboardData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ────────────────────────────── TICKETS ─────────────────────────────
+  /api/v1/admin/tickets:
+    get:
+      operationId: listTickets
+      summary: List all repair tickets
+      description: Returns all repair tickets. Used by admin dashboard and ticket list page.
+      tags: [Tickets]
+      security:
+        - CookieAuth: []
+
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_TicketList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createTicket
+      summary: Create a repair ticket
+      description: Creates a new repair ticket with customer and device information.
+      tags: [Tickets]
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketCreate"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_TicketData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/admin/tickets/{id}:
+    get:
+      operationId: getTicket
+      summary: Get a single ticket
+      description: Returns a repair ticket by its UUID.
+      tags: [Tickets]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ticket UUID
+      responses:
+        "200":
+          description: Ticket detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_TicketData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+    patch:
+      operationId: updateTicket
+      summary: Update a repair ticket
+      description: Updates one or more fields of a repair ticket (status, cost, notes, etc.).
+      tags: [Tickets]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ticket UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketUpdate"
+      responses:
+        "200":
+          description: Ticket updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_TicketData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  /api/v1/admin/tickets/{id}/emergency:
+    post:
+      operationId: emergencyUpdateTicket
+      summary: Emergency administrative update for a repair ticket
+      description: Bypasses state machine validations to fix errors, allowing status reversals.
+      tags: [Tickets]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ticket UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketUpdate"
+      responses:
+        "200":
+          description: Ticket updated successfully (emergency)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_TicketData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  # ──────────────────────────── PUBLIC TRACKER ────────────────────────
+  /api/v1/tracker/{id}:
+    get:
+      operationId: getPublicTrackerTicket
+      summary: Public ticket tracker
+      description: Public endpoint — no auth required. Returns limited ticket information for customer lookup.
+      tags: [Tracker]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ticket UUID
+      responses:
+        "200":
+          description: Ticket status for public view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_PublicTrackerTicketData"
+        "404":
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  # ───────────────────────────── INVENTORY ────────────────────────────
+  /api/v1/admin/inventory:
+    get:
+      operationId: listInventory
+      summary: List all products
+      description: Returns all inventory products — both retail items and spare parts.
+      tags: [Inventory]
+      security:
+        - CookieAuth: []
+
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ProductList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createProduct
+      summary: Create a product
+      description: Adds a new product to inventory.
+      tags: [Inventory]
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCreate"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ProductData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/admin/inventory/{id}:
+    get:
+      operationId: getProduct
+      summary: Get a single product
+      description: Returns a product by its ID.
+      tags: [Inventory]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Product UUID
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ProductData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+    patch:
+      operationId: updateProduct
+      summary: Update a product
+      description: Updates one or more fields of a product (stock, price, etc.).
+      tags: [Inventory]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Product UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ProductData"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+    delete:
+      operationId: deleteProduct
+      summary: Delete a product
+      description: Removes a product from the inventory catalog.
+      tags: [Inventory]
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Product UUID
+      responses:
+        "200":
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Empty"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+
+  # ────────────────────────────── SALES ───────────────────────────────
+  /api/v1/admin/sales:
+    get:
+      operationId: listSales
+      summary: List all sales transactions
+      description: Returns all POS sales transactions.
+      tags: [Sales]
+      security:
+        - CookieAuth: []
+
+      responses:
+        "200":
+          description: List of sales
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_SaleList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createSale
+      summary: Create a sale (checkout)
+      description: Processes a POS checkout — creates a sale transaction and deducts inventory stock.
+      tags: [Sales]
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleCreate"
+      responses:
+        "201":
+          description: Sale recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_SaleData"
+        "400":
+          description: Validation failed or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ───────────────────────────── WARRANTIES ───────────────────────────
+  /api/v1/admin/warranties:
+    get:
+      operationId: listWarranties
+      summary: List all warranty records
+      description: Returns all warranty records, auto-generated when a ticket is picked up.
+      tags: [Warranties]
+      security:
+        - CookieAuth: []
+
+      responses:
+        "200":
+          description: List of warranties
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_WarrantyList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: JWT access token set via Set-Cookie on sign-in / refresh.
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiResponse_Error"
+    Forbidden:
+      description: Insufficient permissions (role must be admin)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiResponse_Error"
+
+  schemas:
+    # ───────────── ENVELOPE ─────────────
+    ApiResponse_Empty:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          nullable: true
+          example: null
+      required: [code]
+
+    ApiResponse_Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: "Invalid email or password"
+        error:
+          type: string
+          example: "invalid credentials"
+      required: [code, message]
+
+    ApiResponse_SignInData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Successfully signed in"
+        data:
+          $ref: "#/components/schemas/SignInResponse"
+      required: [code, message, data]
+
+    ApiResponse_MeData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Successfully retrieved profile info"
+        data:
+          $ref: "#/components/schemas/MeResponse"
+      required: [code, message, data]
+
+    ApiResponse_DashboardData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Welcome to the admin dashboard"
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Welcome to the admin dashboard"
+            user_id:
+              type: string
+              format: uuid
+              example: "a1b2c3d4-..."
+      required: [code, message, data]
+
+    ApiResponse_TicketList:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Tickets retrieved"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ticket"
+      required: [code, message, data]
+
+    ApiResponse_TicketData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Ticket retrieved"
+        data:
+          $ref: "#/components/schemas/Ticket"
+      required: [code, message, data]
+
+    ApiResponse_PublicTrackerTicketData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Ticket retrieved"
+        data:
+          $ref: "#/components/schemas/PublicTrackerTicket"
+      required: [code, message, data]
+
+    ApiResponse_ProductList:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Inventory retrieved"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+      required: [code, message, data]
+
+    ApiResponse_ProductData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Product retrieved"
+        data:
+          $ref: "#/components/schemas/Product"
+      required: [code, message, data]
+
+    ApiResponse_SaleList:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Sales retrieved"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sale"
+      required: [code, message, data]
+
+    ApiResponse_SaleData:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Sale recorded"
+        data:
+          $ref: "#/components/schemas/Sale"
+      required: [code, message, data]
+
+    ApiResponse_WarrantyList:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Warranties retrieved"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warranty"
+      required: [code, message, data]
+
+    # ───────────── AUTH ─────────────
+    SignInRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@openbench.test"
+        password:
+          type: string
+          format: password
+          example: "admin123"
+      additionalProperties: false
+
+    SignInResponse:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, user]
+          example: admin
+        user_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-..."
+        email:
+          type: string
+          format: email
+          example: "admin@openbench.test"
+      required: [role, user_id, email]
+
+    MeResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-..."
+        role:
+          type: string
+          enum: [admin, user]
+          example: admin
+        email:
+          type: string
+          format: email
+          example: "admin@openbench.test"
+      required: [user_id, role, email]
+
+    # ───────────── TICKET ─────────────
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-..."
+        ticket_number:
+          type: string
+          example: "TKT-000001"
+        customer_name:
+          type: string
+          example: "John Doe"
+        customer_phone:
+          type: string
+          example: "0812-3456-7890"
+        brand_phone:
+          type: string
+          example: "Samsung"
+        model_phone:
+          type: string
+          example: "Galaxy S24"
+        serial_number:
+          type: string
+          example: "SN-123456789"
+        damage_description:
+          type: string
+          example: "Cracked LCD and unresponsive touchscreen"
+        repair_action:
+          type: string
+          example: "Replace LCD and touchscreen"
+        cost:
+          type: number
+          format: float
+          example: 450000
+        status:
+          type: string
+          enum: [received, in_repair, completed, cancelled]
+          example: in_repair
+        device_position:
+          type: string
+          enum: [warehouse, picked_up]
+          example: warehouse
+        payment_status:
+          type: string
+          enum: [none, requesting, paid]
+          example: none
+        payment_method:
+          type: string
+          nullable: true
+          enum: [cash, qris]
+          example: null
+        warranty_duration_days:
+          type: integer
+          example: 30
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-16T09:00:00Z"
+      required: [id, ticket_number, customer_name, customer_phone, brand_phone, model_phone, damage_description, status, device_position, payment_status, warranty_duration_days, created_at]
+
+    PublicTrackerTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-..."
+        customer_name_masked:
+          type: string
+          example: "J*** D**"
+        customer_phone_masked:
+          type: string
+          example: "*********890"
+        brand_phone:
+          type: string
+          example: "Samsung"
+        model_phone:
+          type: string
+          example: "Galaxy S24"
+        damage_description:
+          type: string
+          example: "Cracked LCD and unresponsive touchscreen"
+        repair_action:
+          type: string
+          example: "Replace LCD and touchscreen"
+        status:
+          type: string
+          enum: [received, in_repair, completed, cancelled]
+          example: in_repair
+        warranty_duration_days:
+          type: integer
+          example: 30
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-16T09:00:00Z"
+      required: [id, customer_name_masked, customer_phone_masked, brand_phone, model_phone, damage_description, status, warranty_duration_days, created_at]
+
+    TicketCreate:
+      type: object
+      required: [customer_name, customer_phone, brand_phone, model_phone, damage_description, warranty_duration_days]
+      properties:
+        customer_name:
+          type: string
+          example: "John Doe"
+          maxLength: 255
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=255"
+        customer_phone:
+          type: string
+          example: "0812-3456-7890"
+          maxLength: 50
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=50"
+        brand_phone:
+          type: string
+          example: "Samsung"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=100"
+        model_phone:
+          type: string
+          example: "Galaxy S24"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=100"
+        serial_number:
+          type: string
+          example: "SN-123456789"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,max=100"
+        damage_description:
+          type: string
+          example: "Cracked LCD and unresponsive touchscreen"
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+        warranty_duration_days:
+          type: integer
+          minimum: 0
+          example: 30
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
+        cost:
+          type: number
+          format: float
+          minimum: 0
+          example: 150000.00
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
+        repair_action:
+          type: string
+          example: "Replace with new battery"
+          maxLength: 255
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,max=255"
+      additionalProperties: false
+
+    TicketUpdate:
+      type: object
+      properties:
+        customer_name:
+          type: string
+          example: "John Doe"
+          maxLength: 255
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1,max=255"
+        customer_phone:
+          type: string
+          example: "0812-3456-7890"
+          maxLength: 50
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1,max=50"
+        brand_phone:
+          type: string
+          example: "Samsung"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1,max=100"
+        model_phone:
+          type: string
+          example: "Galaxy S24"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1,max=100"
+        serial_number:
+          type: string
+          example: "SN-123456789"
+          maxLength: 100
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,max=100"
+        damage_description:
+          type: string
+          example: "Cracked LCD — replace with new one"
+        repair_action:
+          type: string
+          example: "Replace with original Samsung LCD"
+        cost:
+          type: number
+          format: float
+          example: 450000
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
+        status:
+          type: string
+          enum: [received, in_repair, completed, cancelled]
+          example: in_repair
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=received in_repair completed cancelled"
+        device_position:
+          type: string
+          enum: [warehouse, picked_up]
+          example: warehouse
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=warehouse picked_up"
+        payment_status:
+          type: string
+          enum: [none, requesting, paid]
+          example: paid
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=none requesting paid"
+        payment_method:
+          type: string
+          nullable: true
+          enum: [cash, qris]
+          example: cash
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=cash qris"
+        warranty_duration_days:
+          type: integer
+          minimum: 0
+          example: 30
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
+      additionalProperties: false
+
+    # ───────────── PRODUCT ─────────────
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-..."
+        name:
+          type: string
+          example: "Tempered Glass Samsung S24"
+        category:
+          type: string
+          enum: [retail, spare_part]
+          example: spare_part
+        stock:
+          type: integer
+          example: 50
+        price:
+          type: number
+          format: float
+          example: 50000
+        cost_price:
+          type: number
+          format: float
+          example: 25000
+        min_stock:
+          type: integer
+          example: 10
+      required: [id, name, category, stock, price, cost_price, min_stock]
+
+    ProductCreate:
+      type: object
+      required: [name, category, stock, price, cost_price, min_stock]
+      properties:
+        name:
+          type: string
+          example: "Tempered Glass Samsung S24"
+          maxLength: 255
+        category:
+          type: string
+          enum: [retail, spare_part]
+          example: spare_part
+        stock:
+          type: integer
+          minimum: 0
+          example: 50
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 50000
+        cost_price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        min_stock:
+          type: integer
+          minimum: 0
+          example: 10
+      additionalProperties: false
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Tempered Glass Samsung S24 Ultra"
+          maxLength: 255
+        category:
+          type: string
+          enum: [retail, spare_part]
+          example: spare_part
+        stock:
+          type: integer
+          minimum: 0
+          example: 45
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 55000
+        cost_price:
+          type: number
+          format: float
+          minimum: 0
+          example: 30000
+        min_stock:
+          type: integer
+          minimum: 0
+          example: 10
+      additionalProperties: false
+
+    # ───────────── SALE ─────────────
+    SaleItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-..."
+        name:
+          type: string
+          example: "Tempered Glass Samsung S24"
+        price:
+          type: number
+          format: float
+          example: 50000
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+      required: [productId, name, price, qty]
+
+    Sale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c3d4e5f6-..."
+        invoice_number:
+          type: string
+          example: "INV-20260616-0001"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItem"
+        subtotal:
+          type: number
+          format: float
+          example: 100000
+        discount:
+          type: number
+          format: float
+          example: 5000
+        total:
+          type: number
+          format: float
+          example: 95000
+        payment_method:
+          type: string
+          enum: [cash, qris]
+          example: cash
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-16T10:00:00Z"
+      required: [id, invoice_number, items, subtotal, discount, total, payment_method, created_at]
+
+    SaleCreate:
+      type: object
+      required: [items, subtotal, discount, total, payment_method]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/SaleItem"
+        subtotal:
+          type: number
+          format: float
+          minimum: 0
+          example: 100000
+        discount:
+          type: number
+          format: float
+          minimum: 0
+          example: 5000
+        total:
+          type: number
+          format: float
+          minimum: 0
+          example: 95000
+        payment_method:
+          type: string
+          enum: [cash, qris]
+          example: cash
+      additionalProperties: false
+
+    # ───────────── WARRANTY ─────────────
+    Warranty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "d4e5f6a7-..."
+        ticket_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-..."
+        ticket_number:
+          type: string
+          example: "TKT-000001"
+        customer_name:
+          type: string
+          example: "Budi Santoso"
+        device_info:
+          type: string
+          example: "Samsung Galaxy S24"
+        start_date:
+          type: string
+          format: date
+          example: "2026-06-16"
+        end_date:
+          type: string
+          format: date
+          example: "2026-07-16"
+        status:
+          type: string
+          enum: [active, expired]
+          example: active
+      required: [id, ticket_id, ticket_number, customer_name, device_info, start_date, end_date, status]
+
+x-tagGroups:
+  - name: Monitoring
+    tags: [Health]
+  - name: Authentication
+    tags: [Auth]
+  - name: Admin
+    tags: [Admin, Tickets, Inventory, Sales, Warranties]
+  - name: Public
+    tags: [Tracker]
