@@ -9,12 +9,13 @@ export const initialTickets: MockTicket[] = [
     brand_phone: 'Samsung',
     model_phone: 'Galaxy S23 Ultra',
     serial_number: 'SN-S23U-992812',
-    damage_description: 'Layar pecah setelah jatuh dari motor.',
-    repair_action: 'Penggantian modul LCD Screen S23 Ultra Original.',
+    damage_description: 'Shattered screen after falling from a motorcycle.',
+    repair_action: 'Replacement of S23 Ultra Original LCD Screen module.',
     cost: 2800000,
-    status: 'ready_for_pickup',
+    status: 'completed',
     device_position: 'warehouse',
     payment_status: 'requesting',
+    warranty_duration_days: 30,
     created_at: '2026-06-12T10:00:00.000Z'
   },
   {
@@ -25,12 +26,13 @@ export const initialTickets: MockTicket[] = [
     brand_phone: 'Apple',
     model_phone: 'iPhone 14 Pro',
     serial_number: 'IMEI-358921029381023',
-    damage_description: 'Baterai sangat boros dan sering mati mendadak (Battery health 68%).',
-    repair_action: 'Penggantian baterai iPhone 14 Pro Original Apple + Reset Battery Cycle.',
+    damage_description: 'Battery drains very fast and device turns off unexpectedly (Battery health 68%).',
+    repair_action: 'iPhone 14 Pro Original Apple Battery replacement + Reset Battery Cycle.',
     cost: 950000,
     status: 'in_repair',
     device_position: 'warehouse',
     payment_status: 'none',
+    warranty_duration_days: 90,
     created_at: '2026-06-13T14:30:00.000Z'
   },
   {
@@ -41,14 +43,15 @@ export const initialTickets: MockTicket[] = [
     brand_phone: 'Xiaomi',
     model_phone: 'Redmi Note 12',
     serial_number: 'IMEI-869281029281928',
-    damage_description: 'Port USB rusak tidak bisa mengisi daya.',
-    repair_action: 'Pembersihan dan penggantian papan sub-board konektor USB charger.',
+    damage_description: 'Broken USB port, unable to charge.',
+    repair_action: 'Cleaning and replacing USB charger connector sub-board.',
     cost: 350000,
-    status: 'picked_up',
+    status: 'completed',
     device_position: 'picked_up',
     payment_status: 'paid',
     payment_method: 'qris',
-    warranty_expiry_date: '2026-07-14T00:00:00.000Z',
+    warranty_duration_days: 14,
+    picked_up_at: '2026-06-14T00:00:00.000Z',
     created_at: '2026-06-10T09:00:00.000Z'
   }
 ];

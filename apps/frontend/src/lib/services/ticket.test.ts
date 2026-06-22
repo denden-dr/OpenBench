@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { ticketService, type Ticket } from './ticket';
+import { ticketService, type Ticket, type PublicTrackerTicket } from './ticket';
 
 describe('ticketService Unit Tests', () => {
   afterEach(() => {
@@ -21,7 +21,7 @@ describe('ticketService Unit Tests', () => {
     const result = await ticketService.getTickets();
     
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/admin/tickets'), { credentials: 'include' });
-    expect(result).toEqual(mockTickets);
+    expect(result).toEqual([{ ...mockTickets[0], ui_status: undefined, warranty_expiry_date: undefined }]);
   });
 
   it('should handle getTickets error', async () => {
@@ -37,7 +37,7 @@ describe('ticketService Unit Tests', () => {
     const result = await ticketService.getTicket('ticket-1');
     
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/admin/tickets/ticket-1'), { credentials: 'include' });
-    expect(result).toEqual(mockTicket);
+    expect(result).toEqual({ ...mockTicket, ui_status: undefined, warranty_expiry_date: undefined });
   });
 
   it('should get public tracker ticket', async () => {
@@ -47,8 +47,8 @@ describe('ticketService Unit Tests', () => {
 
     const result = await ticketService.getPublicTrackerTicket('ticket-1');
     
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/tracker/ticket-1'));
-    expect(result).toEqual(mockTicket);
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/tracker/ticket-1'), { signal: undefined });
+    expect(result).toEqual({ ...mockTicket, ui_status: 'in_repair', warranty_expiry_date: undefined });
   });
 
   it('should create a ticket', async () => {
@@ -63,12 +63,12 @@ describe('ticketService Unit Tests', () => {
       method: 'POST',
       body: JSON.stringify(newTicket)
     }));
-    expect(result).toEqual(createdTicket);
+    expect(result).toEqual({ ...createdTicket, ui_status: undefined, warranty_expiry_date: undefined });
   });
 
   it('should update a ticket', async () => {
-    const updates: Partial<Ticket> = { status: 'picked_up' };
-    const updatedTicket = { id: 'ticket-1', status: 'picked_up' };
+    const updates: Partial<Ticket> = { status: 'completed' };
+    const updatedTicket = { id: 'ticket-1', status: 'completed' };
     const fetchSpy = vi.fn().mockResolvedValue(createMockResponse(true, updatedTicket));
     vi.stubGlobal('fetch', fetchSpy);
 
@@ -78,6 +78,6 @@ describe('ticketService Unit Tests', () => {
       method: 'PATCH',
       body: JSON.stringify(updates)
     }));
-    expect(result).toEqual(updatedTicket);
+    expect(result).toEqual({ ...updatedTicket, ui_status: 'completed', warranty_expiry_date: undefined });
   });
 });

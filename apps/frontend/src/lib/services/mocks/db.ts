@@ -1,4 +1,5 @@
 import type { MockTicket, MockProduct, MockSale, MockWarranty, MockUser } from './types';
+import type { TicketCreate } from '../ticket';
 import {
   initialTickets,
   initialInventory,
@@ -143,7 +144,7 @@ export const mockDbService = {
     return tickets.find(t => t.ticket_number.toLowerCase() === ticketNumber.toLowerCase()) || null;
   },
 
-  async createTicket(ticket: Omit<MockTicket, 'id' | 'ticket_number' | 'created_at'>): Promise<MockTicket> {
+  async createTicket(ticket: TicketCreate): Promise<MockTicket> {
     await delay();
     const tickets = getTickets();
 
@@ -152,7 +153,13 @@ export const mockDbService = {
     const ticket_number = `OB-202606-${count.toString().padStart(4, '0')}`;
 
     const newTicket: MockTicket = {
+      status: 'received',
+      device_position: 'warehouse',
+      payment_status: 'none',
       ...ticket,
+      cost: ticket.cost !== undefined ? ticket.cost : 0,
+      repair_action: ticket.repair_action || '',
+      serial_number: ticket.serial_number || 'N/A',
       id: crypto.randomUUID(),
       ticket_number,
       created_at: new Date().toISOString()
@@ -172,33 +179,69 @@ export const mockDbService = {
     const oldTicket = tickets[idx];
     const updatedTicket = { ...oldTicket, ...updates };
 
-    // If status changes to 'picked_up', automatically trigger warranty and update payment/device details
-    if (updates.status === 'picked_up' && oldTicket.status !== 'picked_up') {
-      updatedTicket.device_position = 'picked_up';
-      updatedTicket.payment_status = 'paid';
+    const isReversal = oldTicket.device_position === 'picked_up' && updates.device_position !== undefined && updates.device_position !== 'picked_up';
+    if (isReversal) {
+      delete updatedTicket.picked_up_at;
+      delete updatedTicket.warranty_expiry_date;
+      const warranties = getWarranties().filter(w => w.ticket_id !== id);
+      saveWarranties(warranties);
+    }
 
-      const durationDays = 30; // 30 days default warranty
+    if (updates.warranty_duration_days !== undefined && updatedTicket.device_position === 'picked_up' && updatedTicket.picked_up_at) {
+      const start = new Date(updatedTicket.picked_up_at);
+      const end = new Date(start);
+      end.setDate(start.getDate() + updates.warranty_duration_days);
+      updatedTicket.warranty_expiry_date = end.toISOString();
+
+      const warranties = getWarranties();
+      const warIdx = warranties.findIndex(w => w.ticket_id === id);
+      if (warIdx !== -1) {
+        warranties[warIdx].end_date = end.toISOString();
+        if (updates.customer_name) {
+          warranties[warIdx].customer_name = updates.customer_name;
+        }
+        warranties[warIdx].device_info = `${updatedTicket.brand_phone} ${updatedTicket.model_phone}`;
+        saveWarranties(warranties);
+      }
+    }
+
+    // If device_position changes to 'picked_up', automatically trigger warranty and update payment/device details
+    if (updates.device_position === 'picked_up' && oldTicket.device_position !== 'picked_up') {
+      updatedTicket.device_position = 'picked_up';
+      if (updatedTicket.status !== 'completed' && updatedTicket.status !== 'cancelled') {
+        updatedTicket.status = 'completed';
+      }
+      if (updatedTicket.status === 'completed') {
+        updatedTicket.payment_status = 'paid';
+      }
+
+      const durationDays = updates.warranty_duration_days !== undefined
+        ? updates.warranty_duration_days
+        : (oldTicket.warranty_duration_days !== undefined ? oldTicket.warranty_duration_days : 30);
       const startDate = new Date();
       const endDate = new Date();
       endDate.setDate(startDate.getDate() + durationDays);
 
+      updatedTicket.picked_up_at = startDate.toISOString();
       updatedTicket.warranty_expiry_date = endDate.toISOString();
 
-      // Push warranty record
-      const warranties = getWarranties();
-      const warranty: MockWarranty = {
-        id: `war-${warranties.length + 1}`,
-        ticket_id: id,
-        ticket_number: oldTicket.ticket_number,
-        customer_name: oldTicket.customer_name,
-        device_info: `${oldTicket.brand_phone} ${oldTicket.model_phone}`,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        status: 'active'
-      };
+      if (updatedTicket.status === 'completed') {
+        // Push warranty record
+        const warranties = getWarranties();
+        const warranty: MockWarranty = {
+          id: `war-${warranties.length + 1}`,
+          ticket_id: id,
+          ticket_number: oldTicket.ticket_number,
+          customer_name: oldTicket.customer_name,
+          device_info: `${oldTicket.brand_phone} ${oldTicket.model_phone}`,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          status: 'active'
+        };
 
-      warranties.unshift(warranty);
-      saveWarranties(warranties);
+        warranties.unshift(warranty);
+        saveWarranties(warranties);
+      }
     }
 
     tickets[idx] = updatedTicket;
