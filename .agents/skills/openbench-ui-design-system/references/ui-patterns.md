@@ -54,6 +54,8 @@ Do not add `tailwind.config.js` for new tokens unless the project has intentiona
 - Use skeleton blocks with borders and `animate-pulse`.
 - Avoid small generic spinners for content regions.
 - Preserve layout dimensions while loading to prevent visible shifts.
+- Skeletons are only for active loading. After a successful empty response, replace them with a clear empty state.
+- Empty states should be explicit, scannable, and route-specific; do not reuse loading copy or error copy.
 
 ## Responsive Checks
 

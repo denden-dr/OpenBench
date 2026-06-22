@@ -12,7 +12,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"generate-api-types": "openapi-typescript ../../docs/api/openapi.yml -o src/lib/api/openapi.gen.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",
@@ -23,10 +24,11 @@
 		"@testing-library/svelte": "^5.3.1",
 		"@types/node": "^25.9.3",
 		"jsdom": "^29.1.1",
+		"openapi-typescript": "^7.13.0",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"tailwindcss": "^4.3.0",
-		"typescript": "^6.0.3",
+		"typescript": "^5.9.3",
 		"vite": "^8.0.16",
 		"vitest": "^4.1.8"
 	},
