@@ -48,6 +48,17 @@ export interface MockSale {
   created_at: string;
 }
 
+export interface MockSaleCreateItem {
+  productId: string;
+  qty: number;
+}
+
+export interface MockSaleCreate {
+  items: MockSaleCreateItem[];
+  discount: number;
+  payment_method: 'cash' | 'qris';
+}
+
 export interface MockWarranty {
   id: string;
   ticket_id: string;

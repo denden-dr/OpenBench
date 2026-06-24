@@ -35,7 +35,7 @@ export const saleService = {
     return body.data ?? [];
   },
 
-  async createSale(sale: Omit<Sale, 'id' | 'invoice_number' | 'created_at'>): Promise<Sale> {
+  async createSale(sale: { items: { productId: string; qty: number }[]; discount: number; payment_method: 'cash' | 'qris' }): Promise<Sale> {
     const res = await fetch(`${getApiUrl()}/api/v1/admin/sales`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

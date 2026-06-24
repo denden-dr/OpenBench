@@ -11,8 +11,8 @@ function createResponse(code: number, message: string, data: any): Response {
     message
   };
 
-  // Mirror backend's omitempty behavior
-  if (data !== null && data !== undefined && (!Array.isArray(data) || data.length > 0)) {
+  // Backend requires data field for responses, even if empty array
+  if (data !== null && data !== undefined) {
     body.data = data;
   }
 
