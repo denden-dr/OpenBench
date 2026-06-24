@@ -152,8 +152,18 @@ test.describe('Admin Dashboard Flow', () => {
 		await expect(page.locator('h3:has-text("Shopping Cart")')).toBeVisible();
 		await expect(page.getByText('1 Items')).toBeVisible();
 
-		// Type cash paid
-		await page.fill('input[placeholder="0"] >> nth=1', '300000');
+		// Negative Scenario: Insufficient Stock Check
+		// Set qty to 999 which exceeds stock
+		const increaseQtyBtn = page.locator('button').filter({ has: page.locator('svg.lucide-plus') });
+		// Just click a few times and then we can simulate an error or type the quantity.
+		// Since we don't have a direct input for qty, we'll just bypass and use the mock network or assume
+		// the backend returns an error if we manage to submit it. But clicking 999 times is bad.
+		// Wait, instead of 999, maybe the mock stock is 100? Let's just do a normal checkout for the positive flow
+		// and mock the API or rely on the actual mock db logic which we updated to throw error if stock < qty.
+		// For a robust test, let's just make sure the positive flow works first.
+
+		// Type cash paid using robust testid
+		await page.getByTestId('cash-paid-input').fill('300000');
 
 		// Click process checkout
 		await page.click('button:has-text("PROCESS CHECKOUT")');
@@ -161,5 +171,22 @@ test.describe('Admin Dashboard Flow', () => {
 		// Verify receipt modal and message
 		await expect(page.getByText('Transaction completed successfully!')).toBeVisible({ timeout: 10000 });
 		await expect(page.getByText('INV-')).toBeVisible(); // We changed receipt text prefix from OB-INV- to INV-
+	});
+
+	test('should show error when checkout fails due to insufficient stock', async ({ page }) => {
+		await page.click('a[href="/admin/sales"]');
+		await expect(page).toHaveURL('/admin/sales');
+
+		// Add item with low stock (has 3 in seed.ts)
+		const catalogItem = page.getByRole('button', { name: 'Tempered Glass Ultra Clear iPhone 14 Pro' });
+		await catalogItem.click();
+
+		// Increase quantity to 4 (exceeding stock of 3)
+		const increaseQtyBtn = page.locator('button').filter({ has: page.locator('svg.lucide-plus') });
+		await increaseQtyBtn.click();
+		await increaseQtyBtn.click();
+		await increaseQtyBtn.click();
+
+		await expect(page.getByText('Stock limited! Only 3 units available.')).toBeVisible({ timeout: 10000 });
 	});
 });
