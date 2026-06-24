@@ -128,7 +128,7 @@ test.describe('Admin Dashboard Flow', () => {
 		await expect(page.getByText(testCustomer)).not.toBeVisible({ timeout: 10000 });
 	});
 
-	test.skip('should navigate to inventory and display mock data correctly', async ({ page }) => {
+	test('should navigate to inventory and display data correctly', async ({ page }) => {
 		await page.click('a[href="/admin/inventory"]');
 		await expect(page).toHaveURL('/admin/inventory');
 
@@ -137,7 +137,7 @@ test.describe('Admin Dashboard Flow', () => {
 		await expect(page.getByText('LCD Screen Module Samsung S23 Ultra')).toBeVisible();
 	});
 
-	test.skip('should navigate to sales and perform checkout correctly', async ({ page }) => {
+	test('should navigate to sales and perform checkout correctly', async ({ page }) => {
 		await page.click('a[href="/admin/sales"]');
 		await expect(page).toHaveURL('/admin/sales');
 
@@ -160,6 +160,6 @@ test.describe('Admin Dashboard Flow', () => {
 
 		// Verify receipt modal and message
 		await expect(page.getByText('Transaction completed successfully!')).toBeVisible({ timeout: 10000 });
-		await expect(page.getByText('OB-INV-')).toBeVisible();
+		await expect(page.getByText('INV-')).toBeVisible(); // We changed receipt text prefix from OB-INV- to INV-
 	});
 });
