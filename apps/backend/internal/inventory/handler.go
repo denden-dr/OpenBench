@@ -110,6 +110,9 @@ func (h *Handler) DeleteProduct(c *fiber.Ctx) error {
 		if errors.Is(err, ErrProductNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "Product not found", err)
 		}
+		if errors.Is(err, ErrProductReferenced) {
+			return response.Error(c, fiber.StatusConflict, "Product is referenced by sales", err)
+		}
 		return response.Error(c, fiber.StatusInternalServerError, "Failed to delete product", err)
 	}
 	return response.JSON[any](c, fiber.StatusOK, "Product deleted successfully", nil)

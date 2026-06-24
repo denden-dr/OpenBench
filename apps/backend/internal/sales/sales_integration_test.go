@@ -11,6 +11,7 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/testutil"
 	"github.com/denden-dr/openbench/apps/backend/internal/sales"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -63,7 +64,7 @@ func (s *SalesSuite) TestCreateSaleSuccess() {
 	s.Require().NoError(err)
 	s.Assert().NotEmpty(sale.ID)
 	s.Assert().Contains(sale.InvoiceNumber, "INV-")
-	s.Assert().Equal(690000.0, sale.Total)
+	s.Assert().True(sale.Total.Equal(decimal.NewFromFloat(690000.0)))
 	s.Assert().Len(sale.Items, 1)
 
 	// 3. Verify stock was deducted

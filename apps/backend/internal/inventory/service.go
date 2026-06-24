@@ -9,6 +9,8 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/api"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/shopspring/decimal"
 )
 
 type InventoryService interface {
@@ -44,8 +46,8 @@ func (s *inventoryService) CreateProduct(ctx context.Context, req *api.ProductCr
 		Name:      req.Name,
 		Category:  string(req.Category),
 		Stock:     req.Stock,
-		Price:     float64(req.Price),
-		CostPrice: float64(req.CostPrice),
+		Price:     decimal.NewFromFloat32(req.Price),
+		CostPrice: decimal.NewFromFloat32(req.CostPrice),
 		MinStock:  req.MinStock,
 	}
 
@@ -89,13 +91,13 @@ func (s *inventoryService) UpdateProduct(ctx context.Context, id string, req *ap
 		if *req.Price < 0 {
 			return nil, fmt.Errorf("%w: price must be non-negative", ErrInvalidInput)
 		}
-		p.Price = float64(*req.Price)
+		p.Price = decimal.NewFromFloat32(*req.Price)
 	}
 	if req.CostPrice != nil {
 		if *req.CostPrice < 0 {
 			return nil, fmt.Errorf("%w: cost price must be non-negative", ErrInvalidInput)
 		}
-		p.CostPrice = float64(*req.CostPrice)
+		p.CostPrice = decimal.NewFromFloat32(*req.CostPrice)
 	}
 	if req.MinStock != nil {
 		p.MinStock = *req.MinStock
@@ -112,5 +114,13 @@ func (s *inventoryService) DeleteProduct(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, nil, id)
+	err = s.repo.Delete(ctx, nil, id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return ErrProductReferenced
+		}
+		return err
+	}
+	return nil
 }

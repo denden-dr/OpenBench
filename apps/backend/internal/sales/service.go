@@ -2,8 +2,10 @@ package sales
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
@@ -11,6 +13,7 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/api"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -49,45 +52,54 @@ func (s *salesService) CreateSale(ctx context.Context, req *api.CreateSaleJSONRe
 	}
 	defer tx.Rollback()
 
-	// 1. Generate Invoice Number
-	invoiceNum, err := s.generateInvoiceNumber(ctx, tx)
-	if err != nil {
-		return nil, err
+	// 1. Accumulate quantities by product ID and extract unique sorted IDs
+	itemQtyMap := make(map[string]int)
+	for _, item := range req.Items {
+		prodID := item.ProductId.String()
+		itemQtyMap[prodID] += item.Qty
 	}
+
+	var productIDs []string
+	for prodID := range itemQtyMap {
+		productIDs = append(productIDs, prodID)
+	}
+	sort.Strings(productIDs)
 
 	saleID := uuid.New().String()
 	sale := &Sale{
 		ID:            saleID,
-		InvoiceNumber: invoiceNum,
-		Discount:      float64(req.Discount),
+		Discount:      decimal.NewFromFloat32(req.Discount),
 		PaymentMethod: string(req.PaymentMethod),
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
 
 	var saleItems []SaleItem
-	var subtotal float64
+	subtotal := decimal.NewFromInt(0)
 
-	// 2. Process Sale Items and Stock Deduction
-	for _, item := range req.Items {
-		prodID := item.ProductId.String()
+	// 2. Process Sale Items and Stock Deduction in deterministic order
+	for _, prodID := range productIDs {
+		qty := itemQtyMap[prodID]
 		product, err := s.inventoryRepo.GetByIDForUpdate(ctx, tx, prodID)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, fmt.Errorf("%w: product %s not found", ErrInvalidInput, prodID)
+			}
 			return nil, fmt.Errorf("failed to fetch product %s: %w", prodID, err)
 		}
 
-		if product.Stock < item.Qty {
-			return nil, fmt.Errorf("%w: %s (available: %d, requested: %d)", ErrInsufficientStock, product.Name, product.Stock, item.Qty)
+		if product.Stock < qty {
+			return nil, fmt.Errorf("%w: %s (available: %d, requested: %d)", ErrInsufficientStock, product.Name, product.Stock, qty)
 		}
 
 		// Deduct stock
-		product.Stock -= item.Qty
+		product.Stock -= qty
 		if err := s.inventoryRepo.Update(ctx, tx, product); err != nil {
 			return nil, fmt.Errorf("failed to update product stock: %w", err)
 		}
 
 		itemPrice := product.Price
-		subtotal += itemPrice * float64(item.Qty)
+		subtotal = subtotal.Add(itemPrice.Mul(decimal.NewFromInt(int64(qty))))
 
 		saleItem := SaleItem{
 			ID:        uuid.New().String(),
@@ -95,7 +107,7 @@ func (s *salesService) CreateSale(ctx context.Context, req *api.CreateSaleJSONRe
 			ProductID: prodID,
 			Name:      product.Name,
 			Price:     itemPrice,
-			Qty:       item.Qty,
+			Qty:       qty,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -103,20 +115,27 @@ func (s *salesService) CreateSale(ctx context.Context, req *api.CreateSaleJSONRe
 		saleItems = append(saleItems, saleItem)
 	}
 
-	if sale.Discount > subtotal {
+	if sale.Discount.GreaterThan(subtotal) {
 		return nil, fmt.Errorf("%w: discount cannot exceed subtotal", ErrInvalidInput)
 	}
 
 	sale.Subtotal = subtotal
-	sale.Total = subtotal - sale.Discount
+	sale.Total = subtotal.Sub(sale.Discount)
 	sale.Items = saleItems
 
-	// 3. Insert Sale
+	// 3. Generate Invoice Number (moved down to prevent bottleneck)
+	invoiceNum, err := s.generateInvoiceNumber(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	sale.InvoiceNumber = invoiceNum
+
+	// 4. Insert Sale
 	if err := s.repo.Create(ctx, tx, sale); err != nil {
 		return nil, err
 	}
 
-	// 4. Insert Sale Items
+	// 5. Insert Sale Items
 	for _, si := range saleItems {
 		siCopy := si
 		if err := s.repo.CreateItem(ctx, tx, &siCopy); err != nil {
