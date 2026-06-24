@@ -115,7 +115,7 @@
 
     try {
       const saleItems = cart.map(item => ({
-        productId: item.product.id,
+        product_id: item.product.id,
         qty: item.qty
       }));
 

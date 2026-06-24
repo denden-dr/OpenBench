@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { apiFetch as fetch } from './api';
+import type { components } from '$lib/api/openapi.gen';
 
 const getApiUrl = () => {
   try {
@@ -10,7 +11,7 @@ const getApiUrl = () => {
 };
 
 export interface SaleItem {
-  productId: string;
+  product_id: string;
   name: string;
   price: number;
   qty: number;
@@ -35,7 +36,7 @@ export const saleService = {
     return body.data ?? [];
   },
 
-  async createSale(sale: { items: { productId: string; qty: number }[]; discount: number; payment_method: 'cash' | 'qris' }): Promise<Sale> {
+  async createSale(sale: components['schemas']['SaleCreate']): Promise<Sale> {
     const res = await fetch(`${getApiUrl()}/api/v1/admin/sales`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

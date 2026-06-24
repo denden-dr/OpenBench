@@ -31,7 +31,7 @@ export interface MockProduct {
 }
 
 export interface MockSaleItem {
-  productId: string;
+  product_id: string;
   name: string;
   price: number;
   qty: number;
@@ -49,7 +49,7 @@ export interface MockSale {
 }
 
 export interface MockSaleCreateItem {
-  productId: string;
+  product_id: string;
   qty: number;
 }
 

@@ -109,7 +109,7 @@ export const initialSales: MockSale[] = [
     id: 'sale-001',
     invoice_number: 'INV-202606-0001',
     items: [
-      { productId: 'prod-001', name: 'Charger 25W Fast Charging Type-C', price: 245000, qty: 1 }
+      { product_id: 'prod-001', name: 'Charger 25W Fast Charging Type-C', price: 245000, qty: 1 }
     ],
     subtotal: 245000,
     discount: 0,
@@ -121,8 +121,8 @@ export const initialSales: MockSale[] = [
     id: 'sale-002',
     invoice_number: 'INV-202606-0002',
     items: [
-      { productId: 'prod-002', name: 'Tempered Glass Ultra Clear iPhone 14 Pro', price: 95000, qty: 1 },
-      { productId: 'prod-005', name: 'Soft Case Transparent anti-crack (Universal)', price: 49000, qty: 1 }
+      { product_id: 'prod-002', name: 'Tempered Glass Ultra Clear iPhone 14 Pro', price: 95000, qty: 1 },
+      { product_id: 'prod-005', name: 'Soft Case Transparent anti-crack (Universal)', price: 49000, qty: 1 }
     ],
     subtotal: 144000,
     discount: 10000,

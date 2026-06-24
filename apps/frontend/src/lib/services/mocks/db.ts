@@ -1,5 +1,6 @@
 import type { MockTicket, MockProduct, MockSale, MockWarranty, MockUser } from './types';
 import type { TicketCreate } from '../ticket';
+import type { components } from '$lib/api/openapi.gen';
 import {
   initialTickets,
   initialInventory,
@@ -297,7 +298,7 @@ export const mockDbService = {
     return getSales();
   },
 
-  async createSale(sale: { items: { productId: string, qty: number }[], discount: number, payment_method: 'cash' | 'qris' }): Promise<MockSale> {
+  async createSale(sale: components['schemas']['SaleCreate']): Promise<MockSale> {
     await delay();
     const sales = getSales();
     const inventory = getInventory();
@@ -305,22 +306,28 @@ export const mockDbService = {
     let subtotal = 0;
     const finalItems = [];
 
-    // 1. Check stock and compute subtotal
+    // 0. Accumulate quantities
+    const itemQtyMap: Record<string, number> = {};
     for (const item of sale.items) {
-      const pIdx = inventory.findIndex(p => p.id === item.productId);
+      itemQtyMap[item.product_id] = (itemQtyMap[item.product_id] || 0) + item.qty;
+    }
+
+    // 1. Check stock and compute subtotal
+    for (const [prodId, qty] of Object.entries(itemQtyMap)) {
+      const pIdx = inventory.findIndex(p => p.id === prodId);
       if (pIdx === -1) {
         throw new Error(`Product not found`);
       }
       const product = inventory[pIdx];
-      if (product.stock < item.qty) {
-        throw new Error(`Insufficient stock: ${product.name} (available: ${product.stock}, requested: ${item.qty})`);
+      if (product.stock < qty) {
+        throw new Error(`Insufficient stock: ${product.name} (available: ${product.stock}, requested: ${qty})`);
       }
-      subtotal += product.price * item.qty;
+      subtotal += product.price * qty;
       finalItems.push({
-        productId: product.id,
+        product_id: product.id,
         name: product.name,
         price: product.price,
-        qty: item.qty
+        qty: qty
       });
     }
 
@@ -329,9 +336,9 @@ export const mockDbService = {
     }
 
     // 2. Deduct inventory stocks
-    for (const item of sale.items) {
-      const pIdx = inventory.findIndex(p => p.id === item.productId);
-      inventory[pIdx].stock -= item.qty;
+    for (const [prodId, qty] of Object.entries(itemQtyMap)) {
+      const pIdx = inventory.findIndex(p => p.id === prodId);
+      inventory[pIdx].stock -= qty;
     }
     saveInventory(inventory);
 

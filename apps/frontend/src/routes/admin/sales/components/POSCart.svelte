@@ -119,6 +119,7 @@
         <span>DISCOUNT (IDR):</span>
         <input 
           type="text" 
+          data-testid="discount-input"
           placeholder="0"
           value={displayDiscount}
           oninput={handleDiscountInput}
@@ -159,6 +160,7 @@
           <span>CASH PAID (IDR):</span>
           <input 
             type="text" 
+            data-testid="cash-paid-input"
             placeholder="0"
             value={displayCashPaid}
             oninput={handleCashPaidInput}
