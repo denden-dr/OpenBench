@@ -87,4 +87,3 @@ func SeedDevProducts(db *Database) error {
 	log.Println("Product seeder: 5 products seeded successfully")
 	return nil
 }
-
