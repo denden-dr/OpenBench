@@ -1235,28 +1235,40 @@ components:
           type: string
           example: "Tempered Glass Samsung S24"
           maxLength: 255
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=255"
         category:
           type: string
           enum: [retail, spare_part]
           example: spare_part
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=retail spare_part"
         stock:
           type: integer
           minimum: 0
           example: 50
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
         price:
           type: number
           format: float
           minimum: 0
           example: 50000
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
         cost_price:
           type: number
           format: float
           minimum: 0
           example: 25000
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
         min_stock:
           type: integer
           minimum: 0
           example: 10
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
       additionalProperties: false
 
     ProductUpdate:
@@ -1266,28 +1278,40 @@ components:
           type: string
           example: "Tempered Glass Samsung S24 Ultra"
           maxLength: 255
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1,max=255"
         category:
           type: string
           enum: [retail, spare_part]
           example: spare_part
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=retail spare_part"
         stock:
           type: integer
           minimum: 0
           example: 45
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
         price:
           type: number
           format: float
           minimum: 0
           example: 55000
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
         cost_price:
           type: number
           format: float
           minimum: 0
           example: 30000
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
         min_stock:
           type: integer
           minimum: 0
           example: 10
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,gte=0"
       additionalProperties: false
 
     # ───────────── SALE ─────────────
@@ -1347,34 +1371,47 @@ components:
           example: "2026-06-16T10:00:00Z"
       required: [id, invoice_number, items, subtotal, discount, total, payment_method, created_at]
 
+    SaleCreateItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-..."
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+          x-oapi-codegen-extra-tags:
+            validate: "required,gte=1"
+      required: [productId, qty]
+
     SaleCreate:
       type: object
-      required: [items, subtotal, discount, total, payment_method]
+      required: [items, discount, payment_method]
       properties:
         items:
           type: array
           minItems: 1
           items:
-            $ref: "#/components/schemas/SaleItem"
-        subtotal:
-          type: number
-          format: float
-          minimum: 0
-          example: 100000
+            $ref: "#/components/schemas/SaleCreateItem"
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=1,dive"
         discount:
           type: number
           format: float
           minimum: 0
           example: 5000
-        total:
-          type: number
-          format: float
-          minimum: 0
-          example: 95000
+          x-oapi-codegen-extra-tags:
+            validate: "gte=0"
         payment_method:
           type: string
           enum: [cash, qris]
           example: cash
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=cash qris"
       additionalProperties: false
 
     # ───────────── WARRANTY ─────────────
