@@ -532,7 +532,7 @@ type SaleCreatePaymentMethod string
 
 // SaleCreateItem defines model for SaleCreateItem.
 type SaleCreateItem struct {
-	ProductId openapi_types.UUID `json:"productId" validate:"required"`
+	ProductId openapi_types.UUID `json:"product_id" validate:"required"`
 	Qty       int                `json:"qty" validate:"required,gte=1"`
 }
 
@@ -540,7 +540,7 @@ type SaleCreateItem struct {
 type SaleItem struct {
 	Name      string             `json:"name"`
 	Price     float32            `json:"price"`
-	ProductId openapi_types.UUID `json:"productId"`
+	ProductId openapi_types.UUID `json:"product_id"`
 	Qty       int                `json:"qty"`
 }
 

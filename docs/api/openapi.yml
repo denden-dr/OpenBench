@@ -1318,7 +1318,7 @@ components:
     SaleItem:
       type: object
       properties:
-        productId:
+        product_id:
           type: string
           format: uuid
           example: "b2c3d4e5-..."
@@ -1333,7 +1333,7 @@ components:
           type: integer
           minimum: 1
           example: 2
-      required: [productId, name, price, qty]
+      required: [product_id, name, price, qty]
 
     Sale:
       type: object
@@ -1374,7 +1374,7 @@ components:
     SaleCreateItem:
       type: object
       properties:
-        productId:
+        product_id:
           type: string
           format: uuid
           example: "b2c3d4e5-..."
@@ -1386,7 +1386,7 @@ components:
           example: 2
           x-oapi-codegen-extra-tags:
             validate: "required,gte=1"
-      required: [productId, qty]
+      required: [product_id, qty]
 
     SaleCreate:
       type: object
