@@ -1,5 +1,6 @@
 import type { MockTicket, MockProduct, MockSale, MockWarranty, MockUser } from './types';
 import type { TicketCreate } from '../ticket';
+import type { components } from '$lib/api/openapi.gen';
 import {
   initialTickets,
   initialInventory,
@@ -297,30 +298,63 @@ export const mockDbService = {
     return getSales();
   },
 
-  async createSale(sale: Omit<MockSale, 'id' | 'invoice_number' | 'created_at'>): Promise<MockSale> {
+  async createSale(sale: components['schemas']['SaleCreate']): Promise<MockSale> {
     await delay();
     const sales = getSales();
+    const inventory = getInventory();
 
-    // Generate Invoice Number
+    let subtotal = 0;
+    const finalItems = [];
+
+    // 0. Accumulate quantities
+    const itemQtyMap: Record<string, number> = {};
+    for (const item of sale.items) {
+      itemQtyMap[item.product_id] = (itemQtyMap[item.product_id] || 0) + item.qty;
+    }
+
+    // 1. Check stock and compute subtotal
+    for (const [prodId, qty] of Object.entries(itemQtyMap)) {
+      const pIdx = inventory.findIndex(p => p.id === prodId);
+      if (pIdx === -1) {
+        throw new Error(`Product not found`);
+      }
+      const product = inventory[pIdx];
+      if (product.stock < qty) {
+        throw new Error(`Insufficient stock: ${product.name} (available: ${product.stock}, requested: ${qty})`);
+      }
+      subtotal += product.price * qty;
+      finalItems.push({
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        qty: qty
+      });
+    }
+
+    if (sale.discount > subtotal) {
+      throw new Error('Discount cannot exceed subtotal');
+    }
+
+    // 2. Deduct inventory stocks
+    for (const [prodId, qty] of Object.entries(itemQtyMap)) {
+      const pIdx = inventory.findIndex(p => p.id === prodId);
+      inventory[pIdx].stock -= qty;
+    }
+    saveInventory(inventory);
+
+    // 3. Generate Invoice Number
     const count = sales.length + 1;
-    const invoice_number = `OB-INV-202606-${count.toString().padStart(4, '0')}`;
+    const invoice_number = `INV-202606-${count.toString().padStart(4, '0')}`;
 
     const newSale: MockSale = {
       ...sale,
       id: `sale-${count}`,
       invoice_number,
+      subtotal,
+      total: subtotal - sale.discount,
+      items: finalItems,
       created_at: new Date().toISOString()
     };
-
-    // Reduce inventory stocks accordingly
-    const inventory = getInventory();
-    for (const item of sale.items) {
-      const pIdx = inventory.findIndex(p => p.id === item.productId);
-      if (pIdx !== -1) {
-        inventory[pIdx].stock = Math.max(0, inventory[pIdx].stock - item.qty);
-      }
-    }
-    saveInventory(inventory);
 
     sales.unshift(newSale);
     saveSales(sales);

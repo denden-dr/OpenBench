@@ -31,7 +31,7 @@ export interface MockProduct {
 }
 
 export interface MockSaleItem {
-  productId: string;
+  product_id: string;
   name: string;
   price: number;
   qty: number;
@@ -46,6 +46,17 @@ export interface MockSale {
   total: number;
   payment_method: 'cash' | 'qris';
   created_at: string;
+}
+
+export interface MockSaleCreateItem {
+  product_id: string;
+  qty: number;
+}
+
+export interface MockSaleCreate {
+  items: MockSaleCreateItem[];
+  discount: number;
+  payment_method: 'cash' | 'qris';
 }
 
 export interface MockWarranty {

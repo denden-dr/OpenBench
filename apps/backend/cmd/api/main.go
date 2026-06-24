@@ -13,6 +13,8 @@ import (
 	"github.com/denden-dr/openbench/apps/backend/internal/config"
 	"github.com/denden-dr/openbench/apps/backend/internal/database"
 	"github.com/denden-dr/openbench/apps/backend/internal/health"
+	"github.com/denden-dr/openbench/apps/backend/internal/inventory"
+	"github.com/denden-dr/openbench/apps/backend/internal/sales"
 	"github.com/denden-dr/openbench/apps/backend/internal/ticket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -35,10 +37,13 @@ func main() {
 	}
 	defer db.Close()
 
-	// Seed Development/Testing Users
+	// Seed Development/Testing Users and Products
 	if cfg.Env == "development" || cfg.Env == "test" {
 		if err := database.SeedDevUsers(db); err != nil {
 			log.Fatalf("Database seeding failed: %v", err)
+		}
+		if err := database.SeedDevProducts(db); err != nil {
+			log.Fatalf("Database product seeding failed: %v", err)
 		}
 	}
 
@@ -51,6 +56,16 @@ func main() {
 	publicTicketService := ticket.NewService(ticketRepo, db)
 	adminTicketService := ticket.NewAdminService(ticketRepo, db)
 	ticketHandler := ticket.NewHandler(adminTicketService, publicTicketService)
+
+	// Initialize Inventory Repository and Service
+	inventoryRepo := inventory.NewRepository(db)
+	inventoryService := inventory.NewService(inventoryRepo, db)
+	inventoryHandler := inventory.NewHandler(inventoryService)
+
+	// Initialize Sales Repository and Service
+	salesRepo := sales.NewRepository(db)
+	salesService := sales.NewService(salesRepo, inventoryRepo, db)
+	salesHandler := sales.NewHandler(salesService)
 
 	// Initialize Fiber App
 	app := fiber.New(fiber.Config{
@@ -109,6 +124,17 @@ func main() {
 	admin.Patch("/tickets/:id", ticketHandler.UpdateTicket)
 	admin.Post("/tickets/:id/emergency", ticketHandler.EmergencyUpdateTicket)
 	admin.Get("/warranties", ticketHandler.ListWarranties)
+
+	// Inventory Routes
+	admin.Get("/inventory", inventoryHandler.ListInventory)
+	admin.Post("/inventory", inventoryHandler.CreateProduct)
+	admin.Get("/inventory/:id", inventoryHandler.GetProduct)
+	admin.Patch("/inventory/:id", inventoryHandler.UpdateProduct)
+	admin.Delete("/inventory/:id", inventoryHandler.DeleteProduct)
+
+	// Sales Routes
+	admin.Get("/sales", salesHandler.ListSales)
+	admin.Post("/sales", salesHandler.CreateSale)
 
 	// Periodic expired refresh token cleanup (TD-003)
 	go func() {

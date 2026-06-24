@@ -463,12 +463,12 @@ type ProductCategory string
 
 // ProductCreate defines model for ProductCreate.
 type ProductCreate struct {
-	Category  ProductCreateCategory `json:"category"`
-	CostPrice float32               `json:"cost_price"`
-	MinStock  int                   `json:"min_stock"`
-	Name      string                `json:"name"`
-	Price     float32               `json:"price"`
-	Stock     int                   `json:"stock"`
+	Category  ProductCreateCategory `json:"category" validate:"required,oneof=retail spare_part"`
+	CostPrice float32               `json:"cost_price" validate:"gte=0"`
+	MinStock  int                   `json:"min_stock" validate:"gte=0"`
+	Name      string                `json:"name" validate:"required,max=255"`
+	Price     float32               `json:"price" validate:"gte=0"`
+	Stock     int                   `json:"stock" validate:"gte=0"`
 }
 
 // ProductCreateCategory defines model for ProductCreate.Category.
@@ -476,12 +476,12 @@ type ProductCreateCategory string
 
 // ProductUpdate defines model for ProductUpdate.
 type ProductUpdate struct {
-	Category  *ProductUpdateCategory `json:"category,omitempty"`
-	CostPrice *float32               `json:"cost_price,omitempty"`
-	MinStock  *int                   `json:"min_stock,omitempty"`
-	Name      *string                `json:"name,omitempty"`
-	Price     *float32               `json:"price,omitempty"`
-	Stock     *int                   `json:"stock,omitempty"`
+	Category  *ProductUpdateCategory `json:"category,omitempty" validate:"omitempty,oneof=retail spare_part"`
+	CostPrice *float32               `json:"cost_price,omitempty" validate:"omitempty,gte=0"`
+	MinStock  *int                   `json:"min_stock,omitempty" validate:"omitempty,gte=0"`
+	Name      *string                `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
+	Price     *float32               `json:"price,omitempty" validate:"omitempty,gte=0"`
+	Stock     *int                   `json:"stock,omitempty" validate:"omitempty,gte=0"`
 }
 
 // ProductUpdateCategory defines model for ProductUpdate.Category.
@@ -522,21 +522,25 @@ type SalePaymentMethod string
 
 // SaleCreate defines model for SaleCreate.
 type SaleCreate struct {
-	Discount      float32                 `json:"discount"`
-	Items         []SaleItem              `json:"items"`
-	PaymentMethod SaleCreatePaymentMethod `json:"payment_method"`
-	Subtotal      float32                 `json:"subtotal"`
-	Total         float32                 `json:"total"`
+	Discount      float32                 `json:"discount" validate:"gte=0"`
+	Items         []SaleCreateItem        `json:"items" validate:"required,min=1,dive"`
+	PaymentMethod SaleCreatePaymentMethod `json:"payment_method" validate:"required,oneof=cash qris"`
 }
 
 // SaleCreatePaymentMethod defines model for SaleCreate.PaymentMethod.
 type SaleCreatePaymentMethod string
 
+// SaleCreateItem defines model for SaleCreateItem.
+type SaleCreateItem struct {
+	ProductId openapi_types.UUID `json:"product_id" validate:"required"`
+	Qty       int                `json:"qty" validate:"required,gte=1"`
+}
+
 // SaleItem defines model for SaleItem.
 type SaleItem struct {
 	Name      string             `json:"name"`
 	Price     float32            `json:"price"`
-	ProductId openapi_types.UUID `json:"productId"`
+	ProductId openapi_types.UUID `json:"product_id"`
 	Qty       int                `json:"qty"`
 }
 

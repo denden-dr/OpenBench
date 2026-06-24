@@ -740,7 +740,7 @@ export interface components {
              * Format: uuid
              * @example b2c3d4e5-...
              */
-            productId: string;
+            product_id: string;
             /** @example Tempered Glass Samsung S24 */
             name: string;
             /**
@@ -786,23 +786,22 @@ export interface components {
              */
             created_at: string;
         };
-        SaleCreate: {
-            items: components["schemas"]["SaleItem"][];
+        SaleCreateItem: {
             /**
-             * Format: float
-             * @example 100000
+             * Format: uuid
+             * @example b2c3d4e5-...
              */
-            subtotal: number;
+            product_id: string;
+            /** @example 2 */
+            qty: number;
+        };
+        SaleCreate: {
+            items: components["schemas"]["SaleCreateItem"][];
             /**
              * Format: float
              * @example 5000
              */
             discount: number;
-            /**
-             * Format: float
-             * @example 95000
-             */
-            total: number;
             /**
              * @example cash
              * @enum {string}

@@ -115,17 +115,13 @@
 
     try {
       const saleItems = cart.map(item => ({
-        productId: item.product.id,
-        name: item.product.name,
-        price: item.product.price,
+        product_id: item.product.id,
         qty: item.qty
       }));
 
       const newSale = await saleService.createSale({
         items: saleItems,
-        subtotal: subtotal,
         discount: discount,
-        total: finalTotal,
         payment_method: paymentMethod
       });
 

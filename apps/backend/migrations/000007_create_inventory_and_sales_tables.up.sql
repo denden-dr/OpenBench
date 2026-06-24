@@ -1,0 +1,35 @@
+CREATE TABLE IF NOT EXISTS products (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL CHECK (category IN ('retail', 'spare_part')),
+    stock INTEGER NOT NULL DEFAULT 0,
+    price NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    cost_price NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    min_stock INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_number VARCHAR(100) UNIQUE NOT NULL,
+    subtotal NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    discount NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    total NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('cash', 'qris')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sale_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    price NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    qty INTEGER NOT NULL DEFAULT 1 CHECK (qty > 0),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+CREATE INDEX IF NOT EXISTS idx_sales_invoice_number ON sales(invoice_number);
