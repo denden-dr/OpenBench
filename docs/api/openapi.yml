@@ -1022,6 +1022,9 @@ components:
           type: string
           format: uuid
           example: "a1b2c3d4-..."
+        ticket_number:
+          type: string
+          example: "OB-202606-0001-A9X2"
         customer_name_masked:
           type: string
           example: "J*** D**"
@@ -1056,7 +1059,7 @@ components:
           type: string
           format: date-time
           example: "2026-06-16T09:00:00Z"
-      required: [id, customer_name_masked, customer_phone_masked, brand_phone, model_phone, damage_description, status, warranty_duration_days, created_at]
+      required: [id, ticket_number, customer_name_masked, customer_phone_masked, brand_phone, model_phone, damage_description, status, warranty_duration_days, created_at]
 
     TicketCreate:
       type: object
