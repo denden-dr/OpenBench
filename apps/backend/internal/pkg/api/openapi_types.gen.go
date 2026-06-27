@@ -494,7 +494,6 @@ type PublicTrackerTicket struct {
 	CustomerNameMasked   string                    `json:"customer_name_masked"`
 	CustomerPhoneMasked  string                    `json:"customer_phone_masked"`
 	DamageDescription    string                    `json:"damage_description"`
-	Id                   openapi_types.UUID        `json:"id"`
 	ModelPhone           string                    `json:"model_phone"`
 	PickedUpAt           *time.Time                `json:"picked_up_at,omitempty"`
 	RepairAction         *string                   `json:"repair_action,omitempty"`

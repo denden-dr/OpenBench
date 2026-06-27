@@ -116,10 +116,7 @@ func maskPhone(phone string) string {
 func ToPublicTrackerTicketAPI(t *Ticket) api.PublicTrackerTicket {
 	repairVal := t.RepairAction
 
-	idUUID, _ := uuid.Parse(t.ID)
-
 	return api.PublicTrackerTicket{
-		Id:                   idUUID,
 		TicketNumber:         t.TicketNumber,
 		CustomerNameMasked:   maskName(t.CustomerName),
 		CustomerPhoneMasked:  maskPhone(t.CustomerPhone),

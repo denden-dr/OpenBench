@@ -560,11 +560,6 @@ export interface components {
             created_at: string;
         };
         PublicTrackerTicket: {
-            /**
-             * Format: uuid
-             * @example a1b2c3d4-...
-             */
-            id: string;
             /** @example OB-202606-0001-A9X2 */
             ticket_number: string;
             /** @example J*** D** */
