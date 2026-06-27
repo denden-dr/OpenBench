@@ -10,11 +10,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-//go:generate mockery --name=Repository --output=mocks --outpkg=mocks --case=underscore
+//go:generate mockery --name=TicketRepository --output=mocks --outpkg=mocks --case=underscore
 type TicketRepository interface {
 	Create(ctx context.Context, tx *sqlx.Tx, t *Ticket) error
 	GetByID(ctx context.Context, tx *sqlx.Tx, id string) (*Ticket, error)
 	GetByIDWithLock(ctx context.Context, tx *sqlx.Tx, id string) (*Ticket, error)
+	GetByTicketNumber(ctx context.Context, tx *sqlx.Tx, ticketNumber string) (*Ticket, error)
 	List(ctx context.Context, tx *sqlx.Tx) ([]*Ticket, error)
 	Update(ctx context.Context, tx *sqlx.Tx, t *Ticket) error
 	GetMaxTicketNumberByPrefix(ctx context.Context, tx *sqlx.Tx, prefix string) (string, error)
@@ -149,6 +150,37 @@ func (r *ticketRepository) GetByIDWithLock(ctx context.Context, tx *sqlx.Tx, id 
 	return &t, nil
 }
 
+func (r *ticketRepository) GetByTicketNumber(ctx context.Context, tx *sqlx.Tx, ticketNumber string) (*Ticket, error) {
+	var t Ticket
+	query := `
+		SELECT id, ticket_number, customer_name, customer_phone, brand_phone, model_phone, 
+		       serial_number, damage_description, repair_action, cost, status, device_position, 
+		       payment_status, payment_method, warranty_duration_days, picked_up_at, 
+		       created_at, updated_at 
+		FROM tickets WHERE ticket_number = $1
+	`
+	var err error
+	if tx != nil {
+		err = tx.GetContext(ctx, &t, query, ticketNumber)
+	} else {
+		err = r.db.DB.GetContext(ctx, &t, query, ticketNumber)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := r.GetWarrantyByTicketID(ctx, tx, t.ID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	} else {
+		t.Warranty = w
+	}
+
+	return &t, nil
+}
+
 func (r *ticketRepository) List(ctx context.Context, tx *sqlx.Tx) ([]*Ticket, error) {
 	var tickets []*Ticket
 	query := `
@@ -229,7 +261,7 @@ func (r *ticketRepository) Update(ctx context.Context, tx *sqlx.Tx, t *Ticket) e
 
 func (r *ticketRepository) GetMaxTicketNumberByPrefix(ctx context.Context, tx *sqlx.Tx, prefix string) (string, error) {
 	var maxNum string
-	query := "SELECT COALESCE(MAX(ticket_number), '') FROM tickets WHERE ticket_number LIKE $1"
+	query := "SELECT ticket_number FROM tickets WHERE ticket_number LIKE $1 ORDER BY created_at DESC, ticket_number DESC LIMIT 1"
 	likePattern := prefix + "%"
 	var err error
 	if tx != nil {
@@ -242,6 +274,9 @@ func (r *ticketRepository) GetMaxTicketNumberByPrefix(ctx context.Context, tx *s
 		err = tx.GetContext(ctx, &maxNum, query, likePattern)
 	} else {
 		err = r.db.DB.GetContext(ctx, &maxNum, query, likePattern)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
 	}
 	return maxNum, err
 }

@@ -16,14 +16,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupServiceTest(t *testing.T) (*mocks.Repository, auth.AuthService, sqlmock.Sqlmock) {
+func setupServiceTest(t *testing.T) (*mocks.AuthRepository, auth.AuthService, sqlmock.Sqlmock) {
 	mockDB, mockSQL, err := sqlmock.New()
 	require.NoError(t, err)
 
 	sqlxDB := sqlx.NewDb(mockDB, "postgres")
 	dbWrapper := &database.Database{DB: sqlxDB}
 
-	repo := mocks.NewRepository(t)
+	repo := mocks.NewAuthRepository(t)
 	jwtSecret := "my_test_secret_key"
 	service := auth.NewService(repo, dbWrapper, jwtSecret)
 

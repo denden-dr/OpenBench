@@ -120,6 +120,7 @@ func ToPublicTrackerTicketAPI(t *Ticket) api.PublicTrackerTicket {
 
 	return api.PublicTrackerTicket{
 		Id:                   idUUID,
+		TicketNumber:         t.TicketNumber,
 		CustomerNameMasked:   maskName(t.CustomerName),
 		CustomerPhoneMasked:  maskPhone(t.CustomerPhone),
 		BrandPhone:           t.BrandPhone,

@@ -3,6 +3,7 @@ package ticket
 import (
 	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/api"
 	"github.com/denden-dr/openbench/apps/backend/internal/pkg/response"
@@ -10,6 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
+
+var ticketNumberRegex = regexp.MustCompile(`(?i)^OB-\d{6}-\d{4}-[A-Z0-9]{4}$`)
 
 type Handler struct {
 	adminService  AdminTicketService
@@ -114,15 +117,16 @@ func (h *Handler) UpdateTicket(c *fiber.Ctx) error {
 
 // GetPublicTrackerTicket handles the public tracker route
 func (h *Handler) GetPublicTrackerTicket(c *fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return response.Error(c, fiber.StatusBadRequest, "Ticket ID is required", errors.New("missing ticket id"))
-	}
-	if _, err := uuid.Parse(id); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Invalid ticket ID format (must be UUID)", err)
+	ticketNumber := c.Params("ticket_number")
+	if ticketNumber == "" {
+		return response.Error(c, fiber.StatusBadRequest, "Ticket Number is required", errors.New("missing ticket number"))
 	}
 
-	t, err := h.publicService.GetTicket(c.UserContext(), id)
+	if !ticketNumberRegex.MatchString(ticketNumber) {
+		return response.Error(c, fiber.StatusBadRequest, "Invalid ticket number format", errors.New("malformed ticket number"))
+	}
+
+	t, err := h.publicService.GetTicketByNumber(c.UserContext(), ticketNumber)
 	if err != nil {
 		if errors.Is(err, ErrTicketNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "Ticket not found", err)

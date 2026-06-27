@@ -50,7 +50,7 @@ func (s *TicketHandlerTestSuite) SetupTest() {
 	s.app.Patch("/api/v1/admin/tickets/:id", ticketHandler.UpdateTicket)
 	s.app.Post("/api/v1/admin/tickets/:id/emergency", ticketHandler.EmergencyUpdateTicket)
 	s.app.Get("/api/v1/admin/warranties", ticketHandler.ListWarranties)
-	s.app.Get("/api/v1/tracker/:id", ticketHandler.GetPublicTrackerTicket)
+	s.app.Get("/api/v1/tracker/:ticket_number", ticketHandler.GetPublicTrackerTicket)
 }
 
 func (s *TicketHandlerTestSuite) TestCreateTicket() {
@@ -109,7 +109,7 @@ func (s *TicketHandlerTestSuite) TestGetAndUpdateTicket() {
 	tID := "00000000-0000-0000-0000-000000000001"
 	tkt := &ticket.Ticket{
 		ID:                   tID,
-		TicketNumber:         "OB-202606-9999",
+		TicketNumber:         "OB-202606-9999-A9X2",
 		CustomerName:         "Budi",
 		CustomerPhone:        "0812",
 		BrandPhone:           "Samsung",
@@ -138,7 +138,7 @@ func (s *TicketHandlerTestSuite) TestGetAndUpdateTicket() {
 	})
 
 	s.Run("Get Public Tracker Success", func() {
-		req := httptest.NewRequest("GET", fmt.Sprintf("/api/v1/tracker/%s", tID), nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/api/v1/tracker/%s", tkt.TicketNumber), nil)
 		resp, err := s.app.Test(req)
 		s.Require().NoError(err)
 		s.Assert().Equal(http.StatusOK, resp.StatusCode)

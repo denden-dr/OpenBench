@@ -18,14 +18,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupServiceTest(t *testing.T) (*mocks.Repository, ticket.AdminTicketService, sqlmock.Sqlmock) {
+func setupServiceTest(t *testing.T) (*mocks.TicketRepository, ticket.AdminTicketService, sqlmock.Sqlmock) {
 	mockDB, mockSQL, err := sqlmock.New()
 	require.NoError(t, err)
 
 	sqlxDB := sqlx.NewDb(mockDB, "postgres")
 	dbWrapper := &database.Database{DB: sqlxDB}
 
-	repo := mocks.NewRepository(t)
+	repo := mocks.NewTicketRepository(t)
 	service := ticket.NewAdminService(repo, dbWrapper)
 
 	t.Cleanup(func() {
@@ -69,16 +69,20 @@ func TestService_CreateTicket(t *testing.T) {
 
 	t.Run("Sequential Ticket Numbers", func(t *testing.T) {
 		mockSQL.ExpectBegin()
-		repo.On("GetMaxTicketNumberByPrefix", ctx, mock.Anything, mock.Anything).Return("OB-202606-0005", nil).Once()
-		repo.On("Create", ctx, mock.Anything, mock.MatchedBy(func(t *ticket.Ticket) bool {
-			return strings.HasSuffix(t.TicketNumber, "-0006")
+		repo.On("GetMaxTicketNumberByPrefix", ctx, mock.Anything, mock.Anything).Return("OB-202606-0005-ABCD", nil).Once()
+		repo.On("Create", ctx, mock.Anything, mock.MatchedBy(func(tk *ticket.Ticket) bool {
+			parts := strings.Split(tk.TicketNumber, "-")
+			return len(parts) == 4 && parts[2] == "0006" && len(parts[3]) == 4
 		})).Return(nil).Once()
 		mockSQL.ExpectCommit()
 
 		tkt, err := service.CreateTicket(ctx, validReq)
 		require.NoError(t, err)
 		assert.NotNil(t, tkt)
-		assert.True(t, strings.HasSuffix(tkt.TicketNumber, "-0006"))
+		parts := strings.Split(tkt.TicketNumber, "-")
+		assert.Equal(t, 4, len(parts))
+		assert.Equal(t, "0006", parts[2])
+		assert.Equal(t, 4, len(parts[3]))
 	})
 
 	t.Run("Validation - Missing Required Fields", func(t *testing.T) {
@@ -129,6 +133,29 @@ func TestService_GetTicket(t *testing.T) {
 		repo.On("GetByID", ctx, mock.Anything, testID).Return(nil, sql.ErrNoRows).Once()
 
 		res, err := service.GetTicket(ctx, testID)
+		assert.ErrorIs(t, err, ticket.ErrTicketNotFound)
+		assert.Nil(t, res)
+	})
+}
+
+func TestService_GetTicketByNumber(t *testing.T) {
+	repo, service, _ := setupServiceTest(t)
+	ctx := context.Background()
+	testNumber := "OB-202606-0001-A9X2"
+
+	t.Run("Success", func(t *testing.T) {
+		expectedTicket := &ticket.Ticket{TicketNumber: testNumber, CustomerName: "Jane Doe"}
+		repo.On("GetByTicketNumber", ctx, mock.Anything, testNumber).Return(expectedTicket, nil).Once()
+
+		res, err := service.GetTicketByNumber(ctx, testNumber)
+		require.NoError(t, err)
+		assert.Equal(t, expectedTicket, res)
+	})
+
+	t.Run("Not Found", func(t *testing.T) {
+		repo.On("GetByTicketNumber", ctx, mock.Anything, testNumber).Return(nil, sql.ErrNoRows).Once()
+
+		res, err := service.GetTicketByNumber(ctx, testNumber)
 		assert.ErrorIs(t, err, ticket.ErrTicketNotFound)
 		assert.Nil(t, res)
 	})

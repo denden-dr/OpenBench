@@ -499,6 +499,7 @@ type PublicTrackerTicket struct {
 	PickedUpAt           *time.Time                `json:"picked_up_at,omitempty"`
 	RepairAction         *string                   `json:"repair_action,omitempty"`
 	Status               PublicTrackerTicketStatus `json:"status"`
+	TicketNumber         string                    `json:"ticket_number"`
 	WarrantyDurationDays int                       `json:"warranty_duration_days"`
 }
 
