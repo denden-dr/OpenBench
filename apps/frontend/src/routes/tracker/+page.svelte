@@ -25,6 +25,13 @@
   onMount(() => {
     loadHistory();
     hydrated = true;
+
+    // Auto-track if ID is provided in query params
+    const urlId = new URLSearchParams(window.location.search).get('id');
+    if (urlId) {
+      ticketIdInput = urlId;
+      handleTrack();
+    }
   });
 
   function loadHistory() {
@@ -40,12 +47,12 @@
 
   function saveToHistory(ticket: PublicTrackerTicket) {
     // Remove if already exists to move to top
-    let history = searchHistory.filter(item => item.id !== ticket.id);
+    let history = searchHistory.filter(item => item.id !== ticket.ticket_number);
     
     // Add to top of list
-    const label = `${ticket.brand_phone} ${ticket.model_phone} (${ticket.id.slice(0, 8)})`;
+    const label = `${ticket.brand_phone} ${ticket.model_phone} (${ticket.ticket_number})`;
     history.unshift({
-      id: ticket.id,
+      id: ticket.ticket_number,
       label,
       timestamp: new Date().toLocaleDateString('en-US', { hour: '2-digit', minute: '2-digit' })
     });
@@ -61,8 +68,8 @@
     localStorage.removeItem('openbench_tracked_history');
   }
 
-  // UUID regex pattern helper
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  // Ticket Number regex pattern helper: OB-YYYYMM-XXXX-XXXX
+  const ticketNumberRegex = /^OB-\d{6}-\d{4}-[A-Z0-9]{4}$/i;
 
   async function handleTrack(e?: Event) {
     if (e) e.preventDefault();
@@ -71,19 +78,15 @@
 
     const trimmedInput = ticketIdInput.trim();
     if (!trimmedInput) {
-      errorMessage = 'Please enter a Ticket ID first.';
+      errorMessage = 'Please enter a Tracking Number first.';
       return;
     }
 
-    // Security check: Reject Ticket Number (starts with OB-)
-    if (trimmedInput.toUpperCase().startsWith('OB-')) {
-      errorMessage = 'Public tracking is only allowed using Ticket ID (UUID), not Ticket Number.';
-      return;
-    }
+    const trackingCode = trimmedInput.toUpperCase();
 
-    // Format validation: Validate UUID format
-    if (!uuidRegex.test(trimmedInput)) {
-      errorMessage = 'Invalid Ticket ID format. Make sure you entered the complete UUID code provided.';
+    // Format validation: Validate Ticket Number format
+    if (!ticketNumberRegex.test(trackingCode)) {
+      errorMessage = 'Invalid tracking number format. Format should be OB-YYYYMM-XXXX-XXXX (e.g., OB-202606-0001-A9X2).';
       return;
     }
 
@@ -94,12 +97,12 @@
 
     isLoading = true;
     try {
-      const ticket = await ticketService.getPublicTrackerTicket(trimmedInput, abortController.signal);
+      const ticket = await ticketService.getPublicTrackerTicket(trackingCode, abortController.signal);
       if (ticket) {
         searchedTicket = ticket;
         saveToHistory(ticket);
       } else {
-        errorMessage = 'Ticket not found. Please double-check your Ticket ID.';
+        errorMessage = 'Ticket not found. Please double-check your Tracking Number.';
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;

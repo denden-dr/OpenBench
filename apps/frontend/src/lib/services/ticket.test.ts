@@ -41,13 +41,13 @@ describe('ticketService Unit Tests', () => {
   });
 
   it('should get public tracker ticket', async () => {
-    const mockTicket = { ticket_number: 'OB-001', status: 'in_repair' };
+    const mockTicket = { ticket_number: 'OB-202606-0001-A9X2', status: 'in_repair' };
     const fetchSpy = vi.fn().mockResolvedValue(createMockResponse(true, mockTicket));
     vi.stubGlobal('fetch', fetchSpy);
 
-    const result = await ticketService.getPublicTrackerTicket('ticket-1');
+    const result = await ticketService.getPublicTrackerTicket('OB-202606-0001-A9X2');
     
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/tracker/ticket-1'), { signal: undefined });
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/v1/tracker/OB-202606-0001-A9X2'), { signal: undefined });
     expect(result).toEqual({ ...mockTicket, ui_status: 'in_repair', warranty_expiry_date: undefined });
   });
 

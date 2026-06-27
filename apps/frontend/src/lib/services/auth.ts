@@ -48,20 +48,12 @@ export interface UserSession {
   email: string;
   role: 'admin' | 'user';
   userId: string;
+  username?: string;
+  full_name?: string;
+  phone_number?: string;
 }
 
-let cachedSession: UserSession | null = null;
 
-if (typeof window !== 'undefined') {
-  try {
-    const stored = sessionStorage.getItem('openbench_session');
-    if (stored) {
-      cachedSession = JSON.parse(stored);
-    }
-  } catch (e) {
-    // Ignore parse errors
-  }
-}
 
 export const authService = {
   /**
@@ -86,10 +78,82 @@ export const authService = {
     const session: UserSession = {
       email: resBody.data.email,
       role: resBody.data.role,
-      userId: resBody.data.user_id || ''
+      userId: resBody.data.user_id || '',
+      username: resBody.data.username,
+      full_name: resBody.data.full_name,
+      phone_number: resBody.data.phone_number
     };
 
-    cachedSession = session;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('openbench_session', JSON.stringify(session));
+    }
+
+    return session;
+  },
+
+  /**
+   * Registers a new user and authenticates them immediately.
+   */
+  async signUp(email: string, password: string): Promise<UserSession> {
+    const response = await fetch(`${getApiUrl()}/api/v1/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+
+    const resBody = await response.json();
+
+    if (!response.ok) {
+      throw new Error(resBody.message || 'Failed to sign up.');
+    }
+
+    const session: UserSession = {
+      email: resBody.data.email,
+      role: resBody.data.role,
+      userId: resBody.data.user_id || '',
+      username: resBody.data.username,
+      full_name: resBody.data.full_name,
+      phone_number: resBody.data.phone_number
+    };
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('openbench_session', JSON.stringify(session));
+    }
+
+    return session;
+  },
+
+  /**
+   * Updates user profile attributes.
+   */
+  async updateProfile(profile: { username: string; full_name: string; phone_number?: string }): Promise<UserSession> {
+    const response = await fetch(`${getApiUrl()}/api/v1/auth/profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(profile)
+    });
+
+    const resBody = await response.json();
+
+    if (!response.ok) {
+      throw new Error(resBody.message || 'Failed to update profile.');
+    }
+
+    const session: UserSession = {
+      email: resBody.data.email,
+      role: resBody.data.role,
+      userId: resBody.data.user_id || '',
+      username: resBody.data.username,
+      full_name: resBody.data.full_name,
+      phone_number: resBody.data.phone_number
+    };
+
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('openbench_session', JSON.stringify(session));
     }
@@ -163,10 +227,12 @@ export const authService = {
         const session: UserSession = {
           email: resBody.data.email,
           role: resBody.data.role,
-          userId: resBody.data.user_id
+          userId: resBody.data.user_id,
+          username: resBody.data.username,
+          full_name: resBody.data.full_name,
+          phone_number: resBody.data.phone_number
         };
 
-        cachedSession = session;
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('openbench_session', JSON.stringify(session));
         }
@@ -183,17 +249,23 @@ export const authService = {
   },
 
   clearLocalSession(): void {
-    cachedSession = null;
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('openbench_session');
     }
   },
 
   getSession(): UserSession | null {
-    return cachedSession;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('openbench_session');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
   },
 
   isAdminAuthenticated(): boolean {
-    return cachedSession !== null && cachedSession.role === 'admin';
+    const session = this.getSession();
+    return session !== null && session.role === 'admin';
   }
 };

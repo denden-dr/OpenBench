@@ -23,7 +23,8 @@
       </div>
       <input 
         type="text" 
-        placeholder="Enter Ticket ID (Example: 550e8400-e29b-41d4-a716-...)"
+        aria-label="Tracking Number"
+        placeholder="Enter Tracking Number (Example: OB-202606-0001-A9X2)"
         bind:value={ticketIdInput}
         disabled={isLoading}
         class="w-full pl-9 pr-4 py-3 border-4 border-neubrutalism-charcoal bg-white focus:outline-none focus:bg-zinc-50 font-mono text-xs shadow-neubrutalism-sm"

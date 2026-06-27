@@ -154,6 +154,12 @@ migrate-down:
 	fi; \
 	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down 1
 
+migrate-down-all:
+	@if [ -f apps/backend/.env ]; then \
+		export $$(cat apps/backend/.env | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down -all
+
 migrate-test-up:
 	@if [ -f apps/backend/.env.test ]; then \
 		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
@@ -165,6 +171,12 @@ migrate-test-down:
 		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
 	fi; \
 	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down 1
+
+migrate-test-down-all:
+	@if [ -f apps/backend/.env.test ]; then \
+		export $$(cat apps/backend/.env.test | grep -v '^#' | xargs); \
+	fi; \
+	migrate -path apps/backend/migrations -database "postgres://$$DB_USER:$$DB_PASSWORD@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=$$DB_SSLMODE" down -all
 
 # --- API Contract Code Generation ---
 generate-api-types: generate-api-go generate-api-ts

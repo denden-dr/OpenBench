@@ -33,6 +33,7 @@ export interface Ticket {
 
 export interface PublicTrackerTicket {
   id: string;
+  ticket_number: string;
   customer_name_masked: string;
   customer_phone_masked: string;
   brand_phone: string;
@@ -104,8 +105,8 @@ export const ticketService = {
     return mapTicket(body.data);
   },
 
-  async getPublicTrackerTicket(id: string, signal?: AbortSignal): Promise<PublicTrackerTicket> {
-    const res = await fetch(`${getApiUrl()}/api/v1/tracker/${id}`, { signal });
+  async getPublicTrackerTicket(ticketNumber: string, signal?: AbortSignal): Promise<PublicTrackerTicket> {
+    const res = await fetch(`${getApiUrl()}/api/v1/tracker/${ticketNumber}`, { signal });
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || 'Ticket not found');
     return mapPublicTrackerTicket(body.data);
@@ -154,5 +155,30 @@ export const ticketService = {
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || 'Failed to fetch warranties');
     return body.data ?? [];
+  },
+
+  async getMyTickets(): Promise<Ticket[]> {
+    const res = await fetch(`${getApiUrl()}/api/v1/tickets/my`, { credentials: 'include' });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.message || 'Failed to fetch my tickets');
+    return (body.data ?? []).map(mapTicket);
+  },
+
+  async createRepairRequest(request: {
+    customer_name: string;
+    customer_phone: string;
+    brand_phone: string;
+    model_phone: string;
+    serial_number?: string;
+    damage_description: string;
+  }): Promise<{ id: string; ticket_number: string }> {
+    const res = await fetch(`${getApiUrl()}/api/v1/tickets/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.message || 'Failed to submit repair request');
+    return body.data;
   }
 };

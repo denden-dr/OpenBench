@@ -1,16 +1,16 @@
-# Graph Report - OpenBench  (2026-06-24)
+# Graph Report - OpenBench  (2026-06-26)
 
 ## Corpus Check
-- 156 files · ~69,683 words
+- 187 files · ~88,275 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1009 nodes · 1201 edges · 98 communities (60 shown, 38 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 123 edges (avg confidence: 0.81)
+- 1095 nodes · 1351 edges · 106 communities (69 shown, 37 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 125 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `28775150`
+- Built from commit: `329d0cf3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -66,6 +66,7 @@
 - [[_COMMUNITY_Community 50|Community 50]]
 - [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 54|Community 54]]
 - [[_COMMUNITY_Community 55|Community 55]]
 - [[_COMMUNITY_Community 56|Community 56]]
@@ -92,21 +93,25 @@
 - [[_COMMUNITY_Community 81|Community 81]]
 - [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Community 83|Community 83]]
-- [[_COMMUNITY_Community 84|Community 84]]
 - [[_COMMUNITY_Community 85|Community 85]]
 - [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
 - [[_COMMUNITY_Community 88|Community 88]]
 - [[_COMMUNITY_Community 89|Community 89]]
 - [[_COMMUNITY_Community 90|Community 90]]
 - [[_COMMUNITY_Community 91|Community 91]]
 - [[_COMMUNITY_Community 92|Community 92]]
 - [[_COMMUNITY_Community 93|Community 93]]
+- [[_COMMUNITY_Community 94|Community 94]]
 - [[_COMMUNITY_Community 95|Community 95]]
 - [[_COMMUNITY_Community 96|Community 96]]
 - [[_COMMUNITY_Community 97|Community 97]]
 - [[_COMMUNITY_Community 98|Community 98]]
 - [[_COMMUNITY_Community 99|Community 99]]
-- [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 100|Community 100]]
+- [[_COMMUNITY_Community 101|Community 101]]
+- [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `JSON()` - 17 edges
@@ -114,9 +119,9 @@
 3. `/graphify` - 15 edges
 4. `API Contracts` - 14 edges
 5. `Issue Validation Report` - 14 edges
-6. `Frontend Patterns` - 12 edges
-7. `TicketRepository` - 11 edges
-8. `Repository` - 11 edges
+6. `TicketRepository` - 12 edges
+7. `TicketRepository` - 12 edges
+8. `Frontend Patterns` - 12 edges
 9. `compilerOptions` - 11 edges
 10. `scripts` - 11 edges
 
@@ -137,15 +142,15 @@
 - **API Contract Alignment Layer** — references_api_contracts_spec_first, references_api_contracts_generated_types, references_api_contracts_mock_api, references_api_contracts_response_envelope, api_openapi_response_envelope_schema, api_openapi_openapi_spec, api_openapi_oapi_codegen_config, references_frontend_patterns_list_discipline, references_frontend_patterns_api_payload [EXTRACTED 1.00]
 - **Auth Security Chain (Cookies, RTR, Error Handling)** — changelog_auth_security_module, references_backend_patterns_auth_sessions, api_openapi_auth_endpoints, issue_token_error_leakage, issue_access_token_auto_refresh [INFERRED 0.85]
 
-## Communities (98 total, 38 thin omitted)
+## Communities (106 total, 37 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.11
-Nodes (16): AccessClaims, AuthRepositoryTestSuite, AuthService, CheckPasswordHash(), GenerateAccessToken(), GenerateRefreshToken(), HashPassword(), HashSha256() (+8 more)
+Cohesion: 0.07
+Nodes (18): AccessClaims, AuthRepositoryTestSuite, AuthService, CheckPasswordHash(), GenerateAccessToken(), GenerateRefreshToken(), HashPassword(), HashSha256() (+10 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.05
-Nodes (26): ProductCategory, SalePaymentMethod, TicketDevicePosition, WarrantyStatus, AuthHandler, Handler, ToProductAPI(), ToProductListAPI() (+18 more)
+Nodes (25): PublicTrackerTicketStatus, SalePaymentMethod, WarrantyStatus, AuthHandler, Handler, ToProductAPI(), ToProductListAPI(), Product (+17 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.22
@@ -167,6 +172,10 @@ Nodes (29): ApiResponseDashboardData, ApiResponseEmpty, ApiResponseError, ApiRes
 Cohesion: 0.05
 Nodes (26): main(), TestMain(), AuthHandlerTestSuite, RequireAuth(), RequireRole(), AppConfig, getEnv(), getEnvAsDuration() (+18 more)
 
+### Community 7 - "Community 7"
+Cohesion: 0.16
+Nodes (4): numeric, $lib/services/ticket, $lib/utils/format, $app/state
+
 ### Community 8 - "Community 8"
 Cohesion: 0.14
 Nodes (11): PublicTrackerTicket, createdTicket, fetchSpy, mockTicket, mockTickets, newTicket, updatedTicket, updates (+3 more)
@@ -184,20 +193,24 @@ Cohesion: 0.18
 Nodes (9): authService, isMockEnabled(), stored, fetchMock, mockResponse, mockSignInResponse, mockSignOutResponse, stored (+1 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.30
-Nodes (3): numeric, $lib/services/inventory, targetStock
+Cohesion: 0.18
+Nodes (5): ../components/ProductForm.svelte, displayCostPrice, displayPrice, $lib/services/inventory, targetStock
 
 ### Community 14 - "Community 14"
-Cohesion: 0.33
-Nodes (3): $lib/services/auth, $app/navigation, $app/state
+Cohesion: 0.34
+Nodes (3): $lib, $lib/services/auth, $app/navigation
 
 ### Community 15 - "Community 15"
 Cohesion: 0.15
 Nodes (12): compilerOptions, allowJs, checkJs, esModuleInterop, forceConsistentCasingInFileNames, moduleResolution, resolveJsonModule, rewriteRelativeImportExtensions (+4 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.21
-Nodes (8): adjustQty(), changeAmount, clearCart(), filteredProducts, finalTotal, handleCheckout(), loadProducts(), removeFromCart()
+Cohesion: 0.18
+Nodes (9): numeric, adjustQty(), changeAmount, clearCart(), filteredProducts, finalTotal, handleCheckout(), loadProducts() (+1 more)
+
+### Community 21 - "Community 21"
+Cohesion: 0.16
+Nodes (6): $lib/components/ToastContainer.svelte, $lib/assets/favicon.svg, $lib/services/sales, $lib/services/toast.svelte, ./layout.css, svelte/transition
 
 ### Community 23 - "Community 23"
 Cohesion: 0.20
@@ -208,11 +221,11 @@ Cohesion: 0.22
 Nodes (8): emailInput, errorAlert, heading, logoutButton, passwordInput, submitButton, url, welcomeHeader
 
 ### Community 27 - "Community 27"
-Cohesion: 0.08
-Nodes (12): TicketUpdateDevicePosition, TicketUpdatePaymentMethod, TicketUpdateStatus, AdminTicketService, NewAdminService(), setupServiceTest(), TestService_CreateTicket(), TestService_GetTicket() (+4 more)
+Cohesion: 0.18
+Nodes (3): AdminTicketService, generateRandomSuffix(), TicketService
 
 ### Community 29 - "Community 29"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (5): $lib/services/warranty, daysLeft, expiredWarrantiesCount, filteredWarranties, status
 
 ### Community 30 - "Community 30"
@@ -224,8 +237,8 @@ Cohesion: 0.25
 Nodes (7): card, catalogItem, detailUrl, increaseQtyBtn, searchInput, tId, url
 
 ### Community 32 - "Community 32"
-Cohesion: 0.33
-Nodes (6): button, button2, createTicketAndGetId(), input, input2, url
+Cohesion: 0.32
+Nodes (7): button, button2, createTicketAndGetId(), createTicketAndGetInfo(), input, input2, url
 
 ### Community 34 - "Community 34"
 Cohesion: 0.18
@@ -331,49 +344,65 @@ Nodes (5): Hard Checks, Load References, OpenBench Workflow & Ops, Operating Rul
 Cohesion: 0.40
 Nodes (6): Auth Cookie-Based Endpoints (signin, refresh, signout, me), Auth Security Module (RTR, Bcrypt, HttpOnly Cookies), Technical Debt Register, Missing Auto-Refresh on Access Token Expiry in Ticket Detail View, Important: Refresh Token Error Detail Leakage, Auth Sessions
 
-### Community 84 - "Community 84"
-Cohesion: 0.33
-Nodes (5): $lib/components/ToastContainer.svelte, $lib/assets/favicon.svg, $lib/services/toast.svelte, ./layout.css, svelte/transition
+### Community 87 - "Community 87"
+Cohesion: 0.29
+Nodes (3): TicketUpdateDevicePosition, TicketUpdatePaymentMethod, TicketUpdateStatus
 
 ### Community 88 - "Community 88"
-Cohesion: 0.13
-Nodes (12): components, $defs, operations, paths, webhooks, Sale, SaleItem, saleService (+4 more)
+Cohesion: 0.22
+Nodes (7): components, $defs, operations, paths, webhooks, Sale, SaleItem
 
 ### Community 89 - "Community 89"
-Cohesion: 0.20
-Nodes (8): inventoryService, createdProduct, fetchSpy, mockProduct, mockProducts, newProduct, updatedProduct, updates
+Cohesion: 0.17
+Nodes (9): inventoryService, Product, createdProduct, fetchSpy, mockProduct, mockProducts, newProduct, updatedProduct (+1 more)
+
+### Community 92 - "Community 92"
+Cohesion: 0.15
+Nodes (12): Backend Review (Pending Fixes), Code Review Issues, 🚨 Critical (Must Fix), 🚨 Critical (Must Fix), Frontend Review (Pending Fixes), 🟠 Important (Should Fix), 🟠 Important (Should Fix), 🔵 Minor (Nice to Have) (+4 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.50
 Nodes (3): 1. Always Load AGENTS.md, 2. Always Use Graphify for Codebase Context, Global Agent Rules
 
-### Community 98 - "Community 98"
+### Community 94 - "Community 94"
+Cohesion: 0.52
+Nodes (6): setupServiceTest(), TestService_CreateTicket(), TestService_GetTicket(), TestService_GetTicketByNumber(), TestService_UpdateTicket_CustomerFields(), TestService_UpdateTicket_PickedUp()
+
+### Community 97 - "Community 97"
 Cohesion: 0.29
-Nodes (4): fetchSpy, mockWarranties, Warranty, warrantyService
+Nodes (6): emailInput, errorAlert, heading, passwordInput, submitButton, url
+
+### Community 98 - "Community 98"
+Cohesion: 0.24
+Nodes (5): apiFetch(), fetchSpy, mockWarranties, Warranty, warrantyService
 
 ### Community 99 - "Community 99"
-Cohesion: 0.25
-Nodes (5): ../components/ProductForm.svelte, numeric, displayCostPrice, displayPrice, $lib/utils/format
+Cohesion: 0.29
+Nodes (5): saleService, createdSale, fetchSpy, mockSales, newSale
+
+### Community 100 - "Community 100"
+Cohesion: 0.29
+Nodes (6): brandInput, { getByLabelText }, modelInput, nameInput, phoneInput, serialInput
 
 ## Knowledge Gaps
-- **395 isolated node(s):** `AppConfig`, `AccessClaims`, `SignInRequest`, `SignInResult`, `RefreshResult` (+390 more)
+- **415 isolated node(s):** `AppConfig`, `AccessClaims`, `SignInRequest`, `SignInResult`, `RefreshResult` (+410 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **37 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `main()` connect `Community 6` to `Community 27`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
-- **Why does `NewAdminService()` connect `Community 27` to `Community 6`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `setupServiceTest()` connect `Community 94` to `Community 101`, `Community 53`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `NewAdminService()` connect `Community 101` to `Community 94`, `Community 27`, `Community 6`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `main()` connect `Community 6` to `Community 101`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `JSON()` (e.g. with `.SignIn()` and `.Me()`) actually correct?**
   _`JSON()` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `AppConfig`, `AccessClaims`, `SignInRequest` to the rest of the system?**
-  _397 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _417 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.10685483870967742 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06871035940803383 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.05076679005817028 - nodes in this community are weakly interconnected._
-- **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.08677098150782361 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05310734463276836 - nodes in this community are weakly interconnected._

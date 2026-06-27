@@ -149,9 +149,14 @@ export const mockDbService = {
     await delay();
     const tickets = getTickets();
 
-    // Generate simple sequential ticket number
+    // Generate simple sequential ticket number with random 4-char alphanumeric suffix
     const count = tickets.length + 1;
-    const ticket_number = `OB-202606-${count.toString().padStart(4, '0')}`;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomSuffix = '';
+    for (let i = 0; i < 4; i++) {
+      randomSuffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const ticket_number = `OB-202606-${count.toString().padStart(4, '0')}-${randomSuffix}`;
 
     const newTicket: MockTicket = {
       status: 'received',
@@ -372,6 +377,54 @@ export const mockDbService = {
     await delay();
     const users = getUsers();
     return users.find(u => u.email.toLowerCase() === email.trim().toLowerCase()) || null;
+  },
+
+  async createUser(user: Omit<MockUser, 'id' | 'role'> & { role?: 'admin' | 'user' }): Promise<MockUser> {
+    await delay();
+    const users = getUsers();
+    const existing = users.find(u => u.email.toLowerCase() === user.email.trim().toLowerCase());
+    if (existing) {
+      throw new Error('User with this email already exists.');
+    }
+    const newUser: MockUser = {
+      ...user,
+      id: crypto.randomUUID(),
+      role: user.role || 'user'
+    };
+    users.push(newUser);
+    saveUsers(users);
+    return newUser;
+  },
+
+  async updateUser(id: string, updates: Partial<MockUser>): Promise<MockUser> {
+    await delay();
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('User not found.');
+
+    const updatedUser = { ...users[idx], ...updates };
+    users[idx] = updatedUser;
+    saveUsers(users);
+
+    // If this is the logged-in user, update the active session cache
+    const session = this.getActiveSession();
+    if (session && session.userId === id) {
+      const updatedSession = {
+        ...session,
+        username: updatedUser.username,
+        full_name: updatedUser.full_name,
+        phone_number: updatedUser.phone_number
+      };
+      this.saveActiveSession(updatedSession);
+    }
+
+    return updatedUser;
+  },
+
+  async getUserTickets(userId: string): Promise<MockTicket[]> {
+    await delay();
+    const tickets = getTickets();
+    return tickets.filter(t => t.user_id === userId);
   },
 
   saveActiveSession(session: any): void {

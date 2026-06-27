@@ -2,9 +2,11 @@ package ticket
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -20,11 +22,12 @@ var (
 )
 
 type TicketService interface {
-	GetTicket(ctx context.Context, id string) (*Ticket, error)
+	GetTicketByNumber(ctx context.Context, ticketNumber string) (*Ticket, error)
 }
 
 type AdminTicketService interface {
 	TicketService
+	GetTicket(ctx context.Context, id string) (*Ticket, error)
 	CreateTicket(ctx context.Context, req *api.TicketCreate) (*Ticket, error)
 	ListTickets(ctx context.Context) ([]*Ticket, error)
 	UpdateTicket(ctx context.Context, id string, req *api.TicketUpdate) (*Ticket, error)
@@ -331,6 +334,17 @@ func (s *ticketService) EmergencyUpdateTicket(ctx context.Context, id string, re
 	return t, nil
 }
 
+func (s *ticketService) GetTicketByNumber(ctx context.Context, ticketNumber string) (*Ticket, error) {
+	t, err := s.repo.GetByTicketNumber(ctx, nil, ticketNumber)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTicketNotFound
+		}
+		return nil, err
+	}
+	return t, nil
+}
+
 func (s *ticketService) generateTicketNumber(ctx context.Context, tx *sqlx.Tx) (string, error) {
 	prefix := fmt.Sprintf("OB-%s-", time.Now().Format("200601"))
 	maxNum, err := s.repo.GetMaxTicketNumberByPrefix(ctx, tx, prefix)
@@ -341,13 +355,32 @@ func (s *ticketService) generateTicketNumber(ctx context.Context, tx *sqlx.Tx) (
 	count := 1
 	if maxNum != "" {
 		parts := strings.Split(maxNum, "-")
-		if len(parts) == 3 {
-			lastPart := parts[2]
-			if val, err := strconv.Atoi(lastPart); err == nil {
+		if len(parts) >= 3 {
+			seqPart := parts[2]
+			if val, err := strconv.Atoi(seqPart); err == nil {
 				count = val + 1
 			}
 		}
 	}
 
-	return fmt.Sprintf("%s%04d", prefix, count), nil
+	// Generate an 8-character random alphanumeric suffix
+	suffix, err := generateRandomSuffix(8)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random suffix: %w", err)
+	}
+
+	return fmt.Sprintf("%s%04d-%s", prefix, count, suffix), nil
+}
+
+func generateRandomSuffix(length int) (string, error) {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		b[i] = charset[n.Int64()]
+	}
+	return string(b), nil
 }

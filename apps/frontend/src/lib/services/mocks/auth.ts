@@ -19,7 +19,26 @@ export const mockAuthService = {
       return session;
     }
 
-    throw new Error('Invalid email or password. Please use admin@openbench.dev and SecureAdminPassword123!.');
+    throw new Error('Invalid email or password. Please use admin@openbench.dev or user@openbench.dev.');
+  },
+
+  /**
+   * Registers a new user and logs them in immediately.
+   */
+  async signUp(email: string, password: string): Promise<UserSession> {
+    const newUser = await mockDbService.createUser({
+      email,
+      passwordHash: password
+    });
+
+    const session: UserSession = {
+      email: newUser.email,
+      role: newUser.role,
+      user_id: newUser.id
+    };
+
+    mockDbService.saveActiveSession(session);
+    return session;
   },
 
   /**
