@@ -408,7 +408,7 @@ export const mockDbService = {
 
     // If this is the logged-in user, update the active session cache
     const session = this.getActiveSession();
-    if (session && session.user_id === id) {
+    if (session && session.userId === id) {
       const updatedSession = {
         ...session,
         username: updatedUser.username,
@@ -429,13 +429,6 @@ export const mockDbService = {
 
   saveActiveSession(session: any): void {
     if (typeof window !== 'undefined') {
-      if (session) {
-        if (session.userId && !session.user_id) {
-          session.user_id = session.userId;
-        } else if (session.user_id && !session.userId) {
-          session.userId = session.user_id;
-        }
-      }
       sessionStorage.setItem('openbench_session', JSON.stringify(session));
     }
   },
@@ -445,15 +438,7 @@ export const mockDbService = {
     const data = sessionStorage.getItem('openbench_session');
     if (!data) return null;
     try {
-      const session = JSON.parse(data);
-      if (session) {
-        if (session.userId && !session.user_id) {
-          session.user_id = session.userId;
-        } else if (session.user_id && !session.userId) {
-          session.userId = session.user_id;
-        }
-      }
-      return session;
+      return JSON.parse(data);
     } catch {
       return null;
     }
