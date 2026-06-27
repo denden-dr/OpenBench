@@ -53,18 +53,7 @@ export interface UserSession {
   phone_number?: string;
 }
 
-let cachedSession: UserSession | null = null;
 
-if (typeof window !== 'undefined') {
-  try {
-    const stored = sessionStorage.getItem('openbench_session');
-    if (stored) {
-      cachedSession = JSON.parse(stored);
-    }
-  } catch (e) {
-    // Ignore parse errors
-  }
-}
 
 export const authService = {
   /**
@@ -95,7 +84,6 @@ export const authService = {
       phone_number: resBody.data.phone_number
     };
 
-    cachedSession = session;
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('openbench_session', JSON.stringify(session));
     }
@@ -131,7 +119,6 @@ export const authService = {
       phone_number: resBody.data.phone_number
     };
 
-    cachedSession = session;
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('openbench_session', JSON.stringify(session));
     }
@@ -167,7 +154,6 @@ export const authService = {
       phone_number: resBody.data.phone_number
     };
 
-    cachedSession = session;
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('openbench_session', JSON.stringify(session));
     }
@@ -247,7 +233,6 @@ export const authService = {
           phone_number: resBody.data.phone_number
         };
 
-        cachedSession = session;
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('openbench_session', JSON.stringify(session));
         }
@@ -264,17 +249,23 @@ export const authService = {
   },
 
   clearLocalSession(): void {
-    cachedSession = null;
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('openbench_session');
     }
   },
 
   getSession(): UserSession | null {
-    return cachedSession;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('openbench_session');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
   },
 
   isAdminAuthenticated(): boolean {
-    return cachedSession !== null && cachedSession.role === 'admin';
+    const session = this.getSession();
+    return session !== null && session.role === 'admin';
   }
 };
