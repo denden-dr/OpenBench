@@ -69,10 +69,10 @@ func TestService_CreateTicket(t *testing.T) {
 
 	t.Run("Sequential Ticket Numbers", func(t *testing.T) {
 		mockSQL.ExpectBegin()
-		repo.On("GetMaxTicketNumberByPrefix", ctx, mock.Anything, mock.Anything).Return("OB-202606-0005-ABCD", nil).Once()
+		repo.On("GetMaxTicketNumberByPrefix", ctx, mock.Anything, mock.Anything).Return("OB-202606-0005-ABCD1234", nil).Once()
 		repo.On("Create", ctx, mock.Anything, mock.MatchedBy(func(tk *ticket.Ticket) bool {
 			parts := strings.Split(tk.TicketNumber, "-")
-			return len(parts) == 4 && parts[2] == "0006" && len(parts[3]) == 4
+			return len(parts) == 4 && parts[2] == "0006" && len(parts[3]) == 8
 		})).Return(nil).Once()
 		mockSQL.ExpectCommit()
 
@@ -82,7 +82,7 @@ func TestService_CreateTicket(t *testing.T) {
 		parts := strings.Split(tkt.TicketNumber, "-")
 		assert.Equal(t, 4, len(parts))
 		assert.Equal(t, "0006", parts[2])
-		assert.Equal(t, 4, len(parts[3]))
+		assert.Equal(t, 8, len(parts[3]))
 	})
 
 	t.Run("Validation - Missing Required Fields", func(t *testing.T) {
@@ -141,7 +141,7 @@ func TestService_GetTicket(t *testing.T) {
 func TestService_GetTicketByNumber(t *testing.T) {
 	repo, service, _ := setupServiceTest(t)
 	ctx := context.Background()
-	testNumber := "OB-202606-0001-A9X2"
+	testNumber := "OB-202606-0001-A9X2B8Y3"
 
 	t.Run("Success", func(t *testing.T) {
 		expectedTicket := &ticket.Ticket{TicketNumber: testNumber, CustomerName: "Jane Doe"}

@@ -109,7 +109,7 @@ func (s *TicketHandlerTestSuite) TestGetAndUpdateTicket() {
 	tID := "00000000-0000-0000-0000-000000000001"
 	tkt := &ticket.Ticket{
 		ID:                   tID,
-		TicketNumber:         "OB-202606-9999-A9X2",
+		TicketNumber:         "OB-202606-9999-A9X2B8Y3",
 		CustomerName:         "Budi",
 		CustomerPhone:        "0812",
 		BrandPhone:           "Samsung",

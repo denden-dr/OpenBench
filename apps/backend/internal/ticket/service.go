@@ -363,8 +363,8 @@ func (s *ticketService) generateTicketNumber(ctx context.Context, tx *sqlx.Tx) (
 		}
 	}
 
-	// Generate a 4-character random alphanumeric suffix
-	suffix, err := generateRandomSuffix(4)
+	// Generate an 8-character random alphanumeric suffix
+	suffix, err := generateRandomSuffix(8)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random suffix: %w", err)
 	}

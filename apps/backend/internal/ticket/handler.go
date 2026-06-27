@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var ticketNumberRegex = regexp.MustCompile(`(?i)^OB-\d{6}-\d{4}-[A-Z0-9]{4}$`)
+var ticketNumberRegex = regexp.MustCompile(`(?i)^OB-\d{6}-\d{4,}-[A-Z0-9]{8,12}$`)
 
 type Handler struct {
 	adminService  AdminTicketService
