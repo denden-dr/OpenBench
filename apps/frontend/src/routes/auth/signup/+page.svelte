@@ -3,7 +3,7 @@
   import { Card, Button, Input } from '$lib';
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
-  import { KeyRound, ShieldAlert, LogIn } from 'lucide-svelte';
+  import { UserPlus, ShieldAlert } from 'lucide-svelte';
 
   let email = $state('');
   let password = $state('');
@@ -15,31 +15,36 @@
     hydrated = true;
   });
 
-  async function handleSignIn(e: SubmitEvent) {
+  async function handleSignUp(e: SubmitEvent) {
     e.preventDefault();
     error = '';
-    
-    if (!email) {
+
+    if (!email.trim()) {
       error = 'Email address is required.';
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      error = 'Please enter a valid email address.';
       return;
     }
     if (!password) {
       error = 'Password is required.';
       return;
     }
+    if (password.length < 6) {
+      error = 'Password must be at least 6 characters long.';
+      return;
+    }
 
     loading = true;
     try {
-      const session = await authService.signIn(email, password);
-      // If admin, redirect to admin workbench
-      if (session.role === 'admin') {
-        await goto('/admin');
-      } else {
-        // If regular user, redirect back to home page
-        await goto('/home');
-      }
+      // Call authService signUp which automatically logs the user in
+      await authService.signUp(email.trim(), password);
+      // Redirect to profile setup page upon success
+      await goto('/portal/setup');
     } catch (err: any) {
-      error = err.message || 'An unexpected error occurred.';
+      error = err.message || 'An error occurred during registration.';
     } finally {
       loading = false;
     }
@@ -47,8 +52,8 @@
 </script>
 
 <svelte:head>
-  <title>Sign In - OpenBench</title>
-  <meta name="description" content="Sign in to your OpenBench repair account." />
+  <title>Sign Up - OpenBench</title>
+  <meta name="description" content="Create a new OpenBench account to manage and request device repairs." />
 </svelte:head>
 
 <main class="min-h-screen flex items-center justify-center p-4 bg-neubrutalism-bg select-none" data-hydrated={hydrated}>
@@ -66,20 +71,20 @@
       </p>
     </div>
 
-    <!-- Login Card -->
+    <!-- Sign Up Card -->
     <Card class="relative overflow-visible" bgColor="bg-white">
       <!-- Decorative corner tag -->
       <div class="absolute -top-4 -right-4 bg-neubrutalism-pink text-white font-mono font-bold text-xs uppercase px-3 py-1.5 border-4 border-neubrutalism-charcoal shadow-neubrutalism-sm">
-        PORTAL
+        REGISTER
       </div>
 
-      <form onsubmit={handleSignIn} class="flex flex-col gap-6" novalidate>
+      <form onsubmit={handleSignUp} class="flex flex-col gap-6" novalidate>
         <div class="flex flex-col gap-2">
           <h2 class="font-display font-bold text-2xl text-neubrutalism-charcoal">
-            SIGN IN
+            SIGN UP
           </h2>
           <p class="font-sans text-sm text-neubrutalism-charcoal opacity-70">
-            Enter your credentials below to access your account.
+            Create an account to submit repair requests and trace diagnostic logs.
           </p>
         </div>
 
@@ -87,7 +92,7 @@
           <div class="flex gap-3 items-start border-4 border-neubrutalism-charcoal bg-rose-100 p-4 rounded-none shadow-neubrutalism-sm" role="alert">
             <ShieldAlert class="w-5 h-5 text-neubrutalism-pink shrink-0 mt-0.5" />
             <div class="flex flex-col gap-1">
-              <span class="font-sans font-bold text-sm text-neubrutalism-charcoal">Authentication Failed</span>
+              <span class="font-sans font-bold text-sm text-neubrutalism-charcoal">Registration Failed</span>
               <span class="font-sans text-xs text-neubrutalism-charcoal">{error}</span>
             </div>
           </div>
@@ -98,7 +103,7 @@
             id="email"
             type="email"
             label="Email Address"
-            placeholder="e.g. user@openbench.dev"
+            placeholder="e.g. customer@example.com"
             required
             bind:value={email}
             disabled={loading}
@@ -123,26 +128,18 @@
             disabled={loading}
           >
             {#if loading}
-              <span class="font-mono text-sm animate-pulse">AUTHENTICATING...</span>
+              <span class="font-mono text-sm animate-pulse">CREATING ACCOUNT...</span>
             {:else}
-              <LogIn class="w-5 h-5" />
-              <span>SIGN IN</span>
+              <UserPlus class="w-5 h-5" />
+              <span>CREATE ACCOUNT</span>
             {/if}
           </Button>
 
           <div class="border-t-2 border-dashed border-zinc-200 pt-4 text-center">
-            <span class="font-sans text-xs font-semibold text-zinc-500">Don't have an account? </span>
-            <a href="/auth/signup" class="font-sans text-xs font-bold text-neubrutalism-pink hover:underline uppercase tracking-wide">
-              Sign Up Here
+            <span class="font-sans text-xs font-semibold text-zinc-500">Already have an account? </span>
+            <a href="/auth/signin" class="font-sans text-xs font-bold text-neubrutalism-pink hover:underline uppercase tracking-wide">
+              Sign In Here
             </a>
-          </div>
-          
-          <div class="text-center bg-zinc-50 p-2.5 border-2 border-neubrutalism-charcoal">
-            <p class="font-mono text-[10px] leading-relaxed text-zinc-500">
-              Demo Users:<br/>
-              • Customer: user@openbench.dev / SecureUserPassword123!<br/>
-              • Admin: admin@openbench.dev / SecureAdminPassword123!
-            </p>
           </div>
         </div>
       </form>
