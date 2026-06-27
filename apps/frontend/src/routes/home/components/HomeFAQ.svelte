@@ -42,6 +42,7 @@
       >
         <button
           onclick={() => (activeFaqIndex = activeFaqIndex === idx ? null : idx)}
+          aria-expanded={activeFaqIndex === idx}
           class="w-full flex justify-between items-center p-5 font-display font-black text-base uppercase text-left hover:bg-zinc-50 transition-colors"
         >
           <span>{item.q}</span>

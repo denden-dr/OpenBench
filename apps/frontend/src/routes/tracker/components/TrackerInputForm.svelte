@@ -23,6 +23,7 @@
       </div>
       <input 
         type="text" 
+        aria-label="Tracking Number"
         placeholder="Enter Tracking Number (Example: OB-202606-0001-A9X2)"
         bind:value={ticketIdInput}
         disabled={isLoading}

@@ -22,6 +22,7 @@
     </div>
     <input 
       type="text" 
+      aria-label="Search tickets"
       placeholder="Search ticket number, customer name, device..."
       bind:value={searchQuery}
       class="w-full pl-9 pr-4 py-2 border-4 border-neubrutalism-charcoal bg-white focus:outline-none focus:bg-zinc-50 font-mono text-sm shadow-neubrutalism-sm"
