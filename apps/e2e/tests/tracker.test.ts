@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// Helper function to create a ticket dynamically and return its UUID
-async function createTicketAndGetId(page: Page): Promise<string> {
+// Helper function to create a ticket dynamically and return its details
+async function createTicketAndGetInfo(page: Page): Promise<{ ticketId: string; ticketNumber: string }> {
 	// Sign in as admin
 	await page.goto('/auth/signin');
 	await page.waitForSelector('main[data-hydrated="true"]');
@@ -50,7 +50,12 @@ async function createTicketAndGetId(page: Page): Promise<string> {
 	const parts = url.split('/');
 	const ticketId = parts[parts.length - 1];
 
-	return ticketId;
+	// Extract the human-readable ticket number (OB-...) after it loads
+	const ticketNumberLocator = page.locator('span.font-mono.text-sm.font-extrabold').first();
+	await expect(ticketNumberLocator).toContainText('OB-');
+	const ticketNumber = (await ticketNumberLocator.textContent())?.trim() || '';
+
+	return { ticketId, ticketNumber };
 }
 
 test.describe('Public Tracker Flow', () => {
@@ -80,7 +85,7 @@ test.describe('Public Tracker Flow', () => {
 		await expect(page).toHaveTitle('Track Ticket Status - OpenBench Tracker');
 
 		// Input and submit button
-		const input = page.locator('input[placeholder*="Enter Ticket ID"]');
+		const input = page.locator('input[placeholder*="Enter Tracking Number"]');
 		const button = page.locator('button[type="submit"]');
 
 		await expect(input).toBeVisible();
@@ -88,32 +93,27 @@ test.describe('Public Tracker Flow', () => {
 
 		// Empty input validation
 		await button.click();
-		await expect(page.getByText('Please enter a Ticket ID first.')).toBeVisible();
+		await expect(page.getByText('Please enter a Tracking Number first.')).toBeVisible();
 
-		// Blocking Ticket Number search (starts with OB-)
-		await input.fill('OB-202606-0001');
+		// Invalid format validation
+		await input.fill('invalid-tracking-format');
 		await button.click();
-		await expect(page.getByText('Public tracking is only allowed using Ticket ID (UUID), not Ticket Number.')).toBeVisible();
-
-		// Invalid UUID format validation
-		await input.fill('invalid-uuid-format');
-		await button.click();
-		await expect(page.getByText('Invalid Ticket ID format. Make sure you entered the complete UUID code provided.')).toBeVisible();
+		await expect(page.getByText('Invalid tracking number format. Format should be OB-YYYYMM-XXXX-XXXX (e.g., OB-202606-0001-A9X2).')).toBeVisible();
 	});
 
-	test('should successfully retrieve and display ticket status for valid UUID', async ({ page }) => {
-		// 1. Create a ticket dynamically and get its ID
-		const ticketId = await createTicketAndGetId(page);
+	test('should successfully retrieve and display ticket status for valid ticket number', async ({ page }) => {
+		// 1. Create a ticket dynamically and get its details
+		const { ticketId, ticketNumber } = await createTicketAndGetInfo(page);
 
 		// 2. Go to the public tracker page
 		await page.goto('/tracker');
 		await page.waitForSelector('main[data-hydrated="true"]');
 
-		const input = page.locator('input[placeholder*="Enter Ticket ID"]');
+		const input = page.locator('input[placeholder*="Enter Tracking Number"]');
 		const button = page.locator('button[type="submit"]');
 
-		// Search using the dynamic UUID
-		await input.fill(ticketId);
+		// Search using the dynamic ticket number
+		await input.fill(ticketNumber);
 		await button.click();
 
 		// Check progress card elements
@@ -148,10 +148,10 @@ test.describe('Public Tracker Flow', () => {
 		await page.goto('/tracker');
 		await page.waitForSelector('main[data-hydrated="true"]');
 
-		const input2 = page.locator('input[placeholder*="Enter Ticket ID"]');
+		const input2 = page.locator('input[placeholder*="Enter Tracking Number"]');
 		const button2 = page.locator('button[type="submit"]');
 
-		await input2.fill(ticketId);
+		await input2.fill(ticketNumber);
 		await button2.click();
 
 		// Check warranty info is active for picked_up status

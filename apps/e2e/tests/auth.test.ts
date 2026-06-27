@@ -28,7 +28,7 @@ test.describe('Authentication Flow', () => {
 
 	test('should display the sign-in page elements correctly', async ({ page }) => {
 		// Check title
-		await expect(page).toHaveTitle('Admin Sign In - OpenBench');
+		await expect(page).toHaveTitle('Sign In - OpenBench');
 
 		// Check heading
 		const heading = page.locator('h1');
@@ -42,7 +42,7 @@ test.describe('Authentication Flow', () => {
 
 		await expect(emailInput).toBeVisible();
 		await expect(passwordInput).toBeVisible();
-		await expect(submitButton).toContainText('ACCESS WORKBENCH');
+		await expect(submitButton).toContainText('SIGN IN');
 	});
 
 	test('should show error when fields are empty', async ({ page }) => {
