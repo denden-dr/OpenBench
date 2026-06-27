@@ -3,7 +3,7 @@ import type { MockTicket, MockProduct, MockSale, MockWarranty, MockUser } from '
 export const initialTickets: MockTicket[] = [
   {
     id: '550e8400-e29b-41d4-a716-446655440001',
-    ticket_number: 'OB-202606-0001',
+    ticket_number: 'OB-202606-0001-A9X2',
     customer_name: 'Denden Hidayat',
     customer_phone: '081234567890',
     brand_phone: 'Samsung',
@@ -20,7 +20,7 @@ export const initialTickets: MockTicket[] = [
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    ticket_number: 'OB-202606-0002',
+    ticket_number: 'OB-202606-0002-B7Y3',
     customer_name: 'John Doe',
     customer_phone: '087799228833',
     brand_phone: 'Apple',
@@ -37,7 +37,7 @@ export const initialTickets: MockTicket[] = [
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440003',
-    ticket_number: 'OB-202606-0003',
+    ticket_number: 'OB-202606-0003-C5Z4',
     customer_name: 'Alice Cooper',
     customer_phone: '082199223344',
     brand_phone: 'Xiaomi',
@@ -151,5 +151,11 @@ export const initialUsers: MockUser[] = [
     email: 'admin@openbench.dev',
     role: 'admin',
     passwordHash: 'SecureAdminPassword123!'
+  },
+  {
+    id: 'mock-user-id-customer-54321',
+    email: 'user@openbench.dev',
+    role: 'user',
+    passwordHash: 'SecureUserPassword123!'
   }
 ];

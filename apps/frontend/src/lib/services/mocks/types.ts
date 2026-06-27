@@ -18,6 +18,7 @@ export interface MockTicket {
   picked_up_at?: string;
   warranty_expiry_date?: string;
   created_at: string;
+  user_id?: string;
 }
 
 export interface MockProduct {
@@ -75,10 +76,16 @@ export interface MockUser {
   email: string;
   role: 'admin' | 'user';
   passwordHash: string;
+  username?: string;
+  full_name?: string;
+  phone_number?: string;
 }
 
 export interface UserSession {
   email: string;
   role: 'admin' | 'user';
   user_id: string;
+  username?: string;
+  full_name?: string;
+  phone_number?: string;
 }

@@ -88,6 +88,7 @@
 
   <!-- General Footer Metadata -->
   <div class="flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] text-zinc-500">
+    <span>Tracking Number: {searchedTicket.ticket_number}</span>
     <span>Date Received: {new Date(searchedTicket.created_at).toLocaleDateString('en-US')}</span>
   </div>
 </Card>

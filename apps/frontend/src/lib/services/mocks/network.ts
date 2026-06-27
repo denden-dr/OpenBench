@@ -52,6 +52,27 @@ export function initMockNetwork() {
         return createResponse(200, 'Successfully signed in', session);
       }
       
+      if (path === '/auth/signup' && method === 'POST') {
+        const body = JSON.parse(init?.body as string || '{}');
+        const session = await mockAuthService.signUp(body.email, body.password);
+        return createResponse(201, 'Successfully registered and logged in', session);
+      }
+
+      if (path === '/auth/profile' && method === 'POST') {
+        const session = mockAuthService.getSession();
+        if (!session) {
+          return createResponse(401, 'Authentication required', null);
+        }
+        const body = JSON.parse(init?.body as string || '{}');
+        await mockDbService.updateUser(session.user_id, {
+          username: body.username,
+          full_name: body.full_name,
+          phone_number: body.phone_number
+        });
+        const updatedSession = mockAuthService.getSession();
+        return createResponse(200, 'Profile updated successfully', updatedSession);
+      }
+
       if (path === '/auth/signout' && method === 'POST') {
         await mockAuthService.signOut();
         return createResponse(200, 'Successfully signed out', null);
@@ -79,6 +100,25 @@ export function initMockNetwork() {
         const body = JSON.parse(init?.body as string || '{}');
         const newTicket = await mockDbService.createTicket(body);
         return createResponse(201, 'Ticket created successfully', newTicket);
+      }
+
+      if (path === '/tickets/my' && method === 'GET') {
+        const session = mockAuthService.getSession();
+        if (!session) {
+          return createResponse(401, 'Authentication required', null);
+        }
+        const tickets = await mockDbService.getUserTickets(session.user_id);
+        return createResponse(200, 'Success', tickets);
+      }
+
+      if (path === '/tickets/request' && method === 'POST') {
+        const body = JSON.parse(init?.body as string || '{}');
+        const session = mockAuthService.getSession();
+        if (session) {
+          body.user_id = session.user_id;
+        }
+        const newTicket = await mockDbService.createTicket(body);
+        return createResponse(201, 'Repair request submitted successfully', newTicket);
       }
       
       // GET /admin/tickets/:id
@@ -109,11 +149,11 @@ export function initMockNetwork() {
         return createResponse(200, 'Ticket updated successfully (emergency)', updated);
       }
       
-      // Public Tracker Lookup: GET /tracker/:id
-      const trackerMatch = path.match(/^\/tracker\/([a-f0-9-]+)$/i);
+      // Public Tracker Lookup: GET /tracker/:ticket_number
+      const trackerMatch = path.match(/^\/tracker\/(OB-\d{6}-\d{4}-[A-Z0-9]{4})$/i);
       if (trackerMatch && method === 'GET') {
-        const id = trackerMatch[1];
-        const ticket = await mockDbService.getTicket(id);
+        const ticketNumber = trackerMatch[1];
+        const ticket = await mockDbService.getTicketByNumber(ticketNumber);
         if (!ticket) {
           return createResponse(404, 'Ticket not found', null);
         }
@@ -139,6 +179,7 @@ export function initMockNetwork() {
         // Only return non-sensitive fields for the public tracker
         const publicInfo = {
           id: ticket.id,
+          ticket_number: ticket.ticket_number,
           customer_name_masked: maskName(ticket.customer_name),
           customer_phone_masked: maskPhone(ticket.customer_phone),
           brand_phone: ticket.brand_phone,
