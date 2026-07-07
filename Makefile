@@ -1,4 +1,7 @@
-.PHONY: up down run build test mod-tidy
+include .env
+export
+
+.PHONY: up down run build test mod-tidy migrate-up migrate-down
 
 up:
 	podman compose up -d
@@ -17,3 +20,9 @@ build:
 
 test:
 	cd apps/backend && go test -v ./...
+
+migrate-up:
+	migrate -path apps/backend/migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
+
+migrate-down:
+	migrate -path apps/backend/migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down

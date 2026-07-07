@@ -46,7 +46,6 @@ Endpoint ini digunakan ketika pelanggan membawa HP-nya untuk diservis. Data pela
   "customer_phone": "081234567890",
   "device_brand": "Samsung",
   "device_model": "Galaxy S23",
-  "device_sn_imei": "IMEI123456789012345",
   "device_passcode": "pola-letter-L",
   "issue_description": "Layar pecah dan tidak menampilkan gambar setelah terjatuh",
   "repair_action": "Ganti LCD Set Full",
@@ -65,13 +64,9 @@ Endpoint ini digunakan ketika pelanggan membawa HP-nya untuk diservis. Data pela
       "name": "Budi Santoso",
       "phone": "081234567890"
     },
-    "device": {
-      "id": "f5b248a3-9eb1-46bc-926e-473d0a1b6c7a",
-      "brand": "Samsung",
-      "model": "Galaxy S23",
-      "sn_imei": "IMEI123456789012345",
-      "passcode": "pola-letter-L"
-    },
+    "device_brand": "Samsung",
+    "device_model": "Galaxy S23",
+    "device_passcode": "pola-letter-L",
     "issue_description": "Layar pecah dan tidak menampilkan gambar setelah terjatuh",
     "repair_action": "Ganti LCD Set Full",
     "cost": 1500000,
@@ -104,7 +99,8 @@ Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencaria
       "status": "RECEIVED",
       "customer_name": "Budi Santoso",
       "customer_phone": "081234567890",
-      "device_name": "Samsung Galaxy S23",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S23",
       "issue_description": "Layar pecah",
       "cost": 1500000,
       "created_at": "2026-07-07T12:30:00Z"
@@ -132,13 +128,9 @@ Melihat detail penuh sebuah tiket servis spesifik.
       "name": "Budi Santoso",
       "phone": "081234567890"
     },
-    "device": {
-      "id": "f5b248a3-9eb1-46bc-926e-473d0a1b6c7a",
-      "brand": "Samsung",
-      "model": "Galaxy S23",
-      "sn_imei": "IMEI123456789012345",
-      "passcode": "pola-letter-L"
-    },
+    "device_brand": "Samsung",
+    "device_model": "Galaxy S23",
+    "device_passcode": "pola-letter-L",
     "issue_description": "Layar pecah dan tidak menampilkan gambar setelah terjatuh",
     "repair_action": "Ganti LCD Set Full",
     "cost": 1500000,
@@ -248,14 +240,16 @@ Melihat seluruh riwayat HP yang pernah diservis oleh satu pelanggan tertentu.
     {
       "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
       "status": "REPAIRING",
-      "device_name": "Samsung Galaxy S23",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S23",
       "issue_description": "Layar pecah",
       "created_at": "2026-07-07T12:30:00Z"
     },
     {
       "ticket_id": "71a1795c-59bc-4a41-b062-8ff5e902b79e",
       "status": "COMPLETED",
-      "device_name": "iPhone 11",
+      "device_brand": "Apple",
+      "device_model": "iPhone 11",
       "issue_description": "Ganti Baterai Health 70%",
       "created_at": "2026-06-01T03:00:00Z"
     }
