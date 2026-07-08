@@ -12,6 +12,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/auth"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -35,6 +36,11 @@ func main() {
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
+
+	// Wire Ticket Layers
+	ticketRepo := ticket.NewRepository(db)
+	ticketService := ticket.NewService(ticketRepo)
+	ticketHandler := ticket.NewHandler(ticketService)
 
 	// Run Seeder if APP_ENV == development
 	ctxSeed, cancelSeed := context.WithTimeout(context.Background(), 10*time.Second)
@@ -68,6 +74,15 @@ func main() {
 			},
 		})
 	})
+
+	// Ticket Routes
+	ticketGroup := adminGroup.Group("/services")
+	ticketGroup.Post("/", ticketHandler.CreateTicket)
+	ticketGroup.Get("/", ticketHandler.GetTickets)
+	ticketGroup.Get("/:ticket_id", ticketHandler.GetTicketByID)
+	ticketGroup.Patch("/:ticket_id/status", ticketHandler.UpdateTicketStatus)
+	ticketGroup.Put("/:ticket_id", ticketHandler.UpdateTicketDetails)
+	ticketGroup.Put("/:ticket_id/emergency", ticketHandler.EmergencyUpdateTicket)
 
 	// 5. Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
