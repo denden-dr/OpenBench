@@ -2,32 +2,36 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type mockRepository struct {
-	user *models.User
-	err  error
+	mock.Mock
 }
 
 func (m *mockRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	if m.err != nil {
-		return nil, m.err
+	args := m.Called(ctx, email)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.User), args.Error(1)
 	}
-	if m.user != nil && m.user.Email == email {
-		return m.user, nil
-	}
-	return nil, nil
+	return nil, args.Error(1)
 }
 
 func (m *mockRepository) CreateUser(ctx context.Context, user *models.User) error {
-	return nil
+	args := m.Called(ctx, user)
+	return args.Error(0)
 }
+
+var errDb = errors.New("db connection failure")
 
 func TestAuthService_Login(t *testing.T) {
 	password := "secretpassword123"
@@ -51,32 +55,87 @@ func TestAuthService_Login(t *testing.T) {
 		Role:         "ADMIN",
 	}
 
-	repo := &mockRepository{user: user}
-	svc := NewService(repo, cfg)
+	tests := []struct {
+		name        string
+		email       string
+		password    string
+		mockErr     error
+		expectedErr error
+	}{
+		{
+			name:        "successful login",
+			email:       "admin@openbench.com",
+			password:    "secretpassword123",
+			mockErr:     nil,
+			expectedErr: nil,
+		},
+		{
+			name:        "wrong password",
+			email:       "admin@openbench.com",
+			password:    "wrongpassword",
+			mockErr:     nil,
+			expectedErr: ErrInvalidCredentials,
+		},
+		{
+			name:        "user not found",
+			email:       "nonexistent@openbench.com",
+			password:    "secretpassword123",
+			mockErr:     nil,
+			expectedErr: ErrInvalidCredentials,
+		},
+		{
+			name:        "empty email",
+			email:       "",
+			password:    "secretpassword123",
+			mockErr:     nil,
+			expectedErr: ErrInvalidCredentials,
+		},
+		{
+			name:        "empty password",
+			email:       "admin@openbench.com",
+			password:    "",
+			mockErr:     nil,
+			expectedErr: ErrInvalidCredentials,
+		},
+		{
+			name:        "repo error",
+			email:       "admin@openbench.com",
+			password:    "secretpassword123",
+			mockErr:     errDb,
+			expectedErr: errDb,
+		},
+	}
 
-	t.Run("successful login", func(t *testing.T) {
-		result, err := svc.Login(context.Background(), "admin@openbench.com", "secretpassword123")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if result.AccessToken == "" || result.RefreshToken == "" {
-			t.Error("tokens should not be empty")
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			is := assert.New(t)
+			must := require.New(t)
 
-	t.Run("wrong password", func(t *testing.T) {
-		_, err := svc.Login(context.Background(), "admin@openbench.com", "wrongpassword")
-		if err != ErrInvalidCredentials {
-			t.Errorf("expected ErrInvalidCredentials, got %v", err)
-		}
-	})
+			repo := &mockRepository{}
+			if tt.mockErr != nil {
+				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(nil, tt.mockErr)
+			} else if tt.name == "user not found" || tt.name == "empty email" {
+				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(nil, nil)
+			} else {
+				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(user, nil)
+			}
 
-	t.Run("user not found", func(t *testing.T) {
-		_, err := svc.Login(context.Background(), "nonexistent@openbench.com", "secretpassword123")
-		if err != ErrInvalidCredentials {
-			t.Errorf("expected ErrInvalidCredentials, got %v", err)
-		}
-	})
+			svc := NewService(repo, cfg)
+
+			result, err := svc.Login(context.Background(), tt.email, tt.password)
+			if tt.expectedErr != nil {
+				must.Error(err)
+				is.ErrorIs(err, tt.expectedErr)
+			} else {
+				must.NoError(err)
+				must.NotNil(result)
+				is.NotEmpty(result.AccessToken)
+				is.NotEmpty(result.RefreshToken)
+				is.Equal(tt.email, result.User.Email)
+			}
+			repo.AssertExpectations(t)
+		})
+	}
 }
 
 func TestAuthService_Refresh(t *testing.T) {
@@ -101,28 +160,71 @@ func TestAuthService_Refresh(t *testing.T) {
 		Role:         "ADMIN",
 	}
 
-	repo := &mockRepository{user: user}
-	svc := NewService(repo, cfg)
+	// We need a real token for refresh tests. We can mock repository to login successfully first.
+	loginRepo := &mockRepository{}
+	loginRepo.On("GetUserByEmail", mock.Anything, "admin@openbench.com").Return(user, nil)
+	svc := NewService(loginRepo, cfg)
 
-	result, err := svc.Login(context.Background(), "admin@openbench.com", "secretpassword123")
+	loginResult, err := svc.Login(context.Background(), "admin@openbench.com", "secretpassword123")
 	if err != nil {
 		t.Fatalf("unexpected error during login: %v", err)
 	}
 
-	t.Run("successful refresh", func(t *testing.T) {
-		refreshResult, err := svc.Refresh(context.Background(), result.RefreshToken)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if refreshResult.AccessToken == "" {
-			t.Error("new access token should not be empty")
-		}
-	})
+	tests := []struct {
+		name         string
+		refreshToken string
+		setupMock    func(repo *mockRepository)
+		expectedErr  error
+	}{
+		{
+			name:         "successful refresh",
+			refreshToken: loginResult.RefreshToken,
+			setupMock: func(repo *mockRepository) {
+				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(user, nil)
+			},
+			expectedErr:  nil,
+		},
+		{
+			name:         "invalid refresh token string",
+			refreshToken: "invalid-token-string",
+			setupMock:    func(repo *mockRepository) {},
+			expectedErr:  ErrInvalidToken,
+		},
+		{
+			name:         "empty refresh token",
+			refreshToken: "",
+			setupMock:    func(repo *mockRepository) {},
+			expectedErr:  ErrInvalidToken,
+		},
+		{
+			name:         "user not found in db during refresh",
+			refreshToken: loginResult.RefreshToken,
+			setupMock: func(repo *mockRepository) {
+				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(nil, nil)
+			},
+			expectedErr:  ErrUserNotFound,
+		},
+	}
 
-	t.Run("invalid refresh token", func(t *testing.T) {
-		_, err := svc.Refresh(context.Background(), "invalid-token-string")
-		if err != ErrInvalidToken {
-			t.Errorf("expected ErrInvalidToken, got %v", err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			is := assert.New(t)
+			must := require.New(t)
+
+			repo := &mockRepository{}
+			tt.setupMock(repo)
+			testSvc := NewService(repo, cfg)
+
+			refreshResult, err := testSvc.Refresh(context.Background(), tt.refreshToken)
+			if tt.expectedErr != nil {
+				must.Error(err)
+				is.ErrorIs(err, tt.expectedErr)
+			} else {
+				must.NoError(err)
+				must.NotNil(refreshResult)
+				is.NotEmpty(refreshResult.AccessToken)
+			}
+			repo.AssertExpectations(t)
+		})
+	}
 }
