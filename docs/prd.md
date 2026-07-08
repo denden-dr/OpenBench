@@ -32,13 +32,17 @@
   - `PENDING_CONFIRMATION`: Perbaikan tertunda karena butuh konfirmasi pelanggan (misal: ada isu tambahan, salah diagnosa, atau perubahan biaya).
   - `FIXED`: Perbaikan selesai, perangkat siap diambil oleh pelanggan.
   - `COMPLETED`: Perangkat sudah diserahkan kembali ke pelanggan dan transaksi selesai (ditutup).
-  - `CANCELLED`: Servis dibatalkan (karena mesin tidak bisa diperbaiki, biaya tidak cocok, dsb).
+  - `CANCELLED`: Servis dibatalkan (misal: mesin mati total, harga tidak cocok), **perangkat masih di toko menunggu diambil**.
+  - `RETURNED`: Perangkat yang batal diservis sudah dikembalikan/diambil oleh pelanggan (transaksi ditutup).
 - Menetapkan Total Biaya (`cost`) dan Tindakan Perbaikan (`repair_action`) di awal berdasarkan diagnosa. Jika di tengah jalan ada kerusakan tambahan, admin cukup meng-update biaya dan tindakan tersebut, lalu menunggu persetujuan pelanggan.
 - Memberikan catatan internal teknisi untuk referensi di masa depan.
 
-### 4.2. Manajemen Pelanggan & Perangkat
-- Sistem secara otomatis mencatat dan menyimpan kontak pelanggan baru jika belum pernah terdaftar.
-- Melihat daftar pelanggan dan riwayat akumulasi transaksi mereka (berpotensi berguna jika pelanggan mengklaim garansi).
+### 4.2. Manajemen Profil & Perangkat
+- Profil pelanggan (nama, nomor telepon) dan detail perangkat (merek, model, sandi) diintegrasikan langsung (*flat*) ke dalam entitas tiket servis untuk menyederhanakan pencatatan MVP.
+
+### 4.3. Manajemen Garansi & Klaim (Warranty)
+- **Penerbitan Garansi Otomatis**: Saat tiket selesai dikerjakan (`COMPLETED`), sistem otomatis membuat kontrak garansi yang valid sampai batas hari (`warranty_days`) yang telah disepakati pada saat pembuatan tiket.
+- **Pencatatan Klaim (Claim Ticketing)**: Memproses keluhan garansi ke dalam antrean (entitas) perbaikan khusus `claims` tanpa mencampurkannya dengan alur pendapatan servis reguler (biaya Rp0).
 
 ---
 
@@ -57,11 +61,19 @@
    - Setelah perbaikan selesai dan dites normal, teknisi merubah status menjadi `FIXED` (siap diambil) dan menambahkan Catatan (jika ada).
 
 3. **Alur Pengambilan Barang (Frontdesk)**
-   - Pelanggan datang mengambil HP yang berstatus `FIXED` (atau `CANCELLED`).
+   - Pelanggan datang mengambil HP yang berstatus `FIXED` atau `CANCELLED`.
    - Admin mencari nomor tiket atau nama pelanggan di sistem.
-   - Admin memverifikasi pembayaran, menyerahkan HP, lalu mengubah status akhir menjadi `COMPLETED` (transaksi ditutup).
+   - Admin memverifikasi pembayaran (jika ada), lalu menyerahkan HP ke pelanggan.
+   - Admin mengubah status akhir tiket: 
+     - Menjadi `COMPLETED` jika sebelumnya `FIXED` (sukses diservis).
+     - Menjadi `RETURNED` jika sebelumnya `CANCELLED` (gagal/batal diservis).
+   - *Otomatisasi*: Jika status berubah menjadi `COMPLETED`, sistem menghasilkan data garansi aktif yang jatuh temponya dihitung dari hari ini + `warranty_days`.
 
----
+4. **Alur Klaim Garansi (After-Sales)**
+   - Pelanggan kembali ke toko karena kerusakan ulang di masa garansi.
+   - Admin memindai/mengecek Nomor Tiket lama untuk memastikan garansi masih `ACTIVE`.
+   - Admin mendaftarkan keluhan baru ke sistem sebagai **Klaim Garansi**.
+   - Teknisi memproses klaim dengan alur perbaikan standar secara gratis.
 
 ## 6. Persyaratan Teknis (Technical Requirements)
 
