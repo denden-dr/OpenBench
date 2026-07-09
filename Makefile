@@ -15,6 +15,9 @@ run:
 mod-tidy:
 	cd apps/backend && go mod tidy
 
+fmt:
+	cd apps/backend && go fmt ./...
+
 build:
 	cd apps/backend && go build -o bin/api cmd/api/main.go
 

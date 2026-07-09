@@ -30,7 +30,7 @@ func (r *sqlRepository) GetUserByEmail(ctx context.Context, email string) (*mode
 		LIMIT 1
 	`
 	row := r.db.QueryRow(ctx, query, email)
-	
+
 	var user models.User
 	err := row.Scan(
 		&user.ID,

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/google/uuid"
 )
@@ -26,11 +27,12 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	repo     Repository
+	eventBus events.EventBus
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository, eventBus events.EventBus) Service {
+	return &service{repo: repo, eventBus: eventBus}
 }
 
 func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error) {
@@ -130,6 +132,14 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		return nil, err
 	}
 
+	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
+		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{
+			TicketID:     ticket.ID,
+			WarrantyDays: ticket.WarrantyDays,
+			CompletedAt:  ticket.UpdatedAt,
+		})
+	}
+
 	return &TicketStatusResponse{
 		TicketID:  ticket.ID,
 		Status:    ticket.Status,
@@ -222,6 +232,14 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 
 	if err := s.repo.Update(ctx, ticket); err != nil {
 		return nil, err
+	}
+
+	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
+		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{
+			TicketID:     ticket.ID,
+			WarrantyDays: ticket.WarrantyDays,
+			CompletedAt:  ticket.UpdatedAt,
+		})
 	}
 
 	res := MapToTicketResponse(ticket)
