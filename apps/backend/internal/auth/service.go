@@ -9,6 +9,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"log/slog"
 )
 
 var (
@@ -40,11 +41,13 @@ func (s *service) Login(ctx context.Context, email, password string) (*LoginResp
 		return nil, err
 	}
 	if user == nil {
+		slog.WarnContext(ctx, "Failed login attempt - user not found", slog.String("email", email))
 		return nil, ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
+		slog.WarnContext(ctx, "Failed login attempt - invalid password", slog.String("email", email))
 		return nil, ErrInvalidCredentials
 	}
 
@@ -57,6 +60,11 @@ func (s *service) Login(ctx context.Context, email, password string) (*LoginResp
 	if err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "User logged in successfully",
+		slog.String("email", user.Email),
+		slog.String("user_id", user.ID),
+	)
 
 	return &LoginResponse{
 		AccessToken:  accessToken,
@@ -104,6 +112,11 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 	if err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Token refreshed successfully",
+		slog.String("email", user.Email),
+		slog.String("user_id", user.ID),
+	)
 
 	return &RefreshResponse{
 		AccessToken: newAccessToken,

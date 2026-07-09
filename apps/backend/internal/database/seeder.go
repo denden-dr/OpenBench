@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/auth"
@@ -26,7 +26,7 @@ func SeedDefaultAdmin(ctx context.Context, repo auth.Repository, cfg *config.Con
 	}
 
 	if existing != nil {
-		log.Println("[Seeder] Admin user already exists. Skipping...")
+		slog.InfoContext(ctx, "Admin user already exists. Skipping...", slog.String("email", email))
 		return nil
 	}
 
@@ -48,6 +48,6 @@ func SeedDefaultAdmin(ctx context.Context, repo auth.Repository, cfg *config.Con
 		return err
 	}
 
-	log.Printf("[Seeder] Successfully seeded default admin: %s (Password: %s)\n", email, password)
+	slog.InfoContext(ctx, "Successfully seeded default admin", slog.String("email", email))
 	return nil
 }
