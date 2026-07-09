@@ -10,6 +10,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/google/uuid"
+	"log/slog"
 )
 
 var (
@@ -67,6 +68,13 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 	if err := s.repo.Create(ctx, ticket); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Service ticket created",
+		slog.String("ticket_number", ticket.TicketNumber),
+		slog.String("customer", ticket.CustomerName),
+		slog.String("brand", ticket.DeviceBrand),
+		slog.String("model", ticket.DeviceModel),
+	)
 
 	res := MapToTicketResponse(ticket)
 	return &res, nil
@@ -154,6 +162,12 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "Service ticket status updated",
+		slog.String("ticket_id", ticket.ID),
+		slog.String("ticket_number", ticket.TicketNumber),
+		slog.String("status", string(ticket.Status)),
+	)
+
 	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
 		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{
 			TicketID:     ticket.ID,
@@ -203,6 +217,11 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 	if err := s.repo.Update(ctx, ticket); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Service ticket details updated",
+		slog.String("ticket_id", ticket.ID),
+		slog.String("ticket_number", ticket.TicketNumber),
+	)
 
 	res := MapToTicketResponse(ticket)
 	return &res, nil
@@ -255,6 +274,12 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 	if err := s.repo.Update(ctx, ticket); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Emergency ticket update performed",
+		slog.String("ticket_id", ticket.ID),
+		slog.String("ticket_number", ticket.TicketNumber),
+		slog.String("status", string(ticket.Status)),
+	)
 
 	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
 		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{

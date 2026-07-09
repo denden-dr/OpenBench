@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"log/slog"
 )
 
 var (
@@ -62,6 +63,12 @@ func (s *service) CreateWarranty(ctx context.Context, ticketID string, warrantyD
 	if err := s.repo.CreateWarranty(ctx, w); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Warranty created successfully",
+		slog.String("warranty_id", w.ID),
+		slog.String("ticket_id", w.TicketID),
+		slog.Time("end_date", w.EndDate),
+	)
 
 	return w, nil
 }
@@ -121,6 +128,11 @@ func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req Updat
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "Warranty status updated",
+		slog.String("warranty_id", id),
+		slog.String("status", string(req.Status)),
+	)
+
 	return s.repo.FindWarrantyByID(ctx, id)
 }
 
@@ -169,6 +181,12 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 	if err := s.repo.CreateClaim(ctx, claim); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Claim created successfully",
+		slog.String("claim_id", claim.ID),
+		slog.String("claim_number", claim.ClaimNumber),
+		slog.String("warranty_id", claim.WarrantyID),
+	)
 
 	return claim, nil
 }
@@ -220,6 +238,11 @@ func (s *service) UpdateClaimStatus(ctx context.Context, id string, status model
 	if err := s.repo.UpdateClaim(ctx, c); err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Claim status updated",
+		slog.String("claim_id", id),
+		slog.String("status", string(status)),
+	)
 
 	return c, nil
 }
@@ -305,6 +328,12 @@ func (s *service) EvaluateClaim(ctx context.Context, claimID string, req Evaluat
 	if err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "Claim evaluated successfully",
+		slog.String("claim_id", claimID),
+		slog.String("evaluation_status", string(req.Status)),
+		slog.String("repair_status", string(repairStatus)),
+	)
 
 	return s.repo.FindClaimByID(ctx, claimID)
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +13,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/logger"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
 
@@ -23,16 +24,21 @@ func main() {
 	// 1. Load application configurations
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load configuration: %v", err)
+		slog.Error("failed to load configuration", "error", err)
+		os.Exit(1)
 	}
+
+	// Initialize Logger
+	logger.InitLogger(cfg.App.Env)
 
 	// 2. Initialize database connection pool
 	db, err := database.NewPostgresDB(cfg.DB)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
-	log.Println("Database connection pool established successfully")
+	slog.Info("Database connection pool established successfully")
 
 	// Initialize Event Bus
 	eventBus := events.NewSyncEventBus()
@@ -59,7 +65,7 @@ func main() {
 	// Run Seeder if APP_ENV == development
 	ctxSeed, cancelSeed := context.WithTimeout(context.Background(), 10*time.Second)
 	if err := database.SeedDefaultAdmin(ctxSeed, authRepo, cfg); err != nil {
-		log.Printf("Warning: Failed to seed default admin: %v", err)
+		slog.Warn("Failed to seed default admin", "error", err)
 	}
 	cancelSeed()
 
@@ -67,6 +73,9 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName: cfg.App.AppName,
 	})
+
+	// Register structured logging middleware
+	app.Use(logger.NewMiddleware())
 
 	// 4. Register handlers
 	healthHandler := health.NewHealthHandler(db)
@@ -119,17 +128,17 @@ func main() {
 
 	go func() {
 		<-sigChan
-		log.Println("Shutting down API server...")
+		slog.Info("Shutting down API server...")
 		if err := app.Shutdown(); err != nil {
-			log.Printf("error during server shutdown: %v", err)
+			slog.Error("error during server shutdown", "error", err)
 		}
 	}()
 
 	// 6. Start server
-	log.Printf("Starting API server on port %s...", cfg.App.Port)
+	slog.Info("Starting API server", "port", cfg.App.Port)
 	if err := app.Listen(":" + cfg.App.Port); err != nil {
-		log.Printf("server exited: %v", err)
+		slog.Error("server exited", "error", err)
 	}
 
-	log.Println("Server stopped")
+	slog.Info("Server stopped")
 }

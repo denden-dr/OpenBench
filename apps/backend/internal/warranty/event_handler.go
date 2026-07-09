@@ -3,7 +3,7 @@ package warranty
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 )
@@ -22,14 +22,17 @@ func (h *EventHandler) HandleTicketCompleted(ctx context.Context, event events.E
 		return fmt.Errorf("invalid event type, expected TicketCompletedEvent, got: %T", event)
 	}
 
-	log.Printf("[EventHandler] TicketCompletedEvent received for Ticket ID: %s with %d warranty days", completedEvt.TicketID, completedEvt.WarrantyDays)
+	slog.InfoContext(ctx, "TicketCompletedEvent received",
+		slog.String("ticket_id", completedEvt.TicketID),
+		slog.Int("warranty_days", completedEvt.WarrantyDays),
+	)
 
 	_, err := h.service.CreateWarranty(ctx, completedEvt.TicketID, completedEvt.WarrantyDays)
 	if err != nil {
-		log.Printf("[EventHandler] Error generating warranty: %v", err)
+		slog.ErrorContext(ctx, "Error generating warranty", slog.String("ticket_id", completedEvt.TicketID), slog.Any("error", err))
 		return err
 	}
 
-	log.Printf("[EventHandler] Warranty successfully created for Ticket ID: %s", completedEvt.TicketID)
+	slog.InfoContext(ctx, "Warranty successfully created", slog.String("ticket_id", completedEvt.TicketID))
 	return nil
 }

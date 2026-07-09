@@ -86,13 +86,13 @@ Endpoint ini digunakan ketika pelanggan membawa HP-nya untuk diservis. Data pela
 ---
 
 ### B. Mendapatkan Daftar Tiket Servis
-Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencarian berdasarkan Nomor Tiket / Nama Pelanggan / Nomor HP Pelanggan.
+Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencarian berdasarkan Nomor Tiket / Nama Pelanggan / Nomor HP Pelanggan / Merk HP / Model HP.
 
 * **URL**: `/api/v1/admin/services`
 * **Method**: `GET`
 * **Query Parameters**:
   * `status`: Filter status servis (`RECEIVED`, `REPAIRING`, `PENDING_CONFIRMATION`, `FIXED`, `COMPLETED`, `CANCELLED`, `RETURNED`). *Opsional*.
-  * `search`: Pencarian nama pelanggan, nomor HP, atau nomor tiket. *Opsional*.
+  * `search`: Pencarian nama pelanggan, nomor HP, nomor tiket, merk HP, atau model HP. *Opsional*.
   * `limit`: Jumlah data per halaman. *Opsional, default 10*.
   * `offset`: Offset halaman. *Opsional, default 0*.
 
@@ -104,6 +104,54 @@ Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencaria
       "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
       "ticket_number": "TKT-20260707-1234",
       "status": "RECEIVED",
+      "customer_name": "Budi Santoso",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S23",
+      "created_at": "2026-07-07T12:30:00Z"
+    }
+  ],
+  "meta": {
+    "total_data": 45,
+    "limit": 10,
+    "offset": 0,
+    "total_pages": 5
+  }
+}
+```
+
+---
+
+### B2. Pencarian Lanjutan Tiket Servis (Advanced Search)
+Mendapatkan tiket dengan filter yang lebih kompleks (seperti rentang tanggal dan status aktif/non-aktif) menggunakan metode HTTP `QUERY` (RFC 10008). 
+
+* **URL**: `/api/v1/admin/services/search`
+* **Method**: `QUERY`
+* **Request Body**:
+```json
+{
+  "search": "budi",
+  "start_date": "2026-07-01",
+  "end_date": "2026-07-31",
+  "exact_date": "",
+  "is_active": true,
+  "limit": 10,
+  "offset": 0
+}
+```
+  *Keterangan Payload:*
+  * `search`: Pencarian nama pelanggan, nomor HP, nomor tiket, atau model HP. *Opsional*.
+  * `start_date` / `end_date`: Format YYYY-MM-DD. *Opsional*.
+  * `exact_date`: Format YYYY-MM-DD. *Opsional*.
+  * `is_active`: `true` untuk tiket yang belum selesai/diambil, `false` untuk tiket `COMPLETED` atau `RETURNED`. *Opsional*.
+
+* **Response (200 OK)**:
+```json
+{
+  "data": [
+    {
+      "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "ticket_number": "TKT-20260707-1234",
+      "status": "REPAIRING",
       "customer_name": "Budi Santoso",
       "device_brand": "Samsung",
       "device_model": "Galaxy S23",

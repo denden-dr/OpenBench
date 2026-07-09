@@ -277,4 +277,3 @@ func (r *sqlRepository) Search(ctx context.Context, req TicketSearchRequest) ([]
 
 	return tickets, total, nil
 }
-
