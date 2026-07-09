@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -40,6 +41,19 @@ func (m *mockRepository) FindByID(ctx context.Context, id string) (*models.Servi
 func (m *mockRepository) Update(ctx context.Context, t *models.ServiceTicket) error {
 	args := m.Called(ctx, t)
 	return args.Error(0)
+}
+
+type mockEventBus struct {
+	mock.Mock
+}
+
+func (m *mockEventBus) Publish(ctx context.Context, event events.Event) error {
+	args := m.Called(ctx, event)
+	return args.Error(0)
+}
+
+func (m *mockEventBus) Subscribe(eventType events.EventType, handler events.EventHandler) {
+	m.Called(eventType, handler)
 }
 
 var errDb = errors.New("db connection failure")
@@ -109,6 +123,7 @@ func TestService_CreateTicket(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
+			bus := &mockEventBus{}
 			if tt.expectedErr != nil {
 				if tt.mockErr != nil {
 					repo.On("Create", mock.Anything, mock.AnythingOfType("*models.ServiceTicket")).Return(tt.mockErr)
@@ -116,7 +131,7 @@ func TestService_CreateTicket(t *testing.T) {
 			} else {
 				repo.On("Create", mock.Anything, mock.AnythingOfType("*models.ServiceTicket")).Return(nil)
 			}
-			svc := NewService(repo)
+			svc := NewService(repo, bus)
 
 			res, err := svc.CreateTicket(context.Background(), tt.req)
 			if tt.expectedErr != nil {
@@ -131,22 +146,31 @@ func TestService_CreateTicket(t *testing.T) {
 				is.Equal(tt.req.CustomerName, res.CustomerName)
 			}
 			repo.AssertExpectations(t)
+			bus.AssertExpectations(t)
 		})
 	}
 }
 
 func TestService_UpdateTicketStatus(t *testing.T) {
-	existingTicket := &models.ServiceTicket{
+	existingTicketWithoutWarranty := &models.ServiceTicket{
 		ID:           "ticket-1",
 		TicketNumber: "TKT-20260708-ABCD",
 		Status:       models.StatusReceived,
+		WarrantyDays: 0,
+	}
+
+	existingTicketWithWarranty := &models.ServiceTicket{
+		ID:           "ticket-2",
+		TicketNumber: "TKT-20260708-WARR",
+		Status:       models.StatusReceived,
+		WarrantyDays: 30,
 	}
 
 	tests := []struct {
 		name        string
 		ticketID    string
 		req         ChangeStatusRequest
-		setupMock   func(repo *mockRepository)
+		setupMock   func(repo *mockRepository, bus *mockEventBus)
 		expectedErr error
 		checkStatus models.ServiceTicketStatus
 	}{
@@ -156,8 +180,8 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: models.StatusRepairing,
 			},
-			setupMock: func(repo *mockRepository) {
-				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicket, nil)
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicketWithoutWarranty, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.Status == models.StatusRepairing
 				})).Return(nil)
@@ -166,12 +190,31 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			checkStatus: models.StatusRepairing,
 		},
 		{
+			name:     "Success - Change status to COMPLETED with warranty triggers event",
+			ticketID: "ticket-2",
+			req: ChangeStatusRequest{
+				Status: models.StatusCompleted,
+			},
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+				repo.On("FindByID", mock.Anything, "ticket-2").Return(existingTicketWithWarranty, nil)
+				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
+					return t.Status == models.StatusCompleted
+				})).Return(nil)
+				bus.On("Publish", mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
+					compEvt, ok := evt.(events.TicketCompletedEvent)
+					return ok && compEvt.TicketID == "ticket-2" && compEvt.WarrantyDays == 30
+				})).Return(nil)
+			},
+			expectedErr: nil,
+			checkStatus: models.StatusCompleted,
+		},
+		{
 			name:     "Failure - Ticket Not Found",
 			ticketID: "non-existent",
 			req: ChangeStatusRequest{
 				Status: models.StatusRepairing,
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
 				repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
 			},
 			expectedErr: ErrTicketNotFound,
@@ -182,7 +225,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: "",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -191,7 +234,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: "INVALID_STATUS",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
 			expectedErr: ErrInvalidInput,
 		},
 	}
@@ -202,8 +245,9 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
-			tt.setupMock(repo)
-			svc := NewService(repo)
+			bus := &mockEventBus{}
+			tt.setupMock(repo, bus)
+			svc := NewService(repo, bus)
 
 			res, err := svc.UpdateTicketStatus(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -215,6 +259,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 				is.Equal(tt.checkStatus, res.Status)
 			}
 			repo.AssertExpectations(t)
+			bus.AssertExpectations(t)
 		})
 	}
 }
@@ -233,7 +278,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 		name        string
 		ticketID    string
 		req         UpdateTicketRequest
-		setupMock   func(repo *mockRepository)
+		setupMock   func(repo *mockRepository, bus *mockEventBus)
 		expectedErr error
 	}{
 		{
@@ -248,7 +293,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				WarrantyDays:     60,
 				Notes:            "LCD Original",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
 				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicket, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.CustomerName == "Budi Santoso Baru" &&
@@ -269,7 +314,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				CustomerPhone:    "081234567899",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -280,7 +325,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				CustomerPhone:    "081234567899",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
 				repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
 			},
 			expectedErr: ErrTicketNotFound,
@@ -293,8 +338,9 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
-			tt.setupMock(repo)
-			svc := NewService(repo)
+			bus := &mockEventBus{}
+			tt.setupMock(repo, bus)
+			svc := NewService(repo, bus)
 
 			res, err := svc.UpdateTicketDetails(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -311,6 +357,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				is.Equal(tt.req.Notes, *res.Notes)
 			}
 			repo.AssertExpectations(t)
+			bus.AssertExpectations(t)
 		})
 	}
 }
@@ -325,17 +372,18 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 		DeviceBrand:      "Samsung",
 		DeviceModel:      "Galaxy S23",
 		IssueDescription: "Layar pecah",
+		WarrantyDays:     30,
 	}
 
 	tests := []struct {
 		name        string
 		ticketID    string
 		req         EmergencyUpdateTicketRequest
-		setupMock   func(repo *mockRepository)
+		setupMock   func(repo *mockRepository, bus *mockEventBus)
 		expectedErr error
 	}{
 		{
-			name:     "Success - Emergency Update status and brand/model",
+			name:     "Success - Emergency Update status to COMPLETED triggers event",
 			ticketID: "ticket-1",
 			req: EmergencyUpdateTicketRequest{
 				CustomerName:     "Budi Santoso Baru",
@@ -350,12 +398,16 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 				WarrantyDays:     90,
 				Notes:            "LCD Original Apple",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus) {
 				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicket, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.DeviceBrand == "Apple" &&
 						t.DeviceModel == "iPhone 15 Pro" &&
 						t.Status == models.StatusCompleted
+				})).Return(nil)
+				bus.On("Publish", mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
+					compEvt, ok := evt.(events.TicketCompletedEvent)
+					return ok && compEvt.TicketID == "ticket-1" && compEvt.WarrantyDays == 90
 				})).Return(nil)
 			},
 			expectedErr: nil,
@@ -371,7 +423,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 				Status:           "",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
 			expectedErr: ErrInvalidInput,
 		},
 	}
@@ -382,8 +434,9 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
-			tt.setupMock(repo)
-			svc := NewService(repo)
+			bus := &mockEventBus{}
+			tt.setupMock(repo, bus)
+			svc := NewService(repo, bus)
 
 			res, err := svc.EmergencyUpdateTicket(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -397,6 +450,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 				is.Equal(tt.req.Status, res.Status)
 			}
 			repo.AssertExpectations(t)
+			bus.AssertExpectations(t)
 		})
 	}
 }
@@ -426,26 +480,30 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		must := require.New(t)
 
 		repo := &mockRepository{}
+		bus := &mockEventBus{}
 		repo.On("FindByID", mock.Anything, "ticket-1").Return(ticket1, nil)
-		svc := NewService(repo)
+		svc := NewService(repo, bus)
 
 		res, err := svc.GetTicketByID(context.Background(), "ticket-1")
 		must.NoError(err)
 		must.NotNil(res)
 		is.Equal(ticket1.TicketNumber, res.TicketNumber)
 		repo.AssertExpectations(t)
+		bus.AssertExpectations(t)
 	})
 
 	t.Run("Get Ticket By ID - Not Found", func(t *testing.T) {
 		is := assert.New(t)
 
 		repo := &mockRepository{}
+		bus := &mockEventBus{}
 		repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
-		svc := NewService(repo)
+		svc := NewService(repo, bus)
 
 		_, err := svc.GetTicketByID(context.Background(), "non-existent")
 		is.ErrorIs(err, ErrTicketNotFound)
 		repo.AssertExpectations(t)
+		bus.AssertExpectations(t)
 	})
 
 	t.Run("Get Tickets - Filter Status", func(t *testing.T) {
@@ -453,8 +511,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		must := require.New(t)
 
 		repo := &mockRepository{}
+		bus := &mockEventBus{}
 		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo)
+		svc := NewService(repo, bus)
 
 		res, total, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, 0)
 		must.NoError(err)
@@ -462,6 +521,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		must.Len(res, 1)
 		is.Equal("ticket-2", res[0].TicketID)
 		repo.AssertExpectations(t)
+		bus.AssertExpectations(t)
 	})
 
 	t.Run("Get Tickets - Search Query", func(t *testing.T) {
@@ -469,8 +529,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		must := require.New(t)
 
 		repo := &mockRepository{}
+		bus := &mockEventBus{}
 		repo.On("FindAll", mock.Anything, "", "Joko", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo)
+		svc := NewService(repo, bus)
 
 		res, total, err := svc.GetTickets(context.Background(), "", "Joko", 10, 0)
 		must.NoError(err)
@@ -478,5 +539,6 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		must.Len(res, 1)
 		is.Equal("Joko Widodo", res[0].CustomerName)
 		repo.AssertExpectations(t)
+		bus.AssertExpectations(t)
 	})
 }

@@ -182,7 +182,7 @@ func TestAuthService_Refresh(t *testing.T) {
 			setupMock: func(repo *mockRepository) {
 				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(user, nil)
 			},
-			expectedErr:  nil,
+			expectedErr: nil,
 		},
 		{
 			name:         "invalid refresh token string",
@@ -202,7 +202,7 @@ func TestAuthService_Refresh(t *testing.T) {
 			setupMock: func(repo *mockRepository) {
 				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(nil, nil)
 			},
-			expectedErr:  ErrUserNotFound,
+			expectedErr: ErrUserNotFound,
 		},
 	}
 
