@@ -606,4 +606,3 @@ func TestService_SearchTickets(t *testing.T) {
 		repo.AssertExpectations(t)
 	})
 }
-
