@@ -277,15 +277,45 @@ Digunakan admin saat kustomer membawa nomor tiket lama untuk melihat apakah gara
     "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "start_date": "2026-07-07T12:30:00Z",
     "end_date": "2026-08-06T12:30:00Z",
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "notes": null
   }
 }
 ```
 
 ---
 
-### B. Membuat Klaim Garansi Baru
-Digunakan untuk mendaftarkan HP kustomer ke antrean perbaikan (klaim garansi). Hanya bisa dibuat jika garansi berstatus `ACTIVE`.
+### B. Pembaruan Status Garansi Langsung
+Digunakan admin/teknisi untuk memperbarui status garansi secara langsung, misalnya jika ditemukan pelanggaran garansi (seperti segel rusak atau masuk air) saat pengecekan fisik awal.
+
+* **URL**: `/api/v1/admin/warranties/:warranty_id/status`
+* **Method**: `PATCH`
+* **Request Body**:
+```json
+{
+  "status": "VOID",
+  "notes": "Segel rusak dan terindikasi kemasukan air"
+}
+```
+*Catatan: `notes` bersifat wajib jika status diubah menjadi `VOID`.*
+* **Response (200 OK)**:
+```json
+{
+  "data": {
+    "id": "w-5432-1098",
+    "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "start_date": "2026-07-07T12:30:00Z",
+    "end_date": "2026-08-06T12:30:00Z",
+    "status": "VOID",
+    "notes": "Segel rusak dan terindikasi kemasukan air"
+  }
+}
+```
+
+---
+
+### C. Membuat Klaim Garansi Baru
+Digunakan untuk mendaftarkan HP kustomer ke antrean perbaikan (klaim garansi). Hanya bisa dibuat jika garansi berstatus `ACTIVE`. Status evaluasi awal akan diset menjadi `PENDING`.
 
 * **URL**: `/api/v1/admin/claims`
 * **Method**: `POST`
@@ -304,23 +334,61 @@ Digunakan untuk mendaftarkan HP kustomer ke antrean perbaikan (klaim garansi). H
     "claim_number": "CLM-20260714-0001",
     "warranty_id": "w-5432-1098",
     "status": "RECEIVED",
+    "evaluation_status": "PENDING",
     "issue_description": "Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu",
     "repair_action": null,
     "notes": null,
-    "created_at": "2026-07-14T09:00:00Z"
+    "evaluation_notes": null,
+    "created_at": "2026-07-14T09:00:00Z",
+    "updated_at": "2026-07-14T09:00:00Z"
   }
 }
 ```
 
 ---
 
-### C. Mengelola Klaim (List, Detail, Update Status & Info)
+### D. Evaluasi Klaim Garansi
+Digunakan teknisi untuk mengevaluasi apakah sebuah klaim disetujui (`ACCEPTED`), ditolak (`REJECTED`), atau dibatalkan karena pelanggaran berat (`VOID`).
+
+* **URL**: `/api/v1/admin/claims/:claim_id/evaluate`
+* **Method**: `POST`
+* **Request Body**:
+```json
+{
+  "status": "ACCEPTED",
+  "notes": "Kerusakan LCD memang cacat pabrik, ganti LCD baru gratis"
+}
+```
+*Catatan: `notes` bersifat wajib jika status dievaluasi menjadi `REJECTED` atau `VOID`. Jika status menjadi `VOID`, garansi induk asal akan ikut menjadi `VOID` dan catatan alasan akan disalin ke garansi tersebut.*
+
+* **Response (200 OK)**:
+```json
+{
+  "data": {
+    "claim_id": "c-9876-5432",
+    "claim_number": "CLM-20260714-0001",
+    "warranty_id": "w-5432-1098",
+    "status": "REPAIRING",
+    "evaluation_status": "ACCEPTED",
+    "issue_description": "Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu",
+    "repair_action": null,
+    "notes": null,
+    "evaluation_notes": "Kerusakan LCD memang cacat pabrik, ganti LCD baru gratis",
+    "created_at": "2026-07-14T09:00:00Z",
+    "updated_at": "2026-07-14T09:30:00Z"
+  }
+}
+```
+
+---
+
+### E. Mengelola Klaim (List, Detail, Update Status & Info)
 Klaim garansi memiliki *lifecycle* (status) yang sama dengan tiket servis reguler, namun tabel dan endpoint-nya terpisah agar pelaporannya tidak tercampur.
 
 * **List Claims**: `GET /api/v1/admin/claims`
 * **Detail Claim**: `GET /api/v1/admin/claims/:claim_id`
-* **Ubah Status**: `PATCH /api/v1/admin/claims/:claim_id/status` (Payload: `{"status": "FIXED"}`)
-* **Update Teknisi**: `PUT /api/v1/admin/claims/:claim_id`
+* **Ubah Status Perbaikan**: `PATCH /api/v1/admin/claims/:claim_id/status` (Payload: `{"status": "FIXED"}`)
+* **Update Teknisi (Info Perbaikan)**: `PUT /api/v1/admin/claims/:claim_id`
   *Payload:*
   ```json
   {
