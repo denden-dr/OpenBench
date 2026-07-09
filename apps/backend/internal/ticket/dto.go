@@ -46,6 +46,16 @@ type EmergencyUpdateTicketRequest struct {
 	Notes            string                     `json:"notes"`
 }
 
+type TicketSearchRequest struct {
+	Search    string `json:"search"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
+	ExactDate string `json:"exact_date"`
+	IsActive  *bool  `json:"is_active"`
+	Limit     int    `json:"limit"`
+	Offset    int    `json:"offset"`
+}
+
 type TicketResponse struct {
 	TicketID         string                     `json:"ticket_id"`
 	TicketNumber     string                     `json:"ticket_number,omitempty"`

@@ -14,6 +14,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, ticket *models.ServiceTicket) error
 	FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error)
+	Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error)
 	FindByID(ctx context.Context, id string) (*models.ServiceTicket, error)
 	Update(ctx context.Context, ticket *models.ServiceTicket) error
 }
@@ -175,3 +176,105 @@ func (r *sqlRepository) Update(ctx context.Context, t *models.ServiceTicket) err
 	).Scan(&t.UpdatedAt)
 	return err
 }
+
+func (r *sqlRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
+	var selectQuery = `
+		SELECT 
+			id, ticket_number, status, customer_name, customer_phone, 
+			device_brand, device_model, device_passcode, issue_description, 
+			repair_action, cost, warranty_days, notes, created_at, updated_at
+		FROM service_tickets
+		WHERE deleted_at IS NULL
+	`
+
+	var countQuery = `
+		SELECT COUNT(*)
+		FROM service_tickets
+		WHERE deleted_at IS NULL
+	`
+
+	var conditions []string
+	var args []interface{}
+	argCount := 1
+
+	if req.Search != "" {
+		searchPattern := "%" + req.Search + "%"
+		conditions = append(conditions, fmt.Sprintf("(id::text ILIKE $%d OR ticket_number ILIKE $%d OR customer_name ILIKE $%d OR device_brand ILIKE $%d OR device_model ILIKE $%d)", argCount, argCount, argCount, argCount, argCount))
+		args = append(args, searchPattern)
+		argCount++
+	}
+
+	if req.ExactDate != "" {
+		conditions = append(conditions, fmt.Sprintf("created_at::date = $%d", argCount))
+		args = append(args, req.ExactDate)
+		argCount++
+	} else {
+		if req.StartDate != "" {
+			conditions = append(conditions, fmt.Sprintf("created_at::date >= $%d", argCount))
+			args = append(args, req.StartDate)
+			argCount++
+		}
+		if req.EndDate != "" {
+			conditions = append(conditions, fmt.Sprintf("created_at::date <= $%d", argCount))
+			args = append(args, req.EndDate)
+			argCount++
+		}
+	}
+
+	if req.IsActive != nil {
+		if *req.IsActive {
+			conditions = append(conditions, "status NOT IN ('COMPLETED', 'RETURNED')")
+		} else {
+			conditions = append(conditions, "status IN ('COMPLETED', 'RETURNED')")
+		}
+	}
+
+	if len(conditions) > 0 {
+		whereClause := " AND " + strings.Join(conditions, " AND ")
+		selectQuery += whereClause
+		countQuery += whereClause
+	}
+
+	// Get total count
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Add ordering and pagination to select
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, selectQuery, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var tickets []models.ServiceTicket
+	for rows.Next() {
+		var t models.ServiceTicket
+		err := rows.Scan(
+			&t.ID, &t.TicketNumber, &t.Status, &t.CustomerName, &t.CustomerPhone,
+			&t.DeviceBrand, &t.DeviceModel, &t.DevicePasscode, &t.IssueDescription,
+			&t.RepairAction, &t.Cost, &t.WarrantyDays, &t.Notes, &t.CreatedAt, &t.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		tickets = append(tickets, t)
+	}
+
+	return tickets, total, nil
+}
+

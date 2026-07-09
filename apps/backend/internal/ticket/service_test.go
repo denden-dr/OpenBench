@@ -30,6 +30,14 @@ func (m *mockRepository) FindAll(ctx context.Context, status string, search stri
 	return nil, args.Int(1), args.Error(2)
 }
 
+func (m *mockRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) != nil {
+		return args.Get(0).([]models.ServiceTicket), args.Int(1), args.Error(2)
+	}
+	return nil, args.Int(1), args.Error(2)
+}
+
 func (m *mockRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) != nil {
@@ -542,3 +550,60 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		bus.AssertExpectations(t)
 	})
 }
+
+func TestService_SearchTickets(t *testing.T) {
+	ticket1 := &models.ServiceTicket{
+		ID:            "ticket-1",
+		TicketNumber:  "TKT-20260708-ABCD",
+		Status:        models.StatusReceived,
+		CustomerName:  "Budi Santoso",
+		CustomerPhone: "081234567890",
+		DeviceBrand:   "Samsung",
+		DeviceModel:   "Galaxy S23",
+	}
+
+	t.Run("Search Tickets - Text Match", func(t *testing.T) {
+		is := assert.New(t)
+		must := require.New(t)
+
+		repo := &mockRepository{}
+		bus := &mockEventBus{}
+		req := TicketSearchRequest{
+			Search: "Samsung",
+			Limit:  10,
+			Offset: 0,
+		}
+		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
+		svc := NewService(repo, bus)
+
+		res, total, err := svc.SearchTickets(context.Background(), req)
+		must.NoError(err)
+		is.Equal(1, total)
+		must.Len(res, 1)
+		is.Equal("Samsung", res[0].DeviceBrand)
+		repo.AssertExpectations(t)
+	})
+
+	t.Run("Search Tickets - Active Status", func(t *testing.T) {
+		is := assert.New(t)
+		must := require.New(t)
+
+		repo := &mockRepository{}
+		bus := &mockEventBus{}
+		isActive := true
+		req := TicketSearchRequest{
+			IsActive: &isActive,
+			Limit:    10,
+			Offset:   0,
+		}
+		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
+		svc := NewService(repo, bus)
+
+		res, total, err := svc.SearchTickets(context.Background(), req)
+		must.NoError(err)
+		is.Equal(1, total)
+		must.Len(res, 1)
+		repo.AssertExpectations(t)
+	})
+}
+
