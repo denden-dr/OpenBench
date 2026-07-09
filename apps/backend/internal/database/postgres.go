@@ -3,10 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -22,6 +23,7 @@ func NewPostgresDB(cfg config.DBConfig) (*pgxpool.Pool, error) {
 	configPool.MinConns = cfg.MinConns
 	configPool.MaxConnLifetime = cfg.MaxConnLifetime
 	configPool.MaxConnIdleTime = cfg.MaxConnIdleTime
+	configPool.ConnConfig.Tracer = &slogQueryTracer{}
 
 	var pool *pgxpool.Pool
 	var lastErr error
@@ -39,7 +41,6 @@ func NewPostgresDB(cfg config.DBConfig) (*pgxpool.Pool, error) {
 			}
 			pool.Close()
 		}
-		cancel()
 
 		// Calculate exponential delay: base * (2^attempt) capped at RetryMaxDelay
 		factor := 1 << attempt
@@ -51,9 +52,39 @@ func NewPostgresDB(cfg config.DBConfig) (*pgxpool.Pool, error) {
 			delay = cfg.RetryMaxDelay
 		}
 
-		log.Printf("[DB Connect] Attempt %d/%d failed: %v. Retrying in %v...", attempt+1, cfg.MaxRetries, lastErr, delay)
+		slog.WarnContext(ctx, "DB Connect Attempt failed",
+			slog.Int("attempt", attempt+1),
+			slog.Int("max_retries", cfg.MaxRetries),
+			slog.Any("error", lastErr),
+			slog.Duration("retry_delay", delay),
+		)
+		cancel()
 		time.Sleep(delay)
 	}
 
 	return nil, fmt.Errorf("could not connect to database after %d attempts: %w", cfg.MaxRetries, lastErr)
+}
+
+type queryKey string
+
+const queryStartKey queryKey = "query_start_time"
+
+type slogQueryTracer struct{}
+
+func (slogQueryTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	slog.DebugContext(ctx, "SQL Query Start", slog.String("sql", data.SQL), slog.Any("args", data.Args))
+	return context.WithValue(ctx, queryStartKey, time.Now())
+}
+
+func (slogQueryTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
+	duration := time.Duration(0)
+	if startTime, ok := ctx.Value(queryStartKey).(time.Time); ok {
+		duration = time.Since(startTime)
+	}
+
+	if data.Err != nil {
+		slog.DebugContext(ctx, "SQL Query End with Error", slog.Duration("duration", duration), slog.Any("error", data.Err))
+	} else {
+		slog.DebugContext(ctx, "SQL Query End", slog.Duration("duration", duration))
+	}
 }
