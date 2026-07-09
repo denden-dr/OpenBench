@@ -11,8 +11,10 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/auth"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -32,6 +34,9 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection pool established successfully")
 
+	// Initialize Event Bus
+	eventBus := events.NewSyncEventBus()
+
 	// Wire Auth Layers
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo, cfg)
@@ -39,8 +44,17 @@ func main() {
 
 	// Wire Ticket Layers
 	ticketRepo := ticket.NewRepository(db)
-	ticketService := ticket.NewService(ticketRepo)
+	ticketService := ticket.NewService(ticketRepo, eventBus)
 	ticketHandler := ticket.NewHandler(ticketService)
+
+	// Wire Warranty & Claims Layers
+	warrantyRepo := warranty.NewRepository(db)
+	warrantyService := warranty.NewService(warrantyRepo)
+	warrantyHandler := warranty.NewHandler(warrantyService)
+	warrantyEventHandler := warranty.NewEventHandler(warrantyService)
+
+	// Register Domain Event Subscribers
+	eventBus.Subscribe(events.TicketCompletedType, warrantyEventHandler.HandleTicketCompleted)
 
 	// Run Seeder if APP_ENV == development
 	ctxSeed, cancelSeed := context.WithTimeout(context.Background(), 10*time.Second)
@@ -83,6 +97,20 @@ func main() {
 	ticketGroup.Patch("/:ticket_id/status", ticketHandler.UpdateTicketStatus)
 	ticketGroup.Put("/:ticket_id", ticketHandler.UpdateTicketDetails)
 	ticketGroup.Put("/:ticket_id/emergency", ticketHandler.EmergencyUpdateTicket)
+
+	// Warranty Routes
+	warrGroup := adminGroup.Group("/warranties")
+	warrGroup.Get("/by-ticket/:ticket_id", warrantyHandler.GetWarrantyByTicketID)
+	warrGroup.Patch("/:warranty_id/status", warrantyHandler.UpdateWarrantyStatus)
+
+	// Claim Routes
+	claimGroup := adminGroup.Group("/claims")
+	claimGroup.Post("/", warrantyHandler.CreateClaim)
+	claimGroup.Get("/", warrantyHandler.GetClaims)
+	claimGroup.Get("/:claim_id", warrantyHandler.GetClaimByID)
+	claimGroup.Patch("/:claim_id/status", warrantyHandler.UpdateClaimStatus)
+	claimGroup.Put("/:claim_id", warrantyHandler.UpdateClaim)
+	claimGroup.Post("/:claim_id/evaluate", warrantyHandler.EvaluateClaim)
 
 	// 5. Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
