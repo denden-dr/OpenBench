@@ -20,6 +20,7 @@ var (
 type Service interface {
 	CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error)
 	GetTickets(ctx context.Context, status, search string, limit, offset int) ([]TicketListResponse, int, error)
+	SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, int, error)
 	GetTicketByID(ctx context.Context, id string) (*TicketResponse, error)
 	UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (*TicketStatusResponse, error)
 	UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (*TicketResponse, error)
@@ -80,6 +81,27 @@ func (s *service) GetTickets(ctx context.Context, status, search string, limit, 
 	}
 
 	tickets, total, err := s.repo.FindAll(ctx, status, search, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var res []TicketListResponse
+	for _, t := range tickets {
+		res = append(res, MapToTicketListResponse(t))
+	}
+
+	return res, total, nil
+}
+
+func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, int, error) {
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	tickets, total, err := s.repo.Search(ctx, req)
 	if err != nil {
 		return nil, 0, err
 	}

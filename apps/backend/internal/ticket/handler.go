@@ -77,6 +77,35 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) SearchTickets(c fiber.Ctx) error {
+	var req TicketSearchRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Format JSON tidak valid.")
+	}
+
+	tickets, total, err := h.service.SearchTickets(c.Context(), req)
+	if err != nil {
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Gagal melakukan pencarian tiket.")
+	}
+
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+	return c.Status(fiber.StatusOK).JSON(TicketListWrapper{
+		Data: tickets,
+		Meta: TicketMeta{
+			TotalData:  total,
+			Limit:      limit,
+			Offset:     req.Offset,
+			TotalPages: totalPages,
+		},
+	})
+}
+
 func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {

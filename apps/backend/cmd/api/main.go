@@ -93,6 +93,7 @@ func main() {
 	ticketGroup := adminGroup.Group("/services")
 	ticketGroup.Post("/", ticketHandler.CreateTicket)
 	ticketGroup.Get("/", ticketHandler.GetTickets)
+	ticketGroup.Add([]string{"QUERY"}, "/search", ticketHandler.SearchTickets)
 	ticketGroup.Get("/:ticket_id", ticketHandler.GetTicketByID)
 	ticketGroup.Patch("/:ticket_id/status", ticketHandler.UpdateTicketStatus)
 	ticketGroup.Put("/:ticket_id", ticketHandler.UpdateTicketDetails)
