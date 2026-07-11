@@ -45,3 +45,20 @@ func RequireAuth(cfg *config.Config) fiber.Handler {
 		return c.Next()
 	}
 }
+
+func RequireRole(allowedRoles ...string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		userRole, ok := c.Locals("userRole").(string)
+		if !ok || userRole == "" {
+			return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Akses ditolak: role tidak valid.")
+		}
+
+		for _, role := range allowedRoles {
+			if userRole == role {
+				return c.Next()
+			}
+		}
+
+		return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Akses ditolak: Anda tidak memiliki akses ke resource ini.")
+	}
+}
