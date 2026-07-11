@@ -24,19 +24,19 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
-	cfg  *config.Config
+	queryRepo QueryRepository
+	cfg       *config.Config
 }
 
-func NewService(repo Repository, cfg *config.Config) Service {
+func NewService(queryRepo QueryRepository, cfg *config.Config) Service {
 	return &service{
-		repo: repo,
-		cfg:  cfg,
+		queryRepo: queryRepo,
+		cfg:       cfg,
 	}
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (*LoginResponse, error) {
-	user, err := s.repo.GetUserByEmail(ctx, email)
+	user, err := s.queryRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 		return nil, ErrInvalidToken
 	}
 
-	user, err := s.repo.GetUserByEmail(ctx, email)
+	user, err := s.queryRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}

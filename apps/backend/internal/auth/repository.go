@@ -2,48 +2,49 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
-type Repository interface {
+type QueryRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+}
+
+type CommandRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 }
 
-type sqlRepository struct {
-	db *pgxpool.Pool
+type sqlQueryRepository struct {
+	db *sqlx.DB
 }
 
-func NewRepository(db *pgxpool.Pool) Repository {
-	return &sqlRepository{db: db}
+type sqlCommandRepository struct {
+	db *sqlx.DB
 }
 
-func (r *sqlRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func NewQueryRepository(db *sqlx.DB) QueryRepository {
+	return &sqlQueryRepository{db: db}
+}
+
+func NewCommandRepository(db *sqlx.DB) CommandRepository {
+	return &sqlCommandRepository{db: db}
+}
+
+func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `
 		SELECT id, email, password_hash, full_name, role, created_at, updated_at, deleted_at
 		FROM users
 		WHERE email = $1 AND deleted_at IS NULL
 		LIMIT 1
 	`
-	row := r.db.QueryRow(ctx, query, email)
-
 	var user models.User
-	err := row.Scan(
-		&user.ID,
-		&user.Email,
-		&user.PasswordHash,
-		&user.FullName,
-		&user.Role,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-		&user.DeletedAt,
-	)
+	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -51,11 +52,12 @@ func (r *sqlRepository) GetUserByEmail(ctx context.Context, email string) (*mode
 	return &user, nil
 }
 
-func (r *sqlRepository) CreateUser(ctx context.Context, user *models.User) error {
+func (r *sqlCommandRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
 		INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 	`
-	_, err := r.db.Exec(ctx, query, user.ID, user.Email, user.PasswordHash, user.FullName, user.Role)
+	querier := database.GetQuerier(ctx, r.db)
+	_, err := querier.ExecContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.FullName, user.Role)
 	return err
 }
