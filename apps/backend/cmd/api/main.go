@@ -71,7 +71,7 @@ func main() {
 
 	// 4. Register handlers
 	healthHandler := health.NewHealthHandler(db)
-	app.Get("/health", healthHandler.HealthCheck)
+	app.Get("/health", healthHandler.HealthCheckPublic)
 
 	// Auth Public Routes
 	authGroup := app.Group("/api/v1/auth")
@@ -81,6 +81,7 @@ func main() {
 
 	// Protected Admin Routes
 	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg))
+	adminGroup.Get("/health/detail", healthHandler.HealthCheckDetail)
 	adminGroup.Get("/profile", func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"data": fiber.Map{
