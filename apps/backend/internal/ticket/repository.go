@@ -2,32 +2,44 @@ package ticket
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
-type Repository interface {
-	Create(ctx context.Context, ticket *models.ServiceTicket) error
+type QueryRepository interface {
 	FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error)
 	Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error)
 	FindByID(ctx context.Context, id string) (*models.ServiceTicket, error)
+}
+
+type CommandRepository interface {
+	Create(ctx context.Context, ticket *models.ServiceTicket) error
 	Update(ctx context.Context, ticket *models.ServiceTicket) error
 }
 
-type sqlRepository struct {
-	db *pgxpool.Pool
+type sqlQueryRepository struct {
+	db *sqlx.DB
 }
 
-func NewRepository(db *pgxpool.Pool) Repository {
-	return &sqlRepository{db: db}
+type sqlCommandRepository struct {
+	db *sqlx.DB
 }
 
-func (r *sqlRepository) Create(ctx context.Context, t *models.ServiceTicket) error {
+func NewQueryRepository(db *sqlx.DB) QueryRepository {
+	return &sqlQueryRepository{db: db}
+}
+
+func NewCommandRepository(db *sqlx.DB) CommandRepository {
+	return &sqlCommandRepository{db: db}
+}
+
+func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTicket) error {
 	query := `
 		INSERT INTO service_tickets (
 			id, ticket_number, status, customer_name, customer_phone, 
@@ -40,7 +52,8 @@ func (r *sqlRepository) Create(ctx context.Context, t *models.ServiceTicket) err
 		)
 		RETURNING created_at, updated_at
 	`
-	err := r.db.QueryRow(ctx, query,
+	querier := database.GetQuerier(ctx, r.db)
+	err := querier.QueryRowxContext(ctx, query,
 		t.ID, t.TicketNumber, t.Status, t.CustomerName, t.CustomerPhone,
 		t.DeviceBrand, t.DeviceModel, t.DevicePasscode, t.IssueDescription,
 		t.RepairAction, t.Cost, t.WarrantyDays, t.Notes,
@@ -48,7 +61,7 @@ func (r *sqlRepository) Create(ctx context.Context, t *models.ServiceTicket) err
 	return err
 }
 
-func (r *sqlRepository) FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error) {
+func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error) {
 	var selectQuery = `
 		SELECT 
 			id, ticket_number, status, customer_name, customer_phone, 
@@ -89,7 +102,7 @@ func (r *sqlRepository) FindAll(ctx context.Context, status string, search strin
 
 	// Get total count
 	var total int
-	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	err := r.db.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -98,30 +111,16 @@ func (r *sqlRepository) FindAll(ctx context.Context, status string, search strin
 	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, selectQuery, args...)
+	var tickets []models.ServiceTicket
+	err = r.db.SelectContext(ctx, &tickets, selectQuery, args...)
 	if err != nil {
 		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var tickets []models.ServiceTicket
-	for rows.Next() {
-		var t models.ServiceTicket
-		err := rows.Scan(
-			&t.ID, &t.TicketNumber, &t.Status, &t.CustomerName, &t.CustomerPhone,
-			&t.DeviceBrand, &t.DeviceModel, &t.DevicePasscode, &t.IssueDescription,
-			&t.RepairAction, &t.Cost, &t.WarrantyDays, &t.Notes, &t.CreatedAt, &t.UpdatedAt,
-		)
-		if err != nil {
-			return nil, 0, err
-		}
-		tickets = append(tickets, t)
 	}
 
 	return tickets, total, nil
 }
 
-func (r *sqlRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
+func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
 	query := `
 		SELECT 
 			id, ticket_number, status, customer_name, customer_phone, 
@@ -131,16 +130,10 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*models.Servic
 		WHERE id = $1 AND deleted_at IS NULL
 		LIMIT 1
 	`
-	row := r.db.QueryRow(ctx, query, id)
-
 	var t models.ServiceTicket
-	err := row.Scan(
-		&t.ID, &t.TicketNumber, &t.Status, &t.CustomerName, &t.CustomerPhone,
-		&t.DeviceBrand, &t.DeviceModel, &t.DevicePasscode, &t.IssueDescription,
-		&t.RepairAction, &t.Cost, &t.WarrantyDays, &t.Notes, &t.CreatedAt, &t.UpdatedAt,
-	)
+	err := r.db.GetContext(ctx, &t, query, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -149,7 +142,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*models.Servic
 	return &t, nil
 }
 
-func (r *sqlRepository) Update(ctx context.Context, t *models.ServiceTicket) error {
+func (r *sqlCommandRepository) Update(ctx context.Context, t *models.ServiceTicket) error {
 	query := `
 		UPDATE service_tickets
 		SET 
@@ -169,7 +162,8 @@ func (r *sqlRepository) Update(ctx context.Context, t *models.ServiceTicket) err
 		WHERE id = $1 AND deleted_at IS NULL
 		RETURNING updated_at
 	`
-	err := r.db.QueryRow(ctx, query,
+	querier := database.GetQuerier(ctx, r.db)
+	err := querier.QueryRowxContext(ctx, query,
 		t.ID, t.TicketNumber, t.Status, t.CustomerName, t.CustomerPhone,
 		t.DeviceBrand, t.DeviceModel, t.DevicePasscode, t.IssueDescription,
 		t.RepairAction, t.Cost, t.WarrantyDays, t.Notes,
@@ -177,7 +171,7 @@ func (r *sqlRepository) Update(ctx context.Context, t *models.ServiceTicket) err
 	return err
 }
 
-func (r *sqlRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
+func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
 	var selectQuery = `
 		SELECT 
 			id, ticket_number, status, customer_name, customer_phone, 
@@ -237,7 +231,7 @@ func (r *sqlRepository) Search(ctx context.Context, req TicketSearchRequest) ([]
 
 	// Get total count
 	var total int
-	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	err := r.db.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -255,24 +249,10 @@ func (r *sqlRepository) Search(ctx context.Context, req TicketSearchRequest) ([]
 	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, selectQuery, args...)
+	var tickets []models.ServiceTicket
+	err = r.db.SelectContext(ctx, &tickets, selectQuery, args...)
 	if err != nil {
 		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var tickets []models.ServiceTicket
-	for rows.Next() {
-		var t models.ServiceTicket
-		err := rows.Scan(
-			&t.ID, &t.TicketNumber, &t.Status, &t.CustomerName, &t.CustomerPhone,
-			&t.DeviceBrand, &t.DeviceModel, &t.DevicePasscode, &t.IssueDescription,
-			&t.RepairAction, &t.Cost, &t.WarrantyDays, &t.Notes, &t.CreatedAt, &t.UpdatedAt,
-		)
-		if err != nil {
-			return nil, 0, err
-		}
-		tickets = append(tickets, t)
 	}
 
 	return tickets, total, nil

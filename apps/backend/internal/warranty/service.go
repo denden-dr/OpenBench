@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/google/uuid"
 	"log/slog"
@@ -35,11 +36,21 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	queryRepo   QueryRepository
+	commandRepo CommandRepository
+	txManager   database.TxManager
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(
+	queryRepo QueryRepository,
+	commandRepo CommandRepository,
+	txManager database.TxManager,
+) Service {
+	return &service{
+		queryRepo:   queryRepo,
+		commandRepo: commandRepo,
+		txManager:   txManager,
+	}
 }
 
 func (s *service) CreateWarranty(ctx context.Context, ticketID string, warrantyDays int) (*models.Warranty, error) {
@@ -61,7 +72,7 @@ func (s *service) CreateWarranty(ctx context.Context, ticketID string, warrantyD
 		Status:    models.WarrantyStatusActive,
 	}
 
-	if err := s.repo.CreateWarranty(ctx, w); err != nil {
+	if err := s.commandRepo.CreateWarranty(ctx, w); err != nil {
 		return nil, err
 	}
 
@@ -75,7 +86,7 @@ func (s *service) CreateWarranty(ctx context.Context, ticketID string, warrantyD
 }
 
 func (s *service) GetWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
-	w, err := s.repo.FindWarrantyByTicketID(ctx, ticketID)
+	w, err := s.queryRepo.FindWarrantyByTicketID(ctx, ticketID)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +97,7 @@ func (s *service) GetWarrantyByTicketID(ctx context.Context, ticketID string) (*
 	// Dynamic check if warranty has expired
 	if w.Status == models.WarrantyStatusActive && time.Now().After(w.EndDate) {
 		w.Status = models.WarrantyStatusExpired
-		_ = s.repo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
+		_ = s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
 	}
 
 	return w, nil
@@ -109,7 +120,7 @@ func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req Updat
 		return nil, fmt.Errorf("%w: notes/reason is required when voiding a warranty", ErrInvalidInput)
 	}
 
-	w, err := s.repo.FindWarrantyByID(ctx, id)
+	w, err := s.queryRepo.FindWarrantyByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +135,7 @@ func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req Updat
 		notesPtr = w.Notes
 	}
 
-	err = s.repo.UpdateWarrantyStatus(ctx, id, req.Status, notesPtr)
+	err = s.commandRepo.UpdateWarrantyStatus(ctx, id, req.Status, notesPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +145,7 @@ func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req Updat
 		slog.String("status", string(req.Status)),
 	)
 
-	return s.repo.FindWarrantyByID(ctx, id)
+	return s.queryRepo.FindWarrantyByID(ctx, id)
 }
 
 func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*models.Claim, error) {
@@ -142,7 +153,7 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 		return nil, fmt.Errorf("%w: warranty_id and issue_description are required", ErrInvalidInput)
 	}
 
-	w, err := s.repo.FindWarrantyByID(ctx, req.WarrantyID)
+	w, err := s.queryRepo.FindWarrantyByID(ctx, req.WarrantyID)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +164,7 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 	// Check if active
 	if w.Status == models.WarrantyStatusActive && time.Now().After(w.EndDate) {
 		w.Status = models.WarrantyStatusExpired
-		_ = s.repo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
+		_ = s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
 	}
 
 	if w.Status != models.WarrantyStatusActive {
@@ -179,7 +190,7 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 		IssueDescription: req.IssueDescription,
 	}
 
-	if err := s.repo.CreateClaim(ctx, claim); err != nil {
+	if err := s.commandRepo.CreateClaim(ctx, claim); err != nil {
 		return nil, err
 	}
 
@@ -199,11 +210,11 @@ func (s *service) GetClaims(ctx context.Context, status, search string, limit, o
 	if offset < 0 {
 		offset = 0
 	}
-	return s.repo.FindAllClaims(ctx, status, search, limit, offset)
+	return s.queryRepo.FindAllClaims(ctx, status, search, limit, offset)
 }
 
 func (s *service) GetClaimByID(ctx context.Context, id string) (*models.Claim, error) {
-	c, err := s.repo.FindClaimByID(ctx, id)
+	c, err := s.queryRepo.FindClaimByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +238,7 @@ func (s *service) UpdateClaimStatus(ctx context.Context, id string, status model
 		return nil, fmt.Errorf("%w: invalid claim status", ErrInvalidInput)
 	}
 
-	c, err := s.repo.FindClaimByID(ctx, id)
+	c, err := s.queryRepo.FindClaimByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +247,7 @@ func (s *service) UpdateClaimStatus(ctx context.Context, id string, status model
 	}
 
 	c.Status = status
-	if err := s.repo.UpdateClaim(ctx, c); err != nil {
+	if err := s.commandRepo.UpdateClaim(ctx, c); err != nil {
 		return nil, err
 	}
 
@@ -253,7 +264,7 @@ func (s *service) UpdateClaim(ctx context.Context, id string, req UpdateClaimReq
 		return nil, fmt.Errorf("%w: issue_description is required", ErrInvalidInput)
 	}
 
-	c, err := s.repo.FindClaimByID(ctx, id)
+	c, err := s.queryRepo.FindClaimByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +284,7 @@ func (s *service) UpdateClaim(ctx context.Context, id string, req UpdateClaimReq
 		c.Notes = nil
 	}
 
-	if err := s.repo.UpdateClaim(ctx, c); err != nil {
+	if err := s.commandRepo.UpdateClaim(ctx, c); err != nil {
 		return nil, err
 	}
 
@@ -297,7 +308,7 @@ func (s *service) EvaluateClaim(ctx context.Context, claimID string, req Evaluat
 		return nil, fmt.Errorf("%w: notes/reason is required when status is REJECTED or VOID", ErrInvalidInput)
 	}
 
-	c, err := s.repo.FindClaimByID(ctx, claimID)
+	c, err := s.queryRepo.FindClaimByID(ctx, claimID)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +336,22 @@ func (s *service) EvaluateClaim(ctx context.Context, claimID string, req Evaluat
 		warrantyNotes = &wNotes
 	}
 
-	err = s.repo.EvaluateClaimTx(ctx, c.ID, req.Status, notesPtr, repairStatus, isVoidWarranty, c.WarrantyID, warrantyNotes)
+	err = s.txManager.RunInTx(ctx, func(txCtx context.Context) error {
+		// 1. Update claim evaluation
+		err = s.commandRepo.UpdateClaimEvaluation(txCtx, c.ID, repairStatus, req.Status, notesPtr)
+		if err != nil {
+			return err
+		}
+
+		// 2. Void warranty if requested
+		if isVoidWarranty {
+			err = s.commandRepo.UpdateWarrantyStatus(txCtx, c.WarrantyID, models.WarrantyStatusVoid, warrantyNotes)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +362,7 @@ func (s *service) EvaluateClaim(ctx context.Context, claimID string, req Evaluat
 		slog.String("repair_status", string(repairStatus)),
 	)
 
-	return s.repo.FindClaimByID(ctx, claimID)
+	return s.queryRepo.FindClaimByID(ctx, claimID)
 }
 
 // Helpers

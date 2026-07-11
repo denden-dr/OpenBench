@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
 // HealthHandler holds the database pool to perform health checks.
 type HealthHandler struct {
-	db *pgxpool.Pool
+	db *sqlx.DB
 }
 
 // NewHealthHandler initializes the HealthHandler.
-func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
+func NewHealthHandler(db *sqlx.DB) *HealthHandler {
 	return &HealthHandler{db: db}
 }
 
@@ -31,7 +31,7 @@ func (h *HealthHandler) HealthCheckDetail(c fiber.Ctx) error {
 	defer cancel()
 
 	dbStatus := "up"
-	if err := h.db.Ping(ctx); err != nil {
+	if err := h.db.PingContext(ctx); err != nil {
 		dbStatus = "down"
 	}
 

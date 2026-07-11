@@ -2,46 +2,58 @@ package warranty
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
-type Repository interface {
-	CreateWarranty(ctx context.Context, w *models.Warranty) error
+type QueryRepository interface {
 	FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error)
 	FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error)
-	UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error
-
-	CreateClaim(ctx context.Context, c *models.Claim) error
 	FindClaimByID(ctx context.Context, id string) (*models.Claim, error)
 	FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error)
+}
+
+type CommandRepository interface {
+	CreateWarranty(ctx context.Context, w *models.Warranty) error
+	UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error
+	CreateClaim(ctx context.Context, c *models.Claim) error
 	UpdateClaim(ctx context.Context, c *models.Claim) error
-	EvaluateClaimTx(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, repairStatus models.ServiceTicketStatus, isVoidWarranty bool, warrantyID string, warrantyNotes *string) error
+	UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error
 }
 
-type sqlRepository struct {
-	db *pgxpool.Pool
+type sqlQueryRepository struct {
+	db *sqlx.DB
 }
 
-func NewRepository(db *pgxpool.Pool) Repository {
-	return &sqlRepository{db: db}
+type sqlCommandRepository struct {
+	db *sqlx.DB
 }
 
-func (r *sqlRepository) CreateWarranty(ctx context.Context, w *models.Warranty) error {
+func NewQueryRepository(db *sqlx.DB) QueryRepository {
+	return &sqlQueryRepository{db: db}
+}
+
+func NewCommandRepository(db *sqlx.DB) CommandRepository {
+	return &sqlCommandRepository{db: db}
+}
+
+func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.Warranty) error {
 	query := `
 		INSERT INTO warranties (id, ticket_id, start_date, end_date, status, notes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
-	return r.db.QueryRow(ctx, query, w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes).Scan(&w.CreatedAt, &w.UpdatedAt)
+	querier := database.GetQuerier(ctx, r.db)
+	return querier.QueryRowxContext(ctx, query, w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes).Scan(&w.CreatedAt, &w.UpdatedAt)
 }
 
-func (r *sqlRepository) FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error) {
+func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error) {
 	query := `
 		SELECT id, ticket_id, start_date, end_date, status, notes, created_at, updated_at
 		FROM warranties
@@ -49,9 +61,9 @@ func (r *sqlRepository) FindWarrantyByID(ctx context.Context, id string) (*model
 		LIMIT 1
 	`
 	var w models.Warranty
-	err := r.db.QueryRow(ctx, query, id).Scan(&w.ID, &w.TicketID, &w.StartDate, &w.EndDate, &w.Status, &w.Notes, &w.CreatedAt, &w.UpdatedAt)
+	err := r.db.GetContext(ctx, &w, query, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -59,7 +71,7 @@ func (r *sqlRepository) FindWarrantyByID(ctx context.Context, id string) (*model
 	return &w, nil
 }
 
-func (r *sqlRepository) FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
+func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
 	query := `
 		SELECT id, ticket_id, start_date, end_date, status, notes, created_at, updated_at
 		FROM warranties
@@ -67,9 +79,9 @@ func (r *sqlRepository) FindWarrantyByTicketID(ctx context.Context, ticketID str
 		LIMIT 1
 	`
 	var w models.Warranty
-	err := r.db.QueryRow(ctx, query, ticketID).Scan(&w.ID, &w.TicketID, &w.StartDate, &w.EndDate, &w.Status, &w.Notes, &w.CreatedAt, &w.UpdatedAt)
+	err := r.db.GetContext(ctx, &w, query, ticketID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -77,26 +89,28 @@ func (r *sqlRepository) FindWarrantyByTicketID(ctx context.Context, ticketID str
 	return &w, nil
 }
 
-func (r *sqlRepository) UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error {
+func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error {
 	query := `
 		UPDATE warranties
 		SET status = $2, notes = $3, updated_at = NOW()
 		WHERE id = $1
 	`
-	_, err := r.db.Exec(ctx, query, id, status, notes)
+	querier := database.GetQuerier(ctx, r.db)
+	_, err := querier.ExecContext(ctx, query, id, status, notes)
 	return err
 }
 
-func (r *sqlRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
+func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
 	query := `
 		INSERT INTO claims (id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
-	return r.db.QueryRow(ctx, query, c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes).Scan(&c.CreatedAt, &c.UpdatedAt)
+	querier := database.GetQuerier(ctx, r.db)
+	return querier.QueryRowxContext(ctx, query, c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes).Scan(&c.CreatedAt, &c.UpdatedAt)
 }
 
-func (r *sqlRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
+func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
 	query := `
 		SELECT id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at
 		FROM claims
@@ -104,9 +118,9 @@ func (r *sqlRepository) FindClaimByID(ctx context.Context, id string) (*models.C
 		LIMIT 1
 	`
 	var c models.Claim
-	err := r.db.QueryRow(ctx, query, id).Scan(&c.ID, &c.ClaimNumber, &c.WarrantyID, &c.Status, &c.EvaluationStatus, &c.IssueDescription, &c.RepairAction, &c.Notes, &c.EvaluationNotes, &c.CreatedAt, &c.UpdatedAt)
+	err := r.db.GetContext(ctx, &c, query, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -114,7 +128,7 @@ func (r *sqlRepository) FindClaimByID(ctx context.Context, id string) (*models.C
 	return &c, nil
 }
 
-func (r *sqlRepository) FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error) {
+func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error) {
 	var selectQuery = `
 		SELECT id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at
 		FROM claims
@@ -149,7 +163,7 @@ func (r *sqlRepository) FindAllClaims(ctx context.Context, status string, search
 
 	// Get total count
 	var total int
-	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	err := r.db.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -158,29 +172,16 @@ func (r *sqlRepository) FindAllClaims(ctx context.Context, status string, search
 	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, selectQuery, args...)
+	var claims []models.Claim
+	err = r.db.SelectContext(ctx, &claims, selectQuery, args...)
 	if err != nil {
 		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var claims []models.Claim
-	for rows.Next() {
-		var c models.Claim
-		err := rows.Scan(
-			&c.ID, &c.ClaimNumber, &c.WarrantyID, &c.Status, &c.EvaluationStatus, &c.IssueDescription,
-			&c.RepairAction, &c.Notes, &c.EvaluationNotes, &c.CreatedAt, &c.UpdatedAt,
-		)
-		if err != nil {
-			return nil, 0, err
-		}
-		claims = append(claims, c)
 	}
 
 	return claims, total, nil
 }
 
-func (r *sqlRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
+func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
 	query := `
 		UPDATE claims
 		SET 
@@ -192,39 +193,17 @@ func (r *sqlRepository) UpdateClaim(ctx context.Context, c *models.Claim) error 
 		WHERE id = $1
 		RETURNING updated_at
 	`
-	return r.db.QueryRow(ctx, query, c.ID, c.Status, c.IssueDescription, c.RepairAction, c.Notes).Scan(&c.UpdatedAt)
+	querier := database.GetQuerier(ctx, r.db)
+	return querier.QueryRowxContext(ctx, query, c.ID, c.Status, c.IssueDescription, c.RepairAction, c.Notes).Scan(&c.UpdatedAt)
 }
 
-func (r *sqlRepository) EvaluateClaimTx(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, repairStatus models.ServiceTicketStatus, isVoidWarranty bool, warrantyID string, warrantyNotes *string) error {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	// 1. Update claim status, evaluation status and notes
-	queryClaim := `
+func (r *sqlCommandRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
+	query := `
 		UPDATE claims
 		SET status = $2, evaluation_status = $3, evaluation_notes = $4, updated_at = NOW()
 		WHERE id = $1
 	`
-	_, err = tx.Exec(ctx, queryClaim, claimID, repairStatus, evalStatus, evalNotes)
-	if err != nil {
-		return err
-	}
-
-	// 2. If isVoidWarranty is true, update the associated warranty status to VOID and copy notes
-	if isVoidWarranty {
-		queryWarranty := `
-			UPDATE warranties
-			SET status = $2, notes = $3, updated_at = NOW()
-			WHERE id = $1
-		`
-		_, err = tx.Exec(ctx, queryWarranty, warrantyID, models.WarrantyStatusVoid, warrantyNotes)
-		if err != nil {
-			return err
-		}
-	}
-
-	return tx.Commit(ctx)
+	querier := database.GetQuerier(ctx, r.db)
+	_, err := querier.ExecContext(ctx, query, claimID, status, evalStatus, evalNotes)
+	return err
 }

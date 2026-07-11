@@ -47,24 +47,25 @@ func main() {
 	eventBus := events.NewAsyncEventBus(100)
 	defer eventBus.Close()
 
+	// TxManager
+	txManager := database.NewTxManager(db)
+
 	// Wire Auth Layers
-	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, cfg)
+	authQueryRepo := auth.NewQueryRepository(db)
+	authService := auth.NewService(authQueryRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
 
-	// Wire Ticket Layers
-	ticketRepo := ticket.NewRepository(db)
-	ticketService := ticket.NewService(ticketRepo, eventBus, cfg.App.EncryptionKey)
-	ticketHandler := ticket.NewHandler(ticketService)
-
 	// Wire Warranty & Claims Layers
-	warrantyRepo := warranty.NewRepository(db)
-	warrantyService := warranty.NewService(warrantyRepo)
+	warrantyQueryRepo := warranty.NewQueryRepository(db)
+	warrantyCommandRepo := warranty.NewCommandRepository(db)
+	warrantyService := warranty.NewService(warrantyQueryRepo, warrantyCommandRepo, txManager)
 	warrantyHandler := warranty.NewHandler(warrantyService)
-	warrantyEventHandler := warranty.NewEventHandler(warrantyService)
 
-	// Register Domain Event Subscribers
-	eventBus.Subscribe(events.TicketCompletedType, warrantyEventHandler.HandleTicketCompleted)
+	// Wire Ticket Layers
+	ticketQueryRepo := ticket.NewQueryRepository(db)
+	ticketCommandRepo := ticket.NewCommandRepository(db)
+	ticketService := ticket.NewService(ticketQueryRepo, ticketCommandRepo, txManager, warrantyService, eventBus, cfg.App.EncryptionKey)
+	ticketHandler := ticket.NewHandler(ticketService)
 
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{

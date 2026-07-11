@@ -67,9 +67,15 @@ func (m *mockRepository) UpdateClaim(ctx context.Context, c *models.Claim) error
 	return args.Error(0)
 }
 
-func (m *mockRepository) EvaluateClaimTx(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, repairStatus models.ServiceTicketStatus, isVoidWarranty bool, warrantyID string, warrantyNotes *string) error {
-	args := m.Called(ctx, claimID, evalStatus, evalNotes, repairStatus, isVoidWarranty, warrantyID, warrantyNotes)
+func (m *mockRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
+	args := m.Called(ctx, claimID, status, evalStatus, evalNotes)
 	return args.Error(0)
+}
+
+type mockTxManager struct{}
+
+func (m *mockTxManager) RunInTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	return fn(ctx)
 }
 
 func TestService_CreateWarranty(t *testing.T) {
@@ -112,7 +118,7 @@ func TestService_CreateWarranty(t *testing.T) {
 			if tt.expectedErr == nil {
 				repo.On("CreateWarranty", mock.Anything, mock.AnythingOfType("*models.Warranty")).Return(nil)
 			}
-			svc := NewService(repo)
+			svc := NewService(repo, repo, &mockTxManager{})
 
 			res, err := svc.CreateWarranty(context.Background(), tt.ticketID, tt.warrantyDays)
 			if tt.expectedErr != nil {
@@ -189,7 +195,7 @@ func TestService_GetWarrantyByTicketID(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo)
+			svc := NewService(repo, repo, &mockTxManager{})
 
 			res, err := svc.GetWarrantyByTicketID(context.Background(), tt.ticketID)
 			if tt.expectedErr != nil {
@@ -269,7 +275,7 @@ func TestService_CreateClaim(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo)
+			svc := NewService(repo, repo, &mockTxManager{})
 
 			res, err := svc.CreateClaim(context.Background(), tt.req)
 			if tt.expectedErr != nil {
@@ -311,7 +317,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 			},
 			setupMock: func(repo *mockRepository) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("EvaluateClaimTx", mock.Anything, "c-1", models.ClaimEvaluationAccepted, mock.Anything, models.StatusRepairing, false, "w-1", mock.Anything).Return(nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusRepairing, models.ClaimEvaluationAccepted, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -324,7 +330,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 			},
 			setupMock: func(repo *mockRepository) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("EvaluateClaimTx", mock.Anything, "c-1", models.ClaimEvaluationRejected, mock.Anything, models.StatusCancelled, false, "w-1", mock.Anything).Return(nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusCancelled, models.ClaimEvaluationRejected, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -337,7 +343,8 @@ func TestService_EvaluateClaim(t *testing.T) {
 			},
 			setupMock: func(repo *mockRepository) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("EvaluateClaimTx", mock.Anything, "c-1", models.ClaimEvaluationVoid, mock.Anything, models.StatusCancelled, true, "w-1", mock.Anything).Return(nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusCancelled, models.ClaimEvaluationVoid, mock.Anything).Return(nil)
+				repo.On("UpdateWarrantyStatus", mock.Anything, "w-1", models.WarrantyStatusVoid, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -382,7 +389,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo)
+			svc := NewService(repo, repo, &mockTxManager{})
 
 			res, err := svc.EvaluateClaim(context.Background(), tt.claimID, tt.req)
 			if tt.expectedErr != nil {
@@ -455,7 +462,7 @@ func TestService_UpdateWarrantyStatus(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo)
+			svc := NewService(repo, repo, &mockTxManager{})
 
 			res, err := svc.UpdateWarrantyStatus(context.Background(), tt.warrantyID, tt.req)
 			if tt.expectedErr != nil {

@@ -2,44 +2,71 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
+	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
-// NewPostgresDB creates a connection pool to the PostgreSQL database with retry logic.
-func NewPostgresDB(cfg config.DBConfig) (*pgxpool.Pool, error) {
-	configPool, err := pgxpool.ParseConfig(cfg.DSN())
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse connection string: %w", err)
+// slogAdapter implements sqldblogger.Logger interface using standard log/slog.
+type slogAdapter struct{}
+
+func (s *slogAdapter) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
+	attrs := make([]slog.Attr, 0, len(data))
+	for k, v := range data {
+		attrs = append(attrs, slog.Any(k, v))
 	}
 
-	// Apply pool configurations from config
-	configPool.MaxConns = cfg.MaxConns
-	configPool.MinConns = cfg.MinConns
-	configPool.MaxConnLifetime = cfg.MaxConnLifetime
-	configPool.MaxConnIdleTime = cfg.MaxConnIdleTime
-	configPool.ConnConfig.Tracer = &slogQueryTracer{}
+	var slogLevel slog.Level
+	switch level {
+	case sqldblogger.LevelError:
+		slogLevel = slog.LevelError
+	case sqldblogger.LevelInfo:
+		slogLevel = slog.LevelInfo
+	default:
+		slogLevel = slog.LevelDebug
+	}
 
-	var pool *pgxpool.Pool
+	slog.LogAttrs(ctx, slogLevel, msg, attrs...)
+}
+
+// NewPostgresDB creates a connection pool to the PostgreSQL database with retry logic.
+func NewPostgresDB(cfg config.DBConfig) (*sqlx.DB, error) {
+	// First, obtain the raw pgx driver.
+	rawDB, err := sql.Open("pgx", cfg.DSN())
+	if err != nil {
+		return nil, fmt.Errorf("unable to open database connection: %w", err)
+	}
+	driver := rawDB.Driver()
+	rawDB.Close()
+
+	// Wrap the driver with sqldb-logger for query logging.
+	loggerAdapter := &slogAdapter{}
+	wrappedDB := sqldblogger.OpenDriver(cfg.DSN(), driver, loggerAdapter,
+		sqldblogger.WithQueryerLevel(sqldblogger.LevelDebug),
+		sqldblogger.WithExecerLevel(sqldblogger.LevelDebug),
+		sqldblogger.WithPreparerLevel(sqldblogger.LevelDebug),
+	)
+
+	// Apply connection pool configurations.
+	wrappedDB.SetMaxOpenConns(int(cfg.MaxConns))
+	wrappedDB.SetMaxIdleConns(int(cfg.MinConns))
+	wrappedDB.SetConnMaxLifetime(cfg.MaxConnLifetime)
+	wrappedDB.SetConnMaxIdleTime(cfg.MaxConnIdleTime)
+
 	var lastErr error
-
 	for attempt := 0; attempt < cfg.MaxRetries; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		lastErr = wrappedDB.PingContext(ctx)
+		cancel()
 
-		pool, lastErr = pgxpool.NewWithConfig(ctx, configPool)
 		if lastErr == nil {
-			// Try pinging the database to confirm it's ready
-			lastErr = pool.Ping(ctx)
-			if lastErr == nil {
-				cancel()
-				return pool, nil
-			}
-			pool.Close()
+			break
 		}
 
 		// Calculate exponential delay: base * (2^attempt) capped at RetryMaxDelay
@@ -58,33 +85,15 @@ func NewPostgresDB(cfg config.DBConfig) (*pgxpool.Pool, error) {
 			slog.Any("error", lastErr),
 			slog.Duration("retry_delay", delay),
 		)
-		cancel()
 		time.Sleep(delay)
 	}
 
-	return nil, fmt.Errorf("could not connect to database after %d attempts: %w", cfg.MaxRetries, lastErr)
-}
-
-type queryKey string
-
-const queryStartKey queryKey = "query_start_time"
-
-type slogQueryTracer struct{}
-
-func (slogQueryTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	slog.DebugContext(ctx, "SQL Query Start", slog.String("sql", data.SQL), slog.Any("args", data.Args))
-	return context.WithValue(ctx, queryStartKey, time.Now())
-}
-
-func (slogQueryTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
-	duration := time.Duration(0)
-	if startTime, ok := ctx.Value(queryStartKey).(time.Time); ok {
-		duration = time.Since(startTime)
+	if lastErr != nil {
+		wrappedDB.Close()
+		return nil, fmt.Errorf("could not connect to database after %d attempts: %w", cfg.MaxRetries, lastErr)
 	}
 
-	if data.Err != nil {
-		slog.DebugContext(ctx, "SQL Query End with Error", slog.Duration("duration", duration), slog.Any("error", data.Err))
-	} else {
-		slog.DebugContext(ctx, "SQL Query End", slog.Duration("duration", duration))
-	}
+	sqlxDB := sqlx.NewDb(wrappedDB, "pgx")
+	return sqlxDB, nil
 }
+

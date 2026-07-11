@@ -64,6 +64,24 @@ func (m *mockEventBus) Subscribe(eventType events.EventType, handler events.Even
 	m.Called(eventType, handler)
 }
 
+type mockWarrantyGenerator struct {
+	mock.Mock
+}
+
+func (m *mockWarrantyGenerator) CreateWarranty(ctx context.Context, ticketID string, warrantyDays int) (*models.Warranty, error) {
+	args := m.Called(ctx, ticketID, warrantyDays)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.Warranty), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+type mockTxManager struct{}
+
+func (m *mockTxManager) RunInTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	return fn(ctx)
+}
+
 var errDb = errors.New("db connection failure")
 
 func TestService_CreateTicket(t *testing.T) {
@@ -132,6 +150,7 @@ func TestService_CreateTicket(t *testing.T) {
 
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
+			wgen := &mockWarrantyGenerator{}
 			if tt.expectedErr != nil {
 				if tt.mockErr != nil {
 					repo.On("Create", mock.Anything, mock.AnythingOfType("*models.ServiceTicket")).Return(tt.mockErr)
@@ -139,7 +158,7 @@ func TestService_CreateTicket(t *testing.T) {
 			} else {
 				repo.On("Create", mock.Anything, mock.AnythingOfType("*models.ServiceTicket")).Return(nil)
 			}
-			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+			svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.CreateTicket(context.Background(), tt.req)
 			if tt.expectedErr != nil {
@@ -155,30 +174,19 @@ func TestService_CreateTicket(t *testing.T) {
 			}
 			repo.AssertExpectations(t)
 			bus.AssertExpectations(t)
+			wgen.AssertExpectations(t)
 		})
 	}
 }
 
 func TestService_UpdateTicketStatus(t *testing.T) {
-	existingTicketWithoutWarranty := &models.ServiceTicket{
-		ID:           "ticket-1",
-		TicketNumber: "TKT-20260708-ABCD",
-		Status:       models.StatusReceived,
-		WarrantyDays: 0,
-	}
 
-	existingTicketWithWarranty := &models.ServiceTicket{
-		ID:           "ticket-2",
-		TicketNumber: "TKT-20260708-WARR",
-		Status:       models.StatusReceived,
-		WarrantyDays: 30,
-	}
 
 	tests := []struct {
 		name        string
 		ticketID    string
 		req         ChangeStatusRequest
-		setupMock   func(repo *mockRepository, bus *mockEventBus)
+		setupMock   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator)
 		expectedErr error
 		checkStatus models.ServiceTicketStatus
 	}{
@@ -188,8 +196,13 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: models.StatusRepairing,
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
-				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicketWithoutWarranty, nil)
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
+				repo.On("FindByID", mock.Anything, "ticket-1").Return(&models.ServiceTicket{
+					ID:           "ticket-1",
+					TicketNumber: "TKT-20260708-ABCD",
+					Status:       models.StatusReceived,
+					WarrantyDays: 0,
+				}, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.Status == models.StatusRepairing
 				})).Return(nil)
@@ -198,20 +211,22 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			checkStatus: models.StatusRepairing,
 		},
 		{
-			name:     "Success - Change status to COMPLETED with warranty triggers event",
+			name:     "Success - Change status to COMPLETED with warranty triggers synchronous creation",
 			ticketID: "ticket-2",
 			req: ChangeStatusRequest{
 				Status: models.StatusCompleted,
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
-				repo.On("FindByID", mock.Anything, "ticket-2").Return(existingTicketWithWarranty, nil)
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
+				repo.On("FindByID", mock.Anything, "ticket-2").Return(&models.ServiceTicket{
+					ID:           "ticket-2",
+					TicketNumber: "TKT-20260708-WARR",
+					Status:       models.StatusReceived,
+					WarrantyDays: 30,
+				}, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.Status == models.StatusCompleted
 				})).Return(nil)
-				bus.On("Publish", mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
-					compEvt, ok := evt.(events.TicketCompletedEvent)
-					return ok && compEvt.TicketID == "ticket-2" && compEvt.WarrantyDays == 30
-				})).Return(nil)
+				wgen.On("CreateWarranty", mock.Anything, "ticket-2", 30).Return(&models.Warranty{}, nil)
 			},
 			expectedErr: nil,
 			checkStatus: models.StatusCompleted,
@@ -222,10 +237,26 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: models.StatusRepairing,
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
 				repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
 			},
 			expectedErr: ErrTicketNotFound,
+		},
+		{
+			name:     "Failure - Same Status",
+			ticketID: "ticket-1",
+			req: ChangeStatusRequest{
+				Status: models.StatusReceived,
+			},
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
+				repo.On("FindByID", mock.Anything, "ticket-1").Return(&models.ServiceTicket{
+					ID:           "ticket-1",
+					TicketNumber: "TKT-20260708-ABCD",
+					Status:       models.StatusReceived,
+					WarrantyDays: 0,
+				}, nil)
+			},
+			expectedErr: ErrInvalidInput,
 		},
 		{
 			name:     "Failure - Empty Status",
@@ -233,7 +264,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: "",
 			},
-			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -242,7 +273,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			req: ChangeStatusRequest{
 				Status: "INVALID_STATUS",
 			},
-			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {},
 			expectedErr: ErrInvalidInput,
 		},
 	}
@@ -254,8 +285,9 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
-			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+			wgen := &mockWarrantyGenerator{}
+			tt.setupMock(repo, bus, wgen)
+			svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.UpdateTicketStatus(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -268,6 +300,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			}
 			repo.AssertExpectations(t)
 			bus.AssertExpectations(t)
+			wgen.AssertExpectations(t)
 		})
 	}
 }
@@ -286,7 +319,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 		name        string
 		ticketID    string
 		req         UpdateTicketRequest
-		setupMock   func(repo *mockRepository, bus *mockEventBus)
+		setupMock   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator)
 		expectedErr error
 	}{
 		{
@@ -301,7 +334,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				WarrantyDays:     60,
 				Notes:            "LCD Original",
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
 				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicket, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.CustomerName == "Budi Santoso Baru" &&
@@ -322,7 +355,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				CustomerPhone:    "081234567899",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -333,7 +366,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 				CustomerPhone:    "081234567899",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
 				repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
 			},
 			expectedErr: ErrTicketNotFound,
@@ -347,8 +380,9 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
-			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+			wgen := &mockWarrantyGenerator{}
+			tt.setupMock(repo, bus, wgen)
+			svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.UpdateTicketDetails(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -366,6 +400,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 			}
 			repo.AssertExpectations(t)
 			bus.AssertExpectations(t)
+			wgen.AssertExpectations(t)
 		})
 	}
 }
@@ -387,11 +422,11 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 		name        string
 		ticketID    string
 		req         EmergencyUpdateTicketRequest
-		setupMock   func(repo *mockRepository, bus *mockEventBus)
+		setupMock   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator)
 		expectedErr error
 	}{
 		{
-			name:     "Success - Emergency Update status to COMPLETED triggers event",
+			name:     "Success - Emergency Update status to COMPLETED triggers synchronous creation",
 			ticketID: "ticket-1",
 			req: EmergencyUpdateTicketRequest{
 				CustomerName:     "Budi Santoso Baru",
@@ -406,17 +441,14 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 				WarrantyDays:     90,
 				Notes:            "LCD Original Apple",
 			},
-			setupMock: func(repo *mockRepository, bus *mockEventBus) {
+			setupMock: func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {
 				repo.On("FindByID", mock.Anything, "ticket-1").Return(existingTicket, nil)
 				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
 					return t.DeviceBrand == "Apple" &&
 						t.DeviceModel == "iPhone 15 Pro" &&
 						t.Status == models.StatusCompleted
 				})).Return(nil)
-				bus.On("Publish", mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
-					compEvt, ok := evt.(events.TicketCompletedEvent)
-					return ok && compEvt.TicketID == "ticket-1" && compEvt.WarrantyDays == 90
-				})).Return(nil)
+				wgen.On("CreateWarranty", mock.Anything, "ticket-1", 90).Return(&models.Warranty{}, nil)
 			},
 			expectedErr: nil,
 		},
@@ -431,7 +463,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 				Status:           "",
 				IssueDescription: "Layar pecah",
 			},
-			setupMock:   func(repo *mockRepository, bus *mockEventBus) {},
+			setupMock:   func(repo *mockRepository, bus *mockEventBus, wgen *mockWarrantyGenerator) {},
 			expectedErr: ErrInvalidInput,
 		},
 	}
@@ -443,8 +475,9 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
-			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+			wgen := &mockWarrantyGenerator{}
+			tt.setupMock(repo, bus, wgen)
+			svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.EmergencyUpdateTicket(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -459,6 +492,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 			}
 			repo.AssertExpectations(t)
 			bus.AssertExpectations(t)
+			wgen.AssertExpectations(t)
 		})
 	}
 }
@@ -489,8 +523,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		repo.On("FindByID", mock.Anything, "ticket-1").Return(ticket1, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, err := svc.GetTicketByID(context.Background(), "ticket-1")
 		must.NoError(err)
@@ -505,8 +540,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		_, err := svc.GetTicketByID(context.Background(), "non-existent")
 		is.ErrorIs(err, ErrTicketNotFound)
@@ -520,8 +556,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, 0)
 		must.NoError(err)
@@ -538,8 +575,9 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		repo.On("FindAll", mock.Anything, "", "Joko", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.GetTickets(context.Background(), "", "Joko", 10, 0)
 		must.NoError(err)
@@ -568,13 +606,14 @@ func TestService_SearchTickets(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		req := TicketSearchRequest{
 			Search: "Samsung",
 			Limit:  10,
 			Offset: 0,
 		}
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
@@ -590,6 +629,7 @@ func TestService_SearchTickets(t *testing.T) {
 
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
+		wgen := &mockWarrantyGenerator{}
 		isActive := true
 		req := TicketSearchRequest{
 			IsActive: &isActive,
@@ -597,7 +637,7 @@ func TestService_SearchTickets(t *testing.T) {
 			Offset:   0,
 		}
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
-		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
+		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
@@ -616,13 +656,14 @@ func TestService_CreateTicket_Encryption(t *testing.T) {
 
 	repo := &mockRepository{}
 	bus := &mockEventBus{}
+	wgen := &mockWarrantyGenerator{}
 
 	// Verify that the model passed to repo.Create has an encrypted passcode
 	repo.On("Create", mock.Anything, mock.MatchedBy(func(tick *models.ServiceTicket) bool {
 		return tick.DevicePasscode != rawPasscode && len(tick.DevicePasscode) > len(rawPasscode)
 	})).Return(nil)
 
-	svc := NewService(repo, bus, key)
+	svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, key)
 
 	req := CreateTicketRequest{
 		CustomerName:     "Budi Santoso",
@@ -640,4 +681,45 @@ func TestService_CreateTicket_Encryption(t *testing.T) {
 	// Verify that the returned passcode to client is decrypted back to raw
 	is.Equal(rawPasscode, res.DevicePasscode)
 	repo.AssertExpectations(t)
+}
+
+func TestService_UpdateTicketStatus_Rollback(t *testing.T) {
+	is := assert.New(t)
+	must := require.New(t)
+
+	existingTicket := &models.ServiceTicket{
+		ID:           "ticket-rollback",
+		TicketNumber: "TKT-ROLLBACK",
+		Status:       models.StatusReceived,
+		WarrantyDays: 30,
+	}
+
+	repo := &mockRepository{}
+	bus := &mockEventBus{}
+	wgen := &mockWarrantyGenerator{}
+
+	// Mock getting the ticket initially
+	repo.On("FindByID", mock.Anything, "ticket-rollback").Return(existingTicket, nil).Once()
+
+	// Mock the update operation in the transaction (which will be executed first)
+	repo.On("Update", mock.Anything, mock.MatchedBy(func(t *models.ServiceTicket) bool {
+		return t.Status == models.StatusCompleted
+	})).Return(nil)
+
+	// Mock the warranty generation to fail
+	errWarranty := errors.New("warranty generation failed")
+	wgen.On("CreateWarranty", mock.Anything, "ticket-rollback", 30).Return(nil, errWarranty)
+
+	svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
+
+	// Call UpdateTicketStatus
+	res, err := svc.UpdateTicketStatus(context.Background(), "ticket-rollback", ChangeStatusRequest{Status: models.StatusCompleted})
+
+	// Verify that error from CreateWarranty is propagated and res is nil
+	must.Error(err)
+	is.Contains(err.Error(), "failed to create warranty within transaction")
+	is.Nil(res)
+
+	repo.AssertExpectations(t)
+	wgen.AssertExpectations(t)
 }
