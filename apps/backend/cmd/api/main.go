@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,9 +15,12 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/logger"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 )
 
 func main() {
@@ -41,7 +44,8 @@ func main() {
 	slog.Info("Database connection pool established successfully")
 
 	// Initialize Event Bus
-	eventBus := events.NewSyncEventBus()
+	eventBus := events.NewAsyncEventBus(100)
+	defer eventBus.Close()
 
 	// Wire Auth Layers
 	authRepo := auth.NewRepository(db)
@@ -50,7 +54,7 @@ func main() {
 
 	// Wire Ticket Layers
 	ticketRepo := ticket.NewRepository(db)
-	ticketService := ticket.NewService(ticketRepo, eventBus)
+	ticketService := ticket.NewService(ticketRepo, eventBus, cfg.App.EncryptionKey)
 	ticketHandler := ticket.NewHandler(ticketService)
 
 	// Wire Warranty & Claims Layers
@@ -62,13 +66,6 @@ func main() {
 	// Register Domain Event Subscribers
 	eventBus.Subscribe(events.TicketCompletedType, warrantyEventHandler.HandleTicketCompleted)
 
-	// Run Seeder if APP_ENV == development
-	ctxSeed, cancelSeed := context.WithTimeout(context.Background(), 10*time.Second)
-	if err := database.SeedDefaultAdmin(ctxSeed, authRepo, cfg); err != nil {
-		slog.Warn("Failed to seed default admin", "error", err)
-	}
-	cancelSeed()
-
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
 		AppName: cfg.App.AppName,
@@ -77,18 +74,37 @@ func main() {
 	// Register structured logging middleware
 	app.Use(logger.NewMiddleware())
 
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     strings.Split(cfg.App.AllowedOrigins, ","),
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowCredentials: true,
+	}))
+
 	// 4. Register handlers
 	healthHandler := health.NewHealthHandler(db)
-	app.Get("/health", healthHandler.HealthCheck)
+	app.Get("/health", healthHandler.HealthCheckPublic)
+
+	authLimiter := limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c fiber.Ctx) error {
+			return utils.SendProblem(c, fiber.StatusTooManyRequests, "/errors/too-many-requests", "Too Many Requests", "Terlalu banyak percobaan masuk. Silakan coba lagi dalam 1 menit.")
+		},
+	})
 
 	// Auth Public Routes
 	authGroup := app.Group("/api/v1/auth")
-	authGroup.Post("/login", authHandler.Login)
-	authGroup.Post("/refresh", authHandler.Refresh)
+	authGroup.Post("/login", authLimiter, authHandler.Login)
+	authGroup.Post("/refresh", authLimiter, authHandler.Refresh)
 	authGroup.Post("/logout", authHandler.Logout)
 
 	// Protected Admin Routes
-	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg))
+	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg), auth.RequireRole("ADMIN"))
+	adminGroup.Get("/health/detail", healthHandler.HealthCheckDetail)
 	adminGroup.Get("/profile", func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"data": fiber.Map{

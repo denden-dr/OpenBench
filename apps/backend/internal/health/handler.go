@@ -18,8 +18,15 @@ func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
 	return &HealthHandler{db: db}
 }
 
-// HealthCheck verifies the server and database status.
-func (h *HealthHandler) HealthCheck(c fiber.Ctx) error {
+// HealthCheckPublic verifies that the server is running without leaking database status.
+func (h *HealthHandler) HealthCheckPublic(c fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "up",
+	})
+}
+
+// HealthCheckDetail verifies the server and database status in detail.
+func (h *HealthHandler) HealthCheckDetail(c fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 

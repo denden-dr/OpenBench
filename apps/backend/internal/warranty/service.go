@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/google/uuid"
 	"log/slog"
 )
 
@@ -340,27 +341,11 @@ func (s *service) EvaluateClaim(ctx context.Context, claimID string, req Evaluat
 
 // Helpers
 func (s *service) generateWarrantyID() (string, error) {
-	part1, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		return "", err
-	}
-	part2, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("w-%04d-%04d", part1.Int64(), part2.Int64()), nil
+	return uuid.New().String(), nil
 }
 
 func (s *service) generateClaimID() (string, error) {
-	part1, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		return "", err
-	}
-	part2, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("c-%04d-%04d", part1.Int64(), part2.Int64()), nil
+	return uuid.New().String(), nil
 }
 
 func (s *service) generateClaimNumber() (string, error) {
