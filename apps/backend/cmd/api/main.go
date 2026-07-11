@@ -13,6 +13,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/logger"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
 
 	"github.com/gofiber/fiber/v3"
@@ -48,7 +49,7 @@ func main() {
 
 	// Wire Ticket Layers
 	ticketRepo := ticket.NewRepository(db)
-	ticketService := ticket.NewService(ticketRepo, eventBus)
+	ticketService := ticket.NewService(ticketRepo, eventBus, cfg.App.EncryptionKey)
 	ticketHandler := ticket.NewHandler(ticketService)
 
 	// Wire Warranty & Claims Layers

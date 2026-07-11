@@ -139,7 +139,7 @@ func TestService_CreateTicket(t *testing.T) {
 			} else {
 				repo.On("Create", mock.Anything, mock.AnythingOfType("*models.ServiceTicket")).Return(nil)
 			}
-			svc := NewService(repo, bus)
+			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.CreateTicket(context.Background(), tt.req)
 			if tt.expectedErr != nil {
@@ -255,7 +255,7 @@ func TestService_UpdateTicketStatus(t *testing.T) {
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
 			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus)
+			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.UpdateTicketStatus(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -348,7 +348,7 @@ func TestService_UpdateTicketDetails(t *testing.T) {
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
 			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus)
+			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.UpdateTicketDetails(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -444,7 +444,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 			repo := &mockRepository{}
 			bus := &mockEventBus{}
 			tt.setupMock(repo, bus)
-			svc := NewService(repo, bus)
+			svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 			res, err := svc.EmergencyUpdateTicket(context.Background(), tt.ticketID, tt.req)
 			if tt.expectedErr != nil {
@@ -490,7 +490,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		repo.On("FindByID", mock.Anything, "ticket-1").Return(ticket1, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, err := svc.GetTicketByID(context.Background(), "ticket-1")
 		must.NoError(err)
@@ -506,7 +506,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		repo.On("FindByID", mock.Anything, "non-existent").Return(nil, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		_, err := svc.GetTicketByID(context.Background(), "non-existent")
 		is.ErrorIs(err, ErrTicketNotFound)
@@ -521,7 +521,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, 0)
 		must.NoError(err)
@@ -539,7 +539,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		repo.On("FindAll", mock.Anything, "", "Joko", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.GetTickets(context.Background(), "", "Joko", 10, 0)
 		must.NoError(err)
@@ -574,7 +574,7 @@ func TestService_SearchTickets(t *testing.T) {
 			Offset: 0,
 		}
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
@@ -597,7 +597,7 @@ func TestService_SearchTickets(t *testing.T) {
 			Offset:   0,
 		}
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
-		svc := NewService(repo, bus)
+		svc := NewService(repo, bus, "this_is_a_secret_key_32_chars_ok")
 
 		res, total, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
@@ -605,4 +605,39 @@ func TestService_SearchTickets(t *testing.T) {
 		must.Len(res, 1)
 		repo.AssertExpectations(t)
 	})
+}
+
+func TestService_CreateTicket_Encryption(t *testing.T) {
+	is := assert.New(t)
+	must := require.New(t)
+
+	key := "this_is_a_secret_key_32_chars_ok"
+	rawPasscode := "my-secret-passcode-123"
+
+	repo := &mockRepository{}
+	bus := &mockEventBus{}
+
+	// Verify that the model passed to repo.Create has an encrypted passcode
+	repo.On("Create", mock.Anything, mock.MatchedBy(func(tick *models.ServiceTicket) bool {
+		return tick.DevicePasscode != rawPasscode && len(tick.DevicePasscode) > len(rawPasscode)
+	})).Return(nil)
+
+	svc := NewService(repo, bus, key)
+
+	req := CreateTicketRequest{
+		CustomerName:     "Budi Santoso",
+		CustomerPhone:    "081234567890",
+		DeviceBrand:      "Samsung",
+		DeviceModel:      "Galaxy S23",
+		DevicePasscode:   rawPasscode,
+		IssueDescription: "Layar pecah",
+	}
+
+	res, err := svc.CreateTicket(context.Background(), req)
+	must.NoError(err)
+	must.NotNil(res)
+
+	// Verify that the returned passcode to client is decrypted back to raw
+	is.Equal(rawPasscode, res.DevicePasscode)
+	repo.AssertExpectations(t)
 }

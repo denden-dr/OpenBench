@@ -9,6 +9,7 @@ import (
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/google/uuid"
 	"log/slog"
 )
@@ -29,12 +30,13 @@ type Service interface {
 }
 
 type service struct {
-	repo     Repository
-	eventBus events.EventBus
+	repo          Repository
+	eventBus      events.EventBus
+	encryptionKey string
 }
 
-func NewService(repo Repository, eventBus events.EventBus) Service {
-	return &service{repo: repo, eventBus: eventBus}
+func NewService(repo Repository, eventBus events.EventBus, encryptionKey string) Service {
+	return &service{repo: repo, eventBus: eventBus, encryptionKey: encryptionKey}
 }
 
 func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error) {
@@ -47,6 +49,15 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		return nil, err
 	}
 
+	encryptedPasscode := ""
+	if req.DevicePasscode != "" {
+		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt passcode: %w", err)
+		}
+		encryptedPasscode = enc
+	}
+
 	ticket := &models.ServiceTicket{
 		ID:               uuid.New().String(),
 		TicketNumber:     ticketNum,
@@ -55,7 +66,7 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		CustomerPhone:    req.CustomerPhone,
 		DeviceBrand:      req.DeviceBrand,
 		DeviceModel:      req.DeviceModel,
-		DevicePasscode:   req.DevicePasscode,
+		DevicePasscode:   encryptedPasscode,
 		IssueDescription: req.IssueDescription,
 		Cost:             req.Cost,
 		WarrantyDays:     req.WarrantyDays,
@@ -75,6 +86,14 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		slog.String("brand", ticket.DeviceBrand),
 		slog.String("model", ticket.DeviceModel),
 	)
+
+	// Decrypt for client response
+	if ticket.DevicePasscode != "" {
+		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
+		if err == nil {
+			ticket.DevicePasscode = dec
+		}
+	}
 
 	res := MapToTicketResponse(ticket)
 	return &res, nil
@@ -129,6 +148,15 @@ func (s *service) GetTicketByID(ctx context.Context, id string) (*TicketResponse
 	}
 	if ticket == nil {
 		return nil, ErrTicketNotFound
+	}
+
+	if ticket.DevicePasscode != "" {
+		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
+		if err == nil {
+			ticket.DevicePasscode = dec
+		} else {
+			slog.ErrorContext(ctx, "Failed to decrypt device passcode", slog.String("error", err.Error()))
+		}
 	}
 
 	res := MapToTicketResponse(ticket)
@@ -223,6 +251,13 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 		slog.String("ticket_number", ticket.TicketNumber),
 	)
 
+	if ticket.DevicePasscode != "" {
+		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
+		if err == nil {
+			ticket.DevicePasscode = dec
+		}
+	}
+
 	res := MapToTicketResponse(ticket)
 	return &res, nil
 }
@@ -249,11 +284,20 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		return nil, ErrTicketNotFound
 	}
 
+	encryptedPasscode := ""
+	if req.DevicePasscode != "" {
+		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt passcode: %w", err)
+		}
+		encryptedPasscode = enc
+	}
+
 	ticket.CustomerName = req.CustomerName
 	ticket.CustomerPhone = req.CustomerPhone
 	ticket.DeviceBrand = req.DeviceBrand
 	ticket.DeviceModel = req.DeviceModel
-	ticket.DevicePasscode = req.DevicePasscode
+	ticket.DevicePasscode = encryptedPasscode
 	ticket.Status = req.Status
 	ticket.IssueDescription = req.IssueDescription
 	ticket.Cost = req.Cost
@@ -287,6 +331,13 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 			WarrantyDays: ticket.WarrantyDays,
 			CompletedAt:  ticket.UpdatedAt,
 		})
+	}
+
+	if ticket.DevicePasscode != "" {
+		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
+		if err == nil {
+			ticket.DevicePasscode = dec
+		}
 	}
 
 	res := MapToTicketResponse(ticket)
