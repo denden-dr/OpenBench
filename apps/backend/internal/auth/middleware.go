@@ -13,7 +13,7 @@ func RequireAuth(cfg *config.Config) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		accessToken := c.Cookies("access_token")
 		if accessToken == "" {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token tidak ditemukan.")
+			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token is missing.")
 		}
 
 		token, err := jwt.Parse(accessToken, func(t *jwt.Token) (interface{}, error) {
@@ -24,17 +24,17 @@ func RequireAuth(cfg *config.Config) fiber.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token tidak valid atau kedaluwarsa.")
+			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token is invalid or expired.")
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Format token tidak valid.")
+			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Invalid token format.")
 		}
 
 		userID, ok := claims["sub"].(string)
 		if !ok {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "User ID tidak ditemukan dalam token.")
+			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "User ID not found in token.")
 		}
 
 		role, _ := claims["role"].(string)
@@ -50,7 +50,7 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		userRole, ok := c.Locals("userRole").(string)
 		if !ok || userRole == "" {
-			return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Akses ditolak: role tidak valid.")
+			return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Access denied: invalid role.")
 		}
 
 		for _, role := range allowedRoles {
@@ -59,6 +59,6 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 			}
 		}
 
-		return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Akses ditolak: Anda tidak memiliki akses ke resource ini.")
+		return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Access denied: you do not have permission to access this resource.")
 	}
 }

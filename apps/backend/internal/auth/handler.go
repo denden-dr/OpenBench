@@ -23,19 +23,19 @@ func NewHandler(service Service, cfg *config.Config) *Handler {
 func (h *Handler) Login(c fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Format JSON tidak valid.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	if req.Email == "" || req.Password == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Email dan Password wajib diisi.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Email and Password are required.")
 	}
 
 	result, err := h.service.Login(c, req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, ErrInvalidCredentials) {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Email atau Password salah.")
+			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Invalid email or password.")
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Terjadi kesalahan pada server.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "An internal server error occurred.")
 	}
 
 	// Set Access Token Cookie
@@ -68,12 +68,12 @@ func (h *Handler) Login(c fiber.Ctx) error {
 func (h *Handler) Refresh(c fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken == "" {
-		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token tidak ditemukan.")
+		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token is missing.")
 	}
 
 	result, err := h.service.Refresh(c, refreshToken)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token tidak valid atau kedaluwarsa.")
+		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token is invalid or expired.")
 	}
 
 	// Set new Access Token Cookie
