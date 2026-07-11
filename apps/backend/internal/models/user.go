@@ -5,12 +5,12 @@ import (
 )
 
 type User struct {
-	ID           string     `json:"id"`
-	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"`
-	FullName     string     `json:"full_name"`
-	Role         string     `json:"role"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"-"`
+	ID           string     `json:"id" db:"id"`
+	Email        string     `json:"email" db:"email"`
+	PasswordHash string     `json:"-" db:"password_hash"`
+	FullName     string     `json:"full_name" db:"full_name"`
+	Role         string     `json:"role" db:"role"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt    *time.Time `json:"-" db:"deleted_at"`
 }
