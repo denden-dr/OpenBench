@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -19,6 +20,10 @@ var (
 	ErrInvalidInput   = errors.New("invalid input data")
 )
 
+type WarrantyGenerator interface {
+	CreateWarranty(ctx context.Context, ticketID string, warrantyDays int) (*models.Warranty, error)
+}
+
 type Service interface {
 	CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error)
 	GetTickets(ctx context.Context, status, search string, limit, offset int) ([]TicketListResponse, int, error)
@@ -30,13 +35,30 @@ type Service interface {
 }
 
 type service struct {
-	repo          Repository
+	queryRepo     QueryRepository
+	commandRepo   CommandRepository
+	txManager     database.TxManager
+	warrantyGen   WarrantyGenerator
 	eventBus      events.EventBus
 	encryptionKey string
 }
 
-func NewService(repo Repository, eventBus events.EventBus, encryptionKey string) Service {
-	return &service{repo: repo, eventBus: eventBus, encryptionKey: encryptionKey}
+func NewService(
+	queryRepo QueryRepository,
+	commandRepo CommandRepository,
+	txManager database.TxManager,
+	warrantyGen WarrantyGenerator,
+	eventBus events.EventBus,
+	encryptionKey string,
+) Service {
+	return &service{
+		queryRepo:     queryRepo,
+		commandRepo:   commandRepo,
+		txManager:     txManager,
+		warrantyGen:   warrantyGen,
+		eventBus:      eventBus,
+		encryptionKey: encryptionKey,
+	}
 }
 
 func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error) {
@@ -76,7 +98,7 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		ticket.RepairAction = &req.RepairAction
 	}
 
-	if err := s.repo.Create(ctx, ticket); err != nil {
+	if err := s.commandRepo.Create(ctx, ticket); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +129,7 @@ func (s *service) GetTickets(ctx context.Context, status, search string, limit, 
 		offset = 0
 	}
 
-	tickets, total, err := s.repo.FindAll(ctx, status, search, limit, offset)
+	tickets, total, err := s.queryRepo.FindAll(ctx, status, search, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -128,7 +150,7 @@ func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([
 		req.Offset = 0
 	}
 
-	tickets, total, err := s.repo.Search(ctx, req)
+	tickets, total, err := s.queryRepo.Search(ctx, req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -142,7 +164,7 @@ func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([
 }
 
 func (s *service) GetTicketByID(ctx context.Context, id string) (*TicketResponse, error) {
-	ticket, err := s.repo.FindByID(ctx, id)
+	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +199,7 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		return nil, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
 	}
 
-	ticket, err := s.repo.FindByID(ctx, id)
+	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +207,28 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		return nil, ErrTicketNotFound
 	}
 
+	if ticket.Status == req.Status {
+		return nil, fmt.Errorf("%w: ticket is already in %s status", ErrInvalidInput, req.Status)
+	}
+
 	ticket.Status = req.Status
-	if err := s.repo.Update(ctx, ticket); err != nil {
+
+	err = s.txManager.RunInTx(ctx, func(txCtx context.Context) error {
+		if err := s.commandRepo.Update(txCtx, ticket); err != nil {
+			return err
+		}
+
+		switch ticket.Status {
+		case models.StatusCompleted:
+			if err := s.handleTicketCompletion(txCtx, ticket); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -195,14 +237,6 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		slog.String("ticket_number", ticket.TicketNumber),
 		slog.String("status", string(ticket.Status)),
 	)
-
-	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
-		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{
-			TicketID:     ticket.ID,
-			WarrantyDays: ticket.WarrantyDays,
-			CompletedAt:  ticket.UpdatedAt,
-		})
-	}
 
 	return &TicketStatusResponse{
 		TicketID:  ticket.ID,
@@ -216,7 +250,7 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 		return nil, fmt.Errorf("%w: customer name, phone, and issue description are required", ErrInvalidInput)
 	}
 
-	ticket, err := s.repo.FindByID(ctx, id)
+	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +276,7 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 		ticket.Notes = nil
 	}
 
-	if err := s.repo.Update(ctx, ticket); err != nil {
+	if err := s.commandRepo.Update(ctx, ticket); err != nil {
 		return nil, err
 	}
 
@@ -276,7 +310,7 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		return nil, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
 	}
 
-	ticket, err := s.repo.FindByID(ctx, id)
+	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +349,22 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		ticket.Notes = nil
 	}
 
-	if err := s.repo.Update(ctx, ticket); err != nil {
+	err = s.txManager.RunInTx(ctx, func(txCtx context.Context) error {
+		if err := s.commandRepo.Update(txCtx, ticket); err != nil {
+			return err
+		}
+
+		switch ticket.Status {
+		case models.StatusCompleted:
+			if err := s.handleTicketCompletion(txCtx, ticket); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -324,14 +373,6 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		slog.String("ticket_number", ticket.TicketNumber),
 		slog.String("status", string(ticket.Status)),
 	)
-
-	if ticket.Status == models.StatusCompleted && ticket.WarrantyDays > 0 {
-		_ = s.eventBus.Publish(ctx, events.TicketCompletedEvent{
-			TicketID:     ticket.ID,
-			WarrantyDays: ticket.WarrantyDays,
-			CompletedAt:  ticket.UpdatedAt,
-		})
-	}
 
 	if ticket.DevicePasscode != "" {
 		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
@@ -356,3 +397,14 @@ func (s *service) generateTicketNumber() (string, error) {
 	dateStr := time.Now().Format("20060102")
 	return fmt.Sprintf("TKT-%s-%s", dateStr, string(b)), nil
 }
+
+func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.ServiceTicket) error {
+	if ticket.WarrantyDays > 0 {
+		_, err := s.warrantyGen.CreateWarranty(ctx, ticket.ID, ticket.WarrantyDays)
+		if err != nil {
+			return fmt.Errorf("failed to create warranty within transaction: %w", err)
+		}
+	}
+	return nil
+}
+
