@@ -12,15 +12,27 @@ import (
 func TestLoad(t *testing.T) {
 	// Temporarily set env vars
 	os.Setenv("APP_ENV", "testing")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("DB_USER", "postgres")
+	os.Setenv("DB_NAME", "openbench")
 	os.Setenv("DB_PASSWORD", "testpassword")
-	os.Setenv("JWT_ACCESS_SECRET", "test_access_secret")
-	os.Setenv("JWT_REFRESH_SECRET", "test_refresh_secret")
+	os.Setenv("DB_SSLMODE", "disable")
+	os.Setenv("JWT_ACCESS_SECRET", "testing_access_secret_longer_than_32_bytes_1234567890")
+	os.Setenv("JWT_REFRESH_SECRET", "testing_refresh_secret_longer_than_32_bytes_1234567890")
+	os.Setenv("APP_ENCRYPTION_KEY", "this_is_a_secret_key_32_chars_ok")
 
 	defer func() {
 		os.Unsetenv("APP_ENV")
+		os.Unsetenv("DB_HOST")
+		os.Unsetenv("DB_PORT")
+		os.Unsetenv("DB_USER")
+		os.Unsetenv("DB_NAME")
 		os.Unsetenv("DB_PASSWORD")
+		os.Unsetenv("DB_SSLMODE")
 		os.Unsetenv("JWT_ACCESS_SECRET")
 		os.Unsetenv("JWT_REFRESH_SECRET")
+		os.Unsetenv("APP_ENCRYPTION_KEY")
 	}()
 
 	cfg, err := Load()

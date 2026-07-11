@@ -10,9 +10,11 @@ import (
 
 // AppConfig holds core application configurations.
 type AppConfig struct {
-	Env     string `mapstructure:"env"`
-	AppName string `mapstructure:"name"`
-	Port    string `mapstructure:"port"`
+	Env            string `mapstructure:"env"`
+	AppName        string `mapstructure:"name"`
+	Port           string `mapstructure:"port"`
+	AllowedOrigins string `mapstructure:"allowed_origins"`
+	EncryptionKey  string `mapstructure:"encryption_key"`
 }
 
 // Config wraps all application configuration groups.
@@ -50,11 +52,21 @@ func Load() (*Config, error) {
 
 	// Bind environment variables that don't match the mapstructure structure directly
 	_ = v.BindEnv("app.port", "PORT")
+	_ = v.BindEnv("app.allowed_origins", "CORS_ALLOWED_ORIGINS")
+	_ = v.BindEnv("app.encryption_key", "APP_ENCRYPTION_KEY")
+	_ = v.BindEnv("db.host", "DB_HOST")
+	_ = v.BindEnv("db.port", "DB_PORT")
+	_ = v.BindEnv("db.user", "DB_USER")
+	_ = v.BindEnv("db.name", "DB_NAME")
+	_ = v.BindEnv("db.sslmode", "DB_SSLMODE")
 	_ = v.BindEnv("db.password", "DB_PASSWORD")
 	_ = v.BindEnv("auth.access_secret", "JWT_ACCESS_SECRET")
 	_ = v.BindEnv("auth.refresh_secret", "JWT_REFRESH_SECRET")
 	_ = v.BindEnv("auth.access_expiry", "JWT_ACCESS_EXPIRATION")
 	_ = v.BindEnv("auth.refresh_expiry", "JWT_REFRESH_EXPIRATION")
+
+	// Set defaults
+	v.SetDefault("app.allowed_origins", "http://localhost:5173,http://localhost:3000")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -71,6 +83,26 @@ func Load() (*Config, error) {
 	if cfg.App.Port == "" {
 		return nil, fmt.Errorf("app.port (PORT) is required")
 	}
+	if cfg.App.EncryptionKey == "" {
+		return nil, fmt.Errorf("app.encryption_key (APP_ENCRYPTION_KEY) is required")
+	}
+	if len(cfg.App.EncryptionKey) != 32 {
+		return nil, fmt.Errorf("app.encryption_key (APP_ENCRYPTION_KEY) must be exactly 32 characters long")
+	}
+	
+	// DB Validation
+	if cfg.DB.Host == "" {
+		return nil, fmt.Errorf("db.host (DB_HOST) is required")
+	}
+	if cfg.DB.Port == "" {
+		return nil, fmt.Errorf("db.port (DB_PORT) is required")
+	}
+	if cfg.DB.User == "" {
+		return nil, fmt.Errorf("db.user (DB_USER) is required")
+	}
+	if cfg.DB.Name == "" {
+		return nil, fmt.Errorf("db.name (DB_NAME) is required")
+	}
 	if cfg.DB.Password == "" {
 		return nil, fmt.Errorf("db.password (DB_PASSWORD) is required")
 	}
@@ -79,6 +111,22 @@ func Load() (*Config, error) {
 	}
 	if cfg.Auth.RefreshSecret == "" {
 		return nil, fmt.Errorf("auth.refresh_secret (JWT_REFRESH_SECRET) is required")
+	}
+
+	// Validate JWT Access Secret
+	if len(cfg.Auth.AccessSecret) < 32 {
+		return nil, fmt.Errorf("auth.access_secret (JWT_ACCESS_SECRET) must be at least 32 bytes long, got %d", len(cfg.Auth.AccessSecret))
+	}
+	if strings.Contains(cfg.Auth.AccessSecret, "your_super_secret") {
+		return nil, fmt.Errorf("auth.access_secret (JWT_ACCESS_SECRET) cannot use default placeholder value")
+	}
+
+	// Validate JWT Refresh Secret
+	if len(cfg.Auth.RefreshSecret) < 32 {
+		return nil, fmt.Errorf("auth.refresh_secret (JWT_REFRESH_SECRET) must be at least 32 bytes long, got %d", len(cfg.Auth.RefreshSecret))
+	}
+	if strings.Contains(cfg.Auth.RefreshSecret, "your_super_secret") {
+		return nil, fmt.Errorf("auth.refresh_secret (JWT_REFRESH_SECRET) cannot use default placeholder value")
 	}
 
 	return &cfg, nil
