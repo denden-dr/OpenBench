@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/auth"
@@ -61,13 +59,6 @@ func main() {
 
 	// Register Domain Event Subscribers
 	eventBus.Subscribe(events.TicketCompletedType, warrantyEventHandler.HandleTicketCompleted)
-
-	// Run Seeder if APP_ENV == development
-	ctxSeed, cancelSeed := context.WithTimeout(context.Background(), 10*time.Second)
-	if err := database.SeedDefaultAdmin(ctxSeed, authRepo, cfg); err != nil {
-		slog.Warn("Failed to seed default admin", "error", err)
-	}
-	cancelSeed()
 
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
