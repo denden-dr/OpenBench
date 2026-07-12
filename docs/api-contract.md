@@ -448,7 +448,84 @@ Klaim garansi memiliki *lifecycle* (status) yang sama dengan tiket servis regule
 
 ---
 
-## 4. Authentication (Auth)
+## 4. Point of Sale (POS) & Inventori Aksesoris
+
+### A. Inventori Aksesoris (Products)
+Mengelola daftar produk aksesoris dan ketersediaan stoknya secara manual.
+
+* **List Products**: `GET /api/v1/admin/products?search=kabel&limit=10&offset=0`
+* **Detail Product**: `GET /api/v1/admin/products/:id`
+* **Tambah Product**: `POST /api/v1/admin/products`
+  *Payload:*
+  ```json
+  {
+    "name": "Tempered Glass iPhone 15",
+    "price": 75000,
+    "stock": 100
+  }
+  ```
+* **Edit Product**: `PUT /api/v1/admin/products/:id`
+* **Adjust Stock**: `PATCH /api/v1/admin/products/:id/stock`
+  *Payload:*
+  ```json
+  {
+    "quantity_change": -5
+  }
+  ```
+* **Hapus Product**: `DELETE /api/v1/admin/products/:id`
+
+---
+
+### B. Transaksi POS (Checkout)
+Membuat transaksi baru (checkout) untuk penjualan aksesoris. Secara otomatis akan memotong stok produk yang dibeli. Pembayaran mendukung `CASH` atau `QRIS`.
+
+* **URL**: `/api/v1/admin/pos/checkout`
+* **Method**: `POST`
+* **Request Body**:
+```json
+{
+  "payment_method": "CASH",
+  "items": [
+    {
+      "product_id": "p-1234-5678",
+      "quantity": 2
+    }
+  ]
+}
+```
+
+* **Response (201 Created)**:
+```json
+{
+  "data": {
+    "id": "tx-1234-5678",
+    "payment_method": "CASH",
+    "total_amount": 150000,
+    "created_at": "2026-07-12T13:30:00Z",
+    "items": [
+      {
+        "id": "item-abcd",
+        "product_id": "p-1234-5678",
+        "product_name": "Tempered Glass iPhone 15",
+        "quantity": 2,
+        "price": 75000
+      }
+    ]
+  }
+}
+```
+
+---
+
+### C. Riwayat Transaksi POS
+Melihat riwayat transaksi kasir yang telah berhasil dilakukan.
+
+* **List Transactions**: `GET /api/v1/admin/pos/transactions?limit=10&offset=0`
+* **Detail Transaction**: `GET /api/v1/admin/pos/transactions/:id`
+
+---
+
+## 5. Authentication (Auth)
 
 Sistem menggunakan skema JWT (JSON Web Token) dengan strategi *Access Token* dan *Refresh Token*. Token dikembalikan melalui dua jalur: **HTTP-Only Cookies** (wajib untuk akses rute terproteksi) dan **Response Body** (untuk fleksibilitas klien).
 
