@@ -44,6 +44,12 @@
 - **Penerbitan Garansi Otomatis**: Saat tiket selesai dikerjakan (`COMPLETED`), sistem otomatis membuat kontrak garansi yang valid sampai batas hari (`warranty_days`) yang telah disepakati pada saat pembuatan tiket.
 - **Pencatatan Klaim (Claim Ticketing)**: Memproses keluhan garansi ke dalam antrean (entitas) perbaikan khusus `claims` tanpa mencampurkannya dengan alur pendapatan servis reguler (biaya Rp0).
 
+### 4.4. Manajemen Point of Sale (POS) & Inventori Aksesoris
+- Modul penjualan barang yang berdiri sendiri dan terpisah dari manajemen tiket servis. 
+- Berfokus murni pada pengelolaan penjualan aksesoris toko (misal: tempered glass, casing, charger) dengan mekanisme kuantitas stok sederhana (tanpa manajemen Serial Number).
+- Mendukung dua jenis metode pembayaran formalitas untuk pencatatan: `CASH` dan `QRIS`.
+- Menggunakan jaminan konsistensi transaksional (*Atomic Database Transactions*) saat *checkout*, di mana transaksi akan otomatis dibatalkan (*rollback*) jika stok tidak mencukupi untuk mencegah inkonsistensi.
+
 ---
 
 ## 5. Alur Pengguna (User Flow)
@@ -75,6 +81,13 @@
    - Admin mendaftarkan keluhan baru ke sistem sebagai **Klaim Garansi**.
    - Teknisi memproses klaim dengan alur perbaikan standar secara gratis.
 
+5. **Alur Penjualan Aksesoris (POS)**
+   - Pelanggan ingin membeli aksesoris (misal: Tempered Glass).
+   - Admin memasukkan produk-produk ke dalam keranjang (transaksi).
+   - Sistem memvalidasi ketersediaan stok aksesoris.
+   - Pelanggan membayar secara tunai atau QRIS.
+   - Sistem mencatat transaksi dan memotong stok aksesoris.
+
 ## 6. Persyaratan Teknis (Technical Requirements)
 
 - **Backend**: Golang dengan framework Fiber v3 untuk menunjang konkurensi dan respons ultra-cepat.
@@ -88,5 +101,5 @@
 Fitur berikut tidak akan dikerjakan pada rilis awal (MVP) namun dipertimbangkan untuk versi masa depan (v2/v3):
 1. **Notifikasi WhatsApp Otomatis**: Mengirim WA ke pelanggan secara otomatis saat status HP berubah menjadi `DONE`.
 2. **Portal Pengecekan Publik**: Halaman web statis (dengan rute `/api/v1/public/*`) di mana pelanggan bisa melacak progres servis dengan memasukkan nomor nota/tiket.
-3. **Manajemen Inventaris Sparepart**: Memotong stok layar/baterai secara otomatis ketika tiket servis `DONE`.
+3. **Manajemen Inventaris Sparepart**: Memotong stok layar/baterai secara otomatis ketika tiket servis `COMPLETED`. (Berbeda dengan Inventori Aksesoris yang sudah didukung via POS).
 4. **Modul Akuntansi/Keuangan**: Laporan laba rugi, kasir otomatis, cetak struk (thermal printer integration).
