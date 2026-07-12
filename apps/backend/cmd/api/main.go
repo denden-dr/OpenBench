@@ -14,6 +14,8 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/health"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/logger"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/pos"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
@@ -66,6 +68,18 @@ func main() {
 	ticketCommandRepo := ticket.NewCommandRepository(db)
 	ticketService := ticket.NewService(ticketQueryRepo, ticketCommandRepo, txManager, warrantyService, eventBus, cfg.App.EncryptionKey)
 	ticketHandler := ticket.NewHandler(ticketService)
+
+	// Wire Inventory Layers
+	inventoryQueryRepo := inventory.NewQueryRepository(db)
+	inventoryCommandRepo := inventory.NewCommandRepository(db)
+	inventoryService := inventory.NewService(inventoryQueryRepo, inventoryCommandRepo)
+	inventoryHandler := inventory.NewHandler(inventoryService)
+
+	// Wire POS Layers
+	posQueryRepo := pos.NewQueryRepository(db)
+	posCommandRepo := pos.NewCommandRepository(db)
+	posService := pos.NewService(posQueryRepo, posCommandRepo, inventoryQueryRepo, inventoryCommandRepo, txManager)
+	posHandler := pos.NewHandler(posService)
 
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
@@ -138,6 +152,21 @@ func main() {
 	claimGroup.Patch("/:claim_id/status", warrantyHandler.UpdateClaimStatus)
 	claimGroup.Put("/:claim_id", warrantyHandler.UpdateClaim)
 	claimGroup.Post("/:claim_id/evaluate", warrantyHandler.EvaluateClaim)
+
+	// Inventory Routes
+	invGroup := adminGroup.Group("/products")
+	invGroup.Post("/", inventoryHandler.CreateProduct)
+	invGroup.Get("/", inventoryHandler.GetProducts)
+	invGroup.Get("/:id", inventoryHandler.GetProductByID)
+	invGroup.Put("/:id", inventoryHandler.UpdateProduct)
+	invGroup.Patch("/:id/stock", inventoryHandler.AdjustStock)
+	invGroup.Delete("/:id", inventoryHandler.DeleteProduct)
+
+	// POS Routes
+	posGroup := adminGroup.Group("/pos")
+	posGroup.Post("/checkout", posHandler.Checkout)
+	posGroup.Get("/transactions", posHandler.GetTransactions)
+	posGroup.Get("/transactions/:id", posHandler.GetTransactionByID)
 
 	// 5. Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
