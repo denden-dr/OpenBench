@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -14,6 +16,11 @@ type ProblemDetail struct {
 
 func SendProblem(c fiber.Ctx, status int, problemType, title, detail string) error {
 	c.Set("Content-Type", "application/problem+json")
+
+	if strings.HasPrefix(problemType, "/") {
+		problemType = c.BaseURL() + problemType
+	}
+
 	return c.Status(status).JSON(ProblemDetail{
 		Type:     problemType,
 		Title:    title,
