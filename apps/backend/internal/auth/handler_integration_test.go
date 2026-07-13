@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -45,7 +44,7 @@ func TestAuthHandler_Integration(t *testing.T) {
 
 	cmdRepo := auth.NewCommandRepository(db)
 	queryRepo := auth.NewQueryRepository(db)
-	authService := auth.NewService(queryRepo, cfg)
+	authService := auth.NewService(queryRepo, cmdRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
 
 	// Setup App
@@ -192,14 +191,4 @@ func TestAuthHandler_Integration(t *testing.T) {
 		assert.True(t, accessCookie == nil || accessCookie.Value == "" || accessCookie.Expires.Before(time.Now()))
 		assert.True(t, refreshCookie == nil || refreshCookie.Value == "" || refreshCookie.Expires.Before(time.Now()))
 	})
-}
-
-// httptest helpers for cookie inspection or request creation if needed.
-func findCookie(cookies []*http.Cookie, name string) *http.Cookie {
-	for _, c := range cookies {
-		if strings.EqualFold(c.Name, name) {
-			return c
-		}
-	}
-	return nil
 }

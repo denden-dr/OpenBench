@@ -31,6 +31,21 @@ func (m *mockRepository) CreateUser(ctx context.Context, user *models.User) erro
 	return args.Error(0)
 }
 
+func (m *mockRepository) IsTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
+	args := m.Called(ctx, jti)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockRepository) BlacklistToken(ctx context.Context, jti string, expiresAt time.Time) error {
+	args := m.Called(ctx, jti, expiresAt)
+	return args.Error(0)
+}
+
+func (m *mockRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 var errDb = errors.New("db connection failure")
 
 func TestAuthService_Login(t *testing.T) {
@@ -120,7 +135,7 @@ func TestAuthService_Login(t *testing.T) {
 				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(user, nil)
 			}
 
-			svc := NewService(repo, cfg)
+			svc := NewService(repo, repo, cfg)
 
 			result, err := svc.Login(context.Background(), tt.email, tt.password)
 			if tt.expectedErr != nil {
@@ -163,7 +178,7 @@ func TestAuthService_Refresh(t *testing.T) {
 	// We need a real token for refresh tests. We can mock repository to login successfully first.
 	loginRepo := &mockRepository{}
 	loginRepo.On("GetUserByEmail", mock.Anything, "admin@openbench.com").Return(user, nil)
-	svc := NewService(loginRepo, cfg)
+	svc := NewService(loginRepo, loginRepo, cfg)
 
 	loginResult, err := svc.Login(context.Background(), "admin@openbench.com", "secretpassword123")
 	if err != nil {
@@ -213,7 +228,7 @@ func TestAuthService_Refresh(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			testSvc := NewService(repo, cfg)
+			testSvc := NewService(repo, repo, cfg)
 
 			refreshResult, err := testSvc.Refresh(context.Background(), tt.refreshToken)
 			if tt.expectedErr != nil {
