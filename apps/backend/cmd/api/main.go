@@ -54,8 +54,14 @@ func main() {
 
 	// Wire Auth Layers
 	authQueryRepo := auth.NewQueryRepository(db)
-	authService := auth.NewService(authQueryRepo, cfg)
+	authCommandRepo := auth.NewCommandRepository(db)
+	authService := auth.NewService(authQueryRepo, authCommandRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
+
+	// Token Cleanup Worker
+	authCleanupWorker := auth.NewCleanupWorker(authCommandRepo, 24*time.Hour)
+	authCleanupWorker.Start()
+	defer authCleanupWorker.Stop()
 
 	// Wire Warranty & Claims Layers
 	warrantyQueryRepo := warranty.NewQueryRepository(db)
@@ -118,7 +124,7 @@ func main() {
 	authGroup.Post("/logout", authHandler.Logout)
 
 	// Protected Admin Routes
-	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg), auth.RequireRole("ADMIN"))
+	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg, authQueryRepo), auth.RequireRole("ADMIN"))
 	adminGroup.Get("/health/detail", healthHandler.HealthCheckDetail)
 	adminGroup.Get("/profile", func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
