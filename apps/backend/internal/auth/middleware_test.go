@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +23,15 @@ func generateTestToken(secret string, method jwt.SigningMethod, userID string, r
 	return token.SignedString([]byte(secret))
 }
 
+type mockQueryRepo struct{}
+
+func (m *mockQueryRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return nil, nil
+}
+func (m *mockQueryRepo) IsTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
+	return false, nil
+}
+
 func TestRequireAuth(t *testing.T) {
 	secret := "my_test_jwt_access_secret_longer_than_32_bytes_12345"
 	cfg := &config.Config{
@@ -30,7 +41,7 @@ func TestRequireAuth(t *testing.T) {
 	}
 
 	app := fiber.New()
-	app.Use(RequireAuth(cfg))
+	app.Use(RequireAuth(cfg, &mockQueryRepo{}))
 	app.Get("/test", func(c fiber.Ctx) error {
 		userID := c.Locals("userID").(string)
 		userRole := c.Locals("userRole").(string)

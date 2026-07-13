@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func RequireAuth(cfg *config.Config) fiber.Handler {
+func RequireAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		accessToken := c.Cookies("access_token")
 		if accessToken == "" {
@@ -35,6 +35,14 @@ func RequireAuth(cfg *config.Config) fiber.Handler {
 		userID, ok := claims["sub"].(string)
 		if !ok {
 			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "User ID not found in token.")
+		}
+
+		jti, ok := claims["jti"].(string)
+		if ok && jti != "" {
+			isBlacklisted, err := queryRepo.IsTokenBlacklisted(c.Context(), jti)
+			if err != nil || isBlacklisted {
+				return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token has been revoked.")
+			}
 		}
 
 		role, _ := claims["role"].(string)
