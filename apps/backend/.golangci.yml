@@ -1,0 +1,51 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - gosec
+    - bodyclose
+    - sqlclosecheck
+
+linters-settings:
+  govet:
+    shadow: true
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: package-comments
+        disabled: true
+  errcheck:
+    exclude-functions:
+      - (*database/sql.DB).Close
+      - (*github.com/jmoiron/sqlx.DB).Close
+      - (*database/sql.Tx).Rollback
+      - (*github.com/jmoiron/sqlx.Tx).Rollback
+      - (io.Closer).Close
+      - (github.com/testcontainers/testcontainers-go.Container).Terminate
+      - (*github.com/testcontainers/testcontainers-go/modules/postgres.PostgresContainer).Terminate
+  gosec:
+    excludes:
+      - G104 # Ignore G104 (unhandled error) as errcheck covers this with custom exclusions
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Exclude errcheck and gosec from test files and test utilities
+    - path: (_test\.go|db_container\.go)
+      linters:
+        - errcheck
+        - gosec
