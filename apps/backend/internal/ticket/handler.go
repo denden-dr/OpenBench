@@ -20,15 +20,15 @@ func NewHandler(service Service) *Handler {
 func (h *Handler) CreateTicket(c fiber.Ctx) error {
 	var req CreateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	res, err := h.service.CreateTicket(c.Context(), req)
 	if err != nil {
 		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", err.Error())
+			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to create service ticket.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to create service ticket.")
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -58,7 +58,7 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 
 	tickets, total, err := h.service.GetTickets(c.Context(), status, search, limit, offset)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket list.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket list.")
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
@@ -80,12 +80,12 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 func (h *Handler) SearchTickets(c fiber.Ctx) error {
 	var req TicketSearchRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	tickets, total, err := h.service.SearchTickets(c.Context(), req)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to perform ticket search.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to perform ticket search.")
 	}
 
 	limit := req.Limit
@@ -109,15 +109,15 @@ func (h *Handler) SearchTickets(c fiber.Ctx) error {
 func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
 	}
 
 	res, err := h.service.GetTicketByID(c.Context(), ticketID)
 	if err != nil {
 		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "https://openbench.local/errors/not-found", "Not Found", "Service ticket not found.")
+			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket details.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket details.")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -128,23 +128,23 @@ func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
 	}
 
 	var req ChangeStatusRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	res, err := h.service.UpdateTicketStatus(c.Context(), ticketID, req)
 	if err != nil {
 		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "https://openbench.local/errors/not-found", "Not Found", "Service ticket not found.")
+			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
 		}
 		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", err.Error())
+			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to update ticket status.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to update ticket status.")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -155,23 +155,23 @@ func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
 func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
 	}
 
 	var req UpdateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	res, err := h.service.UpdateTicketDetails(c.Context(), ticketID, req)
 	if err != nil {
 		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "https://openbench.local/errors/not-found", "Not Found", "Service ticket not found.")
+			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
 		}
 		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", err.Error())
+			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to update ticket details.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to update ticket details.")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -182,23 +182,23 @@ func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
 func (h *Handler) EmergencyUpdateTicket(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
 	}
 
 	var req EmergencyUpdateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
 	res, err := h.service.EmergencyUpdateTicket(c.Context(), ticketID, req)
 	if err != nil {
 		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "https://openbench.local/errors/not-found", "Not Found", "Service ticket not found.")
+			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
 		}
 		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "https://openbench.local/errors/bad-request", "Bad Request", err.Error())
+			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
 		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "https://openbench.local/errors/internal-server-error", "Internal Server Error", "Failed to perform emergency ticket update.")
+		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to perform emergency ticket update.")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
