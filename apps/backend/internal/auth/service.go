@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"time"
+	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"log/slog"
 )
 
 var (
@@ -21,17 +22,20 @@ var (
 type Service interface {
 	Login(ctx context.Context, email, password string) (*LoginResponse, error)
 	Refresh(ctx context.Context, refreshToken string) (*RefreshResponse, error)
+	Logout(ctx context.Context, accessToken, refreshToken string) error
 }
 
 type service struct {
-	queryRepo QueryRepository
-	cfg       *config.Config
+	queryRepo   QueryRepository
+	commandRepo CommandRepository
+	cfg         *config.Config
 }
 
-func NewService(queryRepo QueryRepository, cfg *config.Config) Service {
+func NewService(queryRepo QueryRepository, commandRepo CommandRepository, cfg *config.Config) Service {
 	return &service{
-		queryRepo: queryRepo,
-		cfg:       cfg,
+		queryRepo:   queryRepo,
+		commandRepo: commandRepo,
+		cfg:         cfg,
 	}
 }
 
@@ -124,11 +128,58 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 	}, nil
 }
 
+func (s *service) Logout(ctx context.Context, accessToken, refreshToken string) error {
+	blacklistToken := func(tokenString string, secret string) {
+		if tokenString == "" {
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		})
+
+		// We still process the claims even if it's expired
+		if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			return
+		}
+
+		jti, ok := claims["jti"].(string)
+		if !ok || jti == "" {
+			return
+		}
+
+		expFloat, ok := claims["exp"].(float64)
+		if !ok {
+			return
+		}
+		
+		expiresAt := time.Unix(int64(expFloat), 0)
+		
+		// If it's already expired, no need to blacklist
+		if time.Now().After(expiresAt) {
+			return
+		}
+
+		_ = s.commandRepo.BlacklistToken(ctx, jti, expiresAt)
+	}
+
+	blacklistToken(accessToken, s.cfg.Auth.AccessSecret)
+	blacklistToken(refreshToken, s.cfg.Auth.RefreshSecret)
+
+	return nil
+}
+
 func (s *service) generateAccessToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   user.ID,
 		"email": user.Email,
 		"role":  user.Role,
+		"jti":   uuid.New().String(),
 		"exp":   time.Now().Add(s.cfg.Auth.AccessExpiry).Unix(),
 		"iat":   time.Now().Unix(),
 	}
@@ -141,6 +192,7 @@ func (s *service) generateRefreshToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   user.ID,
 		"email": user.Email,
+		"jti":   uuid.New().String(),
 		"exp":   time.Now().Add(s.cfg.Auth.RefreshExpiry).Unix(),
 		"iat":   time.Now().Unix(),
 	}

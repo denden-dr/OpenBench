@@ -93,6 +93,11 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 }
 
 func (h *Handler) Logout(c fiber.Ctx) error {
+	accessToken := c.Cookies("access_token")
+	refreshToken := c.Cookies("refresh_token")
+
+	_ = h.service.Logout(c.Context(), accessToken, refreshToken)
+
 	// Clear Access Token Cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "access_token",
