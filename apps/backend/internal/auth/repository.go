@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/jmoiron/sqlx"
@@ -39,14 +40,18 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 }
 
 func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `
-		SELECT id, email, password_hash, full_name, role, created_at, updated_at, deleted_at
-		FROM users
-		WHERE email = $1 AND deleted_at IS NULL
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
+		From("users").
+		Where(squirrel.Eq{"email": email, "deleted_at": nil}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var user models.User
-	err := r.db.GetContext(ctx, &user, query, email)
+	err = r.db.GetContext(ctx, &user, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -57,19 +62,33 @@ func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (
 }
 
 func (r *sqlCommandRepository) CreateUser(ctx context.Context, user *models.User) error {
-	query := `
-		INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("users").
+		Columns("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at").
+		Values(user.ID, user.Email, user.PasswordHash, user.FullName, user.Role, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.FullName, user.Role)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
 
 func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
-	query := `SELECT 1 FROM token_blacklists WHERE jti = $1 LIMIT 1`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("1").
+		From("token_blacklists").
+		Where(squirrel.Eq{"jti": jti}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return false, err
+	}
+
 	var exists int
-	err := r.db.GetContext(ctx, &exists, query, jti)
+	err = r.db.GetContext(ctx, &exists, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
@@ -80,15 +99,31 @@ func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string)
 }
 
 func (r *sqlCommandRepository) BlacklistToken(ctx context.Context, jti string, expiresAt time.Time) error {
-	query := `INSERT INTO token_blacklists (jti, expires_at) VALUES ($1, $2) ON CONFLICT (jti) DO NOTHING`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("token_blacklists").
+		Columns("jti", "expires_at").
+		Values(jti, expiresAt).
+		Suffix("ON CONFLICT (jti) DO NOTHING").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, jti, expiresAt)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
 
 func (r *sqlCommandRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) error {
-	query := `DELETE FROM token_blacklists WHERE expires_at <= NOW()`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Delete("token_blacklists").
+		Where(squirrel.LtOrEq{"expires_at": squirrel.Expr("NOW()")}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
