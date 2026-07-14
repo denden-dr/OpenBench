@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // ServiceTicketStatus represents the current state of a service ticket
 type ServiceTicketStatus string
@@ -13,6 +19,16 @@ const (
 	StatusCompleted           ServiceTicketStatus = "COMPLETED"
 	StatusCancelled           ServiceTicketStatus = "CANCELLED"
 	StatusReturned            ServiceTicketStatus = "RETURNED"
+)
+
+var (
+	ErrMissingCustomerName     = errors.New("customer name is required")
+	ErrMissingCustomerPhone    = errors.New("customer phone is required")
+	ErrMissingDeviceBrand      = errors.New("device brand is required")
+	ErrMissingDeviceModel      = errors.New("device model is required")
+	ErrMissingIssueDescription = errors.New("issue description is required")
+	ErrNegativeCost            = errors.New("cost cannot be negative")
+	ErrNegativeWarrantyDays    = errors.New("warranty days cannot be negative")
 )
 
 type ServiceTicket struct {
@@ -33,3 +49,63 @@ type ServiceTicket struct {
 	UpdatedAt        time.Time           `json:"updated_at" db:"updated_at"`
 	DeletedAt        *time.Time          `json:"-" db:"deleted_at"`
 }
+
+type CreateTicketParams struct {
+	TicketNumber     string
+	CustomerName     string
+	CustomerPhone    string
+	DeviceBrand      string
+	DeviceModel      string
+	DevicePasscode   string
+	IssueDescription string
+	RepairAction     *string
+	Cost             int64
+	WarrantyDays     int
+}
+
+// NewServiceTicket is a factory function that validates invariants and returns a valid ServiceTicket
+func NewServiceTicket(params CreateTicketParams) (*ServiceTicket, error) {
+	customerName := strings.TrimSpace(params.CustomerName)
+	customerPhone := strings.TrimSpace(params.CustomerPhone)
+	deviceBrand := strings.TrimSpace(params.DeviceBrand)
+	deviceModel := strings.TrimSpace(params.DeviceModel)
+	issueDescription := strings.TrimSpace(params.IssueDescription)
+
+	if customerName == "" {
+		return nil, ErrMissingCustomerName
+	}
+	if customerPhone == "" {
+		return nil, ErrMissingCustomerPhone
+	}
+	if deviceBrand == "" {
+		return nil, ErrMissingDeviceBrand
+	}
+	if deviceModel == "" {
+		return nil, ErrMissingDeviceModel
+	}
+	if issueDescription == "" {
+		return nil, ErrMissingIssueDescription
+	}
+	if params.Cost < 0 {
+		return nil, ErrNegativeCost
+	}
+	if params.WarrantyDays < 0 {
+		return nil, ErrNegativeWarrantyDays
+	}
+
+	return &ServiceTicket{
+		ID:               uuid.New().String(),
+		TicketNumber:     params.TicketNumber,
+		Status:           StatusReceived,
+		CustomerName:     customerName,
+		CustomerPhone:    customerPhone,
+		DeviceBrand:      deviceBrand,
+		DeviceModel:      deviceModel,
+		DevicePasscode:   params.DevicePasscode,
+		IssueDescription: issueDescription,
+		RepairAction:     params.RepairAction,
+		Cost:             params.Cost,
+		WarrantyDays:     params.WarrantyDays,
+	}, nil
+}
+
