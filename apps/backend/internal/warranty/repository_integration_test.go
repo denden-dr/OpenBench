@@ -194,16 +194,16 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 		}
 
 		// 1. Filter by Status
-		list, total, err := queryRepo.FindAllClaims(ctx, string(models.StatusReceived), "", 10, 0)
+		list, nextCursor, err := queryRepo.FindAllClaims(ctx, string(models.StatusReceived), "", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "CLM-001", list[0].ClaimNumber)
 
 		// 2. Search query (number/description)
-		list, total, err = queryRepo.FindAllClaims(ctx, "", "crackle", 10, 0)
+		list, nextCursor, err = queryRepo.FindAllClaims(ctx, "", "crackle", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "CLM-002", list[0].ClaimNumber)
 	})

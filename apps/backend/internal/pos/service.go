@@ -8,6 +8,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/google/uuid"
 )
 
@@ -20,7 +21,7 @@ var (
 type Service interface {
 	Checkout(ctx context.Context, req models.CheckoutRequest) (*models.PosTransaction, error)
 	GetTransactionByID(ctx context.Context, id string) (*models.PosTransaction, error)
-	GetTransactions(ctx context.Context, limit, offset int) ([]models.PosTransaction, int, error)
+	GetTransactions(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error)
 }
 
 type service struct {
@@ -136,12 +137,12 @@ func (s *service) GetTransactionByID(ctx context.Context, id string) (*models.Po
 	return t, nil
 }
 
-func (s *service) GetTransactions(ctx context.Context, limit, offset int) ([]models.PosTransaction, int, error) {
+func (s *service) GetTransactions(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if limit > utils.MaxLimit {
+		limit = utils.MaxLimit
 	}
-	return s.posQueryRepo.FindAll(ctx, limit, offset)
+	return s.posQueryRepo.FindAll(ctx, limit, cursor)
 }

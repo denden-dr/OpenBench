@@ -53,7 +53,7 @@ type TicketSearchRequest struct {
 	ExactDate string `json:"exact_date"`
 	IsActive  *bool  `json:"is_active"`
 	Limit     int    `json:"limit"`
-	Offset    int    `json:"offset"`
+	Cursor    string `json:"cursor"`
 }
 
 type TicketResponse struct {
@@ -84,17 +84,6 @@ type TicketListResponse struct {
 	CreatedAt    time.Time                  `json:"created_at"`
 }
 
-type TicketMeta struct {
-	TotalData  int `json:"total_data"`
-	Limit      int `json:"limit"`
-	Offset     int `json:"offset"`
-	TotalPages int `json:"total_pages"`
-}
-
-type TicketListWrapper struct {
-	Data []TicketListResponse `json:"data"`
-	Meta TicketMeta           `json:"meta"`
-}
 
 type TicketStatusResponse struct {
 	TicketID  string                     `json:"ticket_id"`

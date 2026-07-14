@@ -54,12 +54,12 @@ func (m *mockRepository) FindClaimByID(ctx context.Context, id string) (*models.
 	return nil, args.Error(1)
 }
 
-func (m *mockRepository) FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error) {
-	args := m.Called(ctx, status, search, limit, offset)
+func (m *mockRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
+	args := m.Called(ctx, status, search, limit, cursor)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.Claim), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.Claim), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
 func (m *mockRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {

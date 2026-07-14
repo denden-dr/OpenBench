@@ -103,19 +103,19 @@ func TestPosRepository_Integration(t *testing.T) {
 		err = cmdRepo.Create(ctx, tx2)
 		require.NoError(t, err)
 
-		list, total, err := queryRepo.FindAll(ctx, 10, 0)
+		list, nextCursor, err := queryRepo.FindAll(ctx, 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 2, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 2)
 		// Ordered by created_at DESC
 		assert.Equal(t, tx2.ID, list[0].ID)
 		assert.Equal(t, tx1.ID, list[1].ID)
 
-		// Test limit and offset
-		list, total, err = queryRepo.FindAll(ctx, 1, 1)
+		// Test limit and pagination cursor
+		list, nextCursor, err = queryRepo.FindAll(ctx, 1, "")
 		require.NoError(t, err)
-		assert.Equal(t, 2, total)
+		assert.NotEmpty(t, nextCursor)
 		require.Len(t, list, 1)
-		assert.Equal(t, tx1.ID, list[0].ID)
+		assert.Equal(t, tx2.ID, list[0].ID)
 	})
 }

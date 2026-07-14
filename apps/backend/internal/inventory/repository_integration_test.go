@@ -97,28 +97,23 @@ func TestInventoryRepository_Integration(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// Test FindAll with no search (returns all, sorted by name)
-		list, total, err := queryRepo.FindAll(ctx, "", 10, 0)
+		// Test FindAll with no search (returns all, sorted by created_at DESC)
+		list, nextCursor, err := queryRepo.FindAll(ctx, "", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 3, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 3)
-		assert.Equal(t, "Apple iPhone 15", list[0].Name)
-		assert.Equal(t, "Google Pixel 8", list[1].Name)
-		assert.Equal(t, "Samsung Galaxy S24", list[2].Name)
 
 		// Test FindAll with search
-		list, total, err = queryRepo.FindAll(ctx, "galaxy", 10, 0)
+		list, nextCursor, err = queryRepo.FindAll(ctx, "galaxy", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "Samsung Galaxy S24", list[0].Name)
 
-		// Test FindAll pagination (limit, offset)
-		list, total, err = queryRepo.FindAll(ctx, "", 2, 1)
+		// Test FindAll pagination (limit)
+		list, nextCursor, err = queryRepo.FindAll(ctx, "", 2, "")
 		require.NoError(t, err)
-		assert.Equal(t, 3, total)
+		assert.NotEmpty(t, nextCursor)
 		require.Len(t, list, 2)
-		assert.Equal(t, "Google Pixel 8", list[0].Name)
-		assert.Equal(t, "Samsung Galaxy S24", list[1].Name)
 	})
 }

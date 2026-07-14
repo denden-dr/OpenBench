@@ -4,15 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/jmoiron/sqlx"
 )
 
 type QueryRepository interface {
 	FindByID(ctx context.Context, id string) (*models.PosTransaction, error)
-	FindAll(ctx context.Context, limit, offset int) ([]models.PosTransaction, int, error)
+	FindAll(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error)
 }
 
 type CommandRepository interface {
@@ -65,30 +68,45 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 	return &t, nil
 }
 
-func (r *sqlQueryRepository) FindAll(ctx context.Context, limit, offset int) ([]models.PosTransaction, int, error) {
-	var countQuery = `
-		SELECT COUNT(*)
-		FROM pos_transactions
-	`
-	var total int
-	err := r.db.GetContext(ctx, &total, countQuery)
-	if err != nil {
-		return nil, 0, err
-	}
-
+func (r *sqlQueryRepository) FindAll(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error) {
 	var selectQuery = `
 		SELECT id, payment_method, total_amount, created_at
 		FROM pos_transactions
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
 	`
-	var transactions []models.PosTransaction
-	err = r.db.SelectContext(ctx, &transactions, selectQuery, limit, offset)
-	if err != nil {
-		return nil, 0, err
+
+	var conditions []string
+	var args []interface{}
+	argCount := 1
+
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
+			args = append(args, cursorTime, cursorID)
+			argCount += 2
+		}
 	}
 
-	return transactions, total, nil
+	if len(conditions) > 0 {
+		selectQuery += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
+	args = append(args, limit+1)
+
+	var transactions []models.PosTransaction
+	err := r.db.SelectContext(ctx, &transactions, selectQuery, args...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var nextCursor string
+	if len(transactions) > limit {
+		nextCursor = utils.EncodeCursor(transactions[limit].CreatedAt, transactions[limit].ID)
+		transactions = transactions[:limit]
+	}
+
+	return transactions, nextCursor, nil
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, t *models.PosTransaction) error {

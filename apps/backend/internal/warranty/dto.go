@@ -44,17 +44,6 @@ type ClaimListResponse struct {
 	CreatedAt        time.Time                    `json:"created_at"`
 }
 
-type ClaimListWrapper struct {
-	Data []ClaimListResponse `json:"data"`
-	Meta ClaimMeta           `json:"meta"`
-}
-
-type ClaimMeta struct {
-	TotalData  int `json:"total_data"`
-	Limit      int `json:"limit"`
-	Offset     int `json:"offset"`
-	TotalPages int `json:"total_pages"`
-}
 
 type ChangeClaimStatusRequest struct {
 	Status models.ServiceTicketStatus `json:"status"`

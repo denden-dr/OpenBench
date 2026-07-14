@@ -15,6 +15,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/warranty"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -256,17 +257,17 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 	})
 
 	t.Run("Get Claims List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/claims?status=REPAIRING&search=Speaker&limit=10&offset=0", nil)
+		req, err := http.NewRequest("GET", "/claims?status=REPAIRING&search=Speaker&limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var respData warranty.ClaimListWrapper
+		var respData utils.CursorPaginatedResponse[warranty.ClaimListResponse]
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
-		assert.Equal(t, 1, respData.Meta.TotalData)
+		assert.Equal(t, 10, respData.Meta.Limit)
 		require.Len(t, respData.Data, 1)
 		assert.Equal(t, createdClaimID, respData.Data[0].ClaimID)
 	})

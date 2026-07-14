@@ -15,6 +15,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/ticket"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -212,7 +213,7 @@ func TestTicketHandler_Integration(t *testing.T) {
 			Search:   "Google",
 			IsActive: &isActive,
 			Limit:    10,
-			Offset:   0,
+			Cursor:   "",
 		}
 		bodyBytes, _ := json.Marshal(searchReq)
 
@@ -224,27 +225,27 @@ func TestTicketHandler_Integration(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var respData ticket.TicketListWrapper
+		var respData utils.CursorPaginatedResponse[ticket.TicketListResponse]
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
-		assert.Equal(t, 1, respData.Meta.TotalData)
+		assert.Equal(t, 10, respData.Meta.Limit)
 		require.Len(t, respData.Data, 1)
 		assert.Equal(t, createdTicketID, respData.Data[0].TicketID)
 		assert.Equal(t, "John Doe Emergency", respData.Data[0].CustomerName)
 	})
 
 	t.Run("Get Tickets List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/tickets?status=COMPLETED&search=John&limit=10&offset=0", nil)
+		req, err := http.NewRequest("GET", "/tickets?status=COMPLETED&search=John&limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var respData ticket.TicketListWrapper
+		var respData utils.CursorPaginatedResponse[ticket.TicketListResponse]
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
-		assert.Equal(t, 1, respData.Meta.TotalData)
+		assert.Equal(t, 10, respData.Meta.Limit)
 		require.Len(t, respData.Data, 1)
 		assert.Equal(t, createdTicketID, respData.Data[0].TicketID)
 	})

@@ -22,12 +22,12 @@ func (m *mockQueryRepo) FindByID(ctx context.Context, id string) (*models.Produc
 	return nil, args.Error(1)
 }
 
-func (m *mockQueryRepo) FindAll(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error) {
-	args := m.Called(ctx, search, limit, offset)
+func (m *mockQueryRepo) FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
+	args := m.Called(ctx, search, limit, cursor)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.Product), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.Product), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
 type mockCommandRepo struct {

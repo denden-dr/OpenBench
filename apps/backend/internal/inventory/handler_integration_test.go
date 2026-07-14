@@ -154,7 +154,7 @@ func TestInventoryHandler_Integration(t *testing.T) {
 	})
 
 	t.Run("Get Products List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/products?search=iPhone&limit=10&offset=0", nil)
+		req, err := http.NewRequest("GET", "/products?search=iPhone&limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)
@@ -167,12 +167,12 @@ func TestInventoryHandler_Integration(t *testing.T) {
 				Name string `json:"name"`
 			} `json:"data"`
 			Meta struct {
-				TotalData int `json:"total_data"`
+				Limit int `json:"limit"`
 			} `json:"meta"`
 		}
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
-		assert.Equal(t, 1, respData.Meta.TotalData)
+		assert.Equal(t, 10, respData.Meta.Limit)
 		require.Len(t, respData.Data, 1)
 		assert.Equal(t, "iPhone 15 Pro Max", respData.Data[0].Name)
 	})

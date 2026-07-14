@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/google/uuid"
 )
 
@@ -32,7 +33,7 @@ type Service interface {
 	UpdateProduct(ctx context.Context, id string, req UpdateProductRequest) (*models.Product, error)
 	AdjustStock(ctx context.Context, id string, quantityChange int) error
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
-	GetProducts(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error)
+	GetProducts(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error)
 	DeleteProduct(ctx context.Context, id string) error
 }
 
@@ -133,14 +134,14 @@ func (s *service) GetProductByID(ctx context.Context, id string) (*models.Produc
 	return p, nil
 }
 
-func (s *service) GetProducts(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error) {
+func (s *service) GetProducts(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if limit > utils.MaxLimit {
+		limit = utils.MaxLimit
 	}
-	return s.queryRepo.FindAll(ctx, search, limit, offset)
+	return s.queryRepo.FindAll(ctx, search, limit, cursor)
 }
 
 func (s *service) DeleteProduct(ctx context.Context, id string) error {

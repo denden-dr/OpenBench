@@ -2,8 +2,6 @@ package ticket
 
 import (
 	"errors"
-	"math"
-	"strconv"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
@@ -40,41 +38,14 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 	status := c.Query("status")
 	search := c.Query("search")
 
-	limitStr := c.Query("limit")
-	limit := 10
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
-	}
+	limit, cursor := utils.ParseCursorPagination(c)
 
-	offsetStr := c.Query("offset")
-	offset := 0
-	if offsetStr != "" {
-		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
-			offset = o
-		}
-	}
-
-	tickets, total, err := h.service.GetTickets(c.Context(), status, search, limit, offset)
+	tickets, nextCursor, err := h.service.GetTickets(c.Context(), status, search, limit, cursor)
 	if err != nil {
 		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket list.")
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
-	if totalPages == 0 {
-		totalPages = 0
-	}
-
-	return c.Status(fiber.StatusOK).JSON(TicketListWrapper{
-		Data: tickets,
-		Meta: TicketMeta{
-			TotalData:  total,
-			Limit:      limit,
-			Offset:     offset,
-			TotalPages: totalPages,
-		},
-	})
+	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(tickets, limit, nextCursor))
 }
 
 func (h *Handler) SearchTickets(c fiber.Ctx) error {
@@ -83,27 +54,19 @@ func (h *Handler) SearchTickets(c fiber.Ctx) error {
 		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
 	}
 
-	tickets, total, err := h.service.SearchTickets(c.Context(), req)
+	if req.Limit <= 0 {
+		req.Limit = utils.DefaultLimit
+	}
+	if req.Limit > utils.MaxLimit {
+		req.Limit = utils.MaxLimit
+	}
+
+	tickets, nextCursor, err := h.service.SearchTickets(c.Context(), req)
 	if err != nil {
 		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to perform ticket search.")
 	}
 
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
-
-	return c.Status(fiber.StatusOK).JSON(TicketListWrapper{
-		Data: tickets,
-		Meta: TicketMeta{
-			TotalData:  total,
-			Limit:      limit,
-			Offset:     req.Offset,
-			TotalPages: totalPages,
-		},
-	})
+	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(tickets, req.Limit, nextCursor))
 }
 
 func (h *Handler) GetTicketByID(c fiber.Ctx) error {

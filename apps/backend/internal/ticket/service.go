@@ -26,8 +26,8 @@ type WarrantyGenerator interface {
 
 type Service interface {
 	CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error)
-	GetTickets(ctx context.Context, status, search string, limit, offset int) ([]TicketListResponse, int, error)
-	SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, int, error)
+	GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error)
+	SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, string, error)
 	GetTicketByID(ctx context.Context, id string) (*TicketResponse, error)
 	UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (*TicketStatusResponse, error)
 	UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (*TicketResponse, error)
@@ -121,17 +121,17 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 	return &res, nil
 }
 
-func (s *service) GetTickets(ctx context.Context, status, search string, limit, offset int) ([]TicketListResponse, int, error) {
+func (s *service) GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if limit > utils.MaxLimit {
+		limit = utils.MaxLimit
 	}
 
-	tickets, total, err := s.queryRepo.FindAll(ctx, status, search, limit, offset)
+	tickets, nextCursor, err := s.queryRepo.FindAll(ctx, status, search, limit, cursor)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
 	var res []TicketListResponse
@@ -139,20 +139,20 @@ func (s *service) GetTickets(ctx context.Context, status, search string, limit, 
 		res = append(res, MapToTicketListResponse(t))
 	}
 
-	return res, total, nil
+	return res, nextCursor, nil
 }
 
-func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, int, error) {
+func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, string, error) {
 	if req.Limit <= 0 {
 		req.Limit = 10
 	}
-	if req.Offset < 0 {
-		req.Offset = 0
+	if req.Limit > utils.MaxLimit {
+		req.Limit = utils.MaxLimit
 	}
 
-	tickets, total, err := s.queryRepo.Search(ctx, req)
+	tickets, nextCursor, err := s.queryRepo.Search(ctx, req)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
 	var res []TicketListResponse
@@ -160,7 +160,7 @@ func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([
 		res = append(res, MapToTicketListResponse(t))
 	}
 
-	return res, total, nil
+	return res, nextCursor, nil
 }
 
 func (s *service) GetTicketByID(ctx context.Context, id string) (*TicketResponse, error) {
