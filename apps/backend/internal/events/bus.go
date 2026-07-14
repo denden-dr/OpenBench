@@ -86,7 +86,7 @@ func (b *AsyncEventBus) dispatch(ctx context.Context, event Event) {
 			}()
 			if err := handler(ctx, event); err != nil {
 				slog.ErrorContext(ctx, "event handler failed",
-					slog.String("error", err.Error()),
+					slog.Any("error", err),
 					slog.String("event_type", string(event.Type())),
 				)
 			}

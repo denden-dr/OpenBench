@@ -42,10 +42,12 @@ func (w *CleanupWorker) Stop() {
 }
 
 func (w *CleanupWorker) cleanup(ctx context.Context) {
-	err := w.commandRepo.DeleteExpiredBlacklistedTokens(ctx)
+	n, err := w.commandRepo.DeleteExpiredBlacklistedTokens(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to cleanup expired blacklisted tokens", "error", err)
-	} else {
-		slog.DebugContext(ctx, "Expired blacklisted tokens cleaned up successfully")
+		slog.ErrorContext(ctx, "Failed to cleanup expired blacklisted tokens", slog.Any("error", err))
+		return
 	}
+	slog.DebugContext(ctx, "Expired blacklisted tokens cleaned up",
+		slog.Int64("rows_deleted", n),
+	)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
@@ -123,7 +124,19 @@ func (s *service) Checkout(ctx context.Context, req models.CheckoutRequest) (*mo
 		return nil, err
 	}
 
-	return s.GetTransactionByID(ctx, txID)
+	tx, err := s.GetTransactionByID(ctx, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "POS checkout completed",
+		slog.String("transaction_id", tx.ID),
+		slog.String("payment_method", string(tx.PaymentMethod)),
+		slog.Int64("total_amount", tx.TotalAmount),
+		slog.Int("item_count", len(tx.Items)),
+	)
+
+	return tx, nil
 }
 
 func (s *service) GetTransactionByID(ctx context.Context, id string) (*models.PosTransaction, error) {

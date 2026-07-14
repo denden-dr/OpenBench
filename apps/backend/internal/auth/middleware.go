@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -24,6 +25,11 @@ func RequireAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
 		})
 
 		if err != nil || !token.Valid {
+			slog.WarnContext(c.Context(), "Access attempt with invalid token",
+				slog.String("path", c.Path()),
+				slog.String("method", c.Method()),
+				slog.Any("error", err),
+			)
 			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token is invalid or expired.")
 		}
 
@@ -41,6 +47,12 @@ func RequireAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
 		if ok && jti != "" {
 			isBlacklisted, err := queryRepo.IsTokenBlacklisted(c.Context(), jti)
 			if err != nil || isBlacklisted {
+				slog.WarnContext(c.Context(), "Access attempt with revoked token",
+					slog.String("jti", jti),
+					slog.String("path", c.Path()),
+					slog.String("method", c.Method()),
+					slog.Any("error", err),
+				)
 				return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token has been revoked.")
 			}
 		}
@@ -66,6 +78,12 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 				return c.Next()
 			}
 		}
+
+		slog.WarnContext(c.Context(), "Forbidden access attempt",
+			slog.String("user_role", userRole),
+			slog.String("path", c.Path()),
+			slog.String("method", c.Method()),
+		)
 
 		return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Access denied: you do not have permission to access this resource.")
 	}

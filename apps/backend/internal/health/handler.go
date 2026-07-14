@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -33,6 +34,7 @@ func (h *HealthHandler) HealthCheckDetail(c fiber.Ctx) error {
 	dbStatus := "up"
 	if err := h.db.PingContext(ctx); err != nil {
 		dbStatus = "down"
+		slog.ErrorContext(ctx, "Health check: database is unreachable", slog.Any("error", err))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
