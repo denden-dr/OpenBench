@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -45,24 +44,33 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 }
 
 func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.Warranty) error {
-	query := `
-		INSERT INTO warranties (id, ticket_id, start_date, end_date, status, notes, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-		RETURNING created_at, updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("warranties").
+		Columns("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+		Values(w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
+		Suffix("RETURNING created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	return querier.QueryRowxContext(ctx, query, w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes).Scan(&w.CreatedAt, &w.UpdatedAt)
+	return querier.QueryRowxContext(ctx, query, args...).Scan(&w.CreatedAt, &w.UpdatedAt)
 }
 
 func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error) {
-	query := `
-		SELECT id, ticket_id, start_date, end_date, status, notes, created_at, updated_at
-		FROM warranties
-		WHERE id = $1
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+		From("warranties").
+		Where(squirrel.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var w models.Warranty
-	err := r.db.GetContext(ctx, &w, query, id)
+	err = r.db.GetContext(ctx, &w, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -73,14 +81,18 @@ func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*
 }
 
 func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
-	query := `
-		SELECT id, ticket_id, start_date, end_date, status, notes, created_at, updated_at
-		FROM warranties
-		WHERE ticket_id = $1
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+		From("warranties").
+		Where(squirrel.Eq{"ticket_id": ticketID}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var w models.Warranty
-	err := r.db.GetContext(ctx, &w, query, ticketID)
+	err = r.db.GetContext(ctx, &w, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -91,35 +103,50 @@ func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketI
 }
 
 func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error {
-	query := `
-		UPDATE warranties
-		SET status = $2, notes = $3, updated_at = NOW()
-		WHERE id = $1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("warranties").
+		Set("status", status).
+		Set("notes", notes).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, id, status, notes)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
 
 func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
-	query := `
-		INSERT INTO claims (id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-		RETURNING created_at, updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("claims").
+		Columns("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+		Values(c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
+		Suffix("RETURNING created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	return querier.QueryRowxContext(ctx, query, c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes).Scan(&c.CreatedAt, &c.UpdatedAt)
+	return querier.QueryRowxContext(ctx, query, args...).Scan(&c.CreatedAt, &c.UpdatedAt)
 }
 
 func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
-	query := `
-		SELECT id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at
-		FROM claims
-		WHERE id = $1
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+		From("claims").
+		Where(squirrel.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var c models.Claim
-	err := r.db.GetContext(ctx, &c, query, id)
+	err = r.db.GetContext(ctx, &c, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -130,46 +157,38 @@ func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*mod
 }
 
 func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
-	var selectQuery = `
-		SELECT id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at
-		FROM claims
-	`
-
-	var conditions []string
-	var args []interface{}
-	argCount := 1
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+		From("claims")
 
 	if status != "" {
-		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
-		args = append(args, status)
-		argCount++
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"status": status})
 	}
 
 	if search != "" {
 		searchPattern := "%" + search + "%"
-		conditions = append(conditions, fmt.Sprintf("(claim_number ILIKE $%d OR issue_description ILIKE $%d)", argCount, argCount))
-		args = append(args, searchPattern)
-		argCount++
+		queryBuilder = queryBuilder.Where(squirrel.Or{
+			squirrel.Expr("claim_number ILIKE ?", searchPattern),
+			squirrel.Expr("issue_description ILIKE ?", searchPattern),
+		})
 	}
 
 	if cursor != "" {
 		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
 		if err == nil {
-			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
-			args = append(args, cursorTime, cursorID)
-			argCount += 2
+			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
 		}
 	}
 
-	if len(conditions) > 0 {
-		selectQuery += " WHERE " + strings.Join(conditions, " AND ")
+	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, "", err
 	}
 
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
-	args = append(args, limit+1)
-
 	var claims []models.Claim
-	err := r.db.SelectContext(ctx, &claims, selectQuery, args...)
+	err = r.db.SelectContext(ctx, &claims, query, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -184,28 +203,38 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 }
 
 func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
-	query := `
-		UPDATE claims
-		SET 
-			status = $2,
-			issue_description = $3,
-			repair_action = $4,
-			notes = $5,
-			updated_at = NOW()
-		WHERE id = $1
-		RETURNING updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("claims").
+		Set("status", c.Status).
+		Set("issue_description", c.IssueDescription).
+		Set("repair_action", c.RepairAction).
+		Set("notes", c.Notes).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": c.ID}).
+		Suffix("RETURNING updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	return querier.QueryRowxContext(ctx, query, c.ID, c.Status, c.IssueDescription, c.RepairAction, c.Notes).Scan(&c.UpdatedAt)
+	return querier.QueryRowxContext(ctx, query, args...).Scan(&c.UpdatedAt)
 }
 
 func (r *sqlCommandRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
-	query := `
-		UPDATE claims
-		SET status = $2, evaluation_status = $3, evaluation_notes = $4, updated_at = NOW()
-		WHERE id = $1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("claims").
+		Set("status", status).
+		Set("evaluation_status", evalStatus).
+		Set("evaluation_notes", evalNotes).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": claimID}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, claimID, status, evalStatus, evalNotes)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
