@@ -11,6 +11,7 @@ import (
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/google/uuid"
 	"log/slog"
 )
@@ -28,7 +29,7 @@ type Service interface {
 	UpdateWarrantyStatus(ctx context.Context, id string, req UpdateWarrantyStatusRequest) (*models.Warranty, error)
 
 	CreateClaim(ctx context.Context, req CreateClaimRequest) (*models.Claim, error)
-	GetClaims(ctx context.Context, status, search string, limit, offset int) ([]models.Claim, int, error)
+	GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.Claim, string, error)
 	GetClaimByID(ctx context.Context, id string) (*models.Claim, error)
 	UpdateClaimStatus(ctx context.Context, id string, status models.ServiceTicketStatus) (*models.Claim, error)
 	UpdateClaim(ctx context.Context, id string, req UpdateClaimRequest) (*models.Claim, error)
@@ -203,14 +204,14 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 	return claim, nil
 }
 
-func (s *service) GetClaims(ctx context.Context, status, search string, limit, offset int) ([]models.Claim, int, error) {
+func (s *service) GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.Claim, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if limit > utils.MaxLimit {
+		limit = utils.MaxLimit
 	}
-	return s.queryRepo.FindAllClaims(ctx, status, search, limit, offset)
+	return s.queryRepo.FindAllClaims(ctx, status, search, limit, cursor)
 }
 
 func (s *service) GetClaimByID(ctx context.Context, id string) (*models.Claim, error) {

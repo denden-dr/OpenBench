@@ -9,6 +9,7 @@ import (
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,7 +17,7 @@ type QueryRepository interface {
 	FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error)
 	FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error)
 	FindClaimByID(ctx context.Context, id string) (*models.Claim, error)
-	FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error)
+	FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error)
 }
 
 type CommandRepository interface {
@@ -128,13 +129,9 @@ func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*mod
 	return &c, nil
 }
 
-func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit, offset int) ([]models.Claim, int, error) {
+func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
 	var selectQuery = `
 		SELECT id, claim_number, warranty_id, status, evaluation_status, issue_description, repair_action, notes, evaluation_notes, created_at, updated_at
-		FROM claims
-	`
-	var countQuery = `
-		SELECT COUNT(*)
 		FROM claims
 	`
 
@@ -155,30 +152,35 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 		argCount++
 	}
 
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
+			args = append(args, cursorTime, cursorID)
+			argCount += 2
+		}
+	}
+
 	if len(conditions) > 0 {
-		whereClause := " WHERE " + strings.Join(conditions, " AND ")
-		selectQuery += whereClause
-		countQuery += whereClause
+		selectQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Get total count
-	var total int
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Add ordering and pagination to select
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
-	args = append(args, limit, offset)
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
+	args = append(args, limit+1)
 
 	var claims []models.Claim
-	err = r.db.SelectContext(ctx, &claims, selectQuery, args...)
+	err := r.db.SelectContext(ctx, &claims, selectQuery, args...)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
-	return claims, total, nil
+	var nextCursor string
+	if len(claims) > limit {
+		nextCursor = utils.EncodeCursor(claims[limit].CreatedAt, claims[limit].ID)
+		claims = claims[:limit]
+	}
+
+	return claims, nextCursor, nil
 }
 
 func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {

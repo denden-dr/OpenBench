@@ -2,8 +2,6 @@ package warranty
 
 import (
 	"errors"
-	"math"
-	"strconv"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
@@ -65,23 +63,9 @@ func (h *Handler) GetClaims(c fiber.Ctx) error {
 	status := c.Query("status")
 	search := c.Query("search")
 
-	limitStr := c.Query("limit")
-	limit := 10
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
-	}
+	limit, cursor := utils.ParseCursorPagination(c)
 
-	offsetStr := c.Query("offset")
-	offset := 0
-	if offsetStr != "" {
-		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
-			offset = o
-		}
-	}
-
-	claims, total, err := h.service.GetClaims(c.Context(), status, search, limit, offset)
+	claims, nextCursor, err := h.service.GetClaims(c.Context(), status, search, limit, cursor)
 	if err != nil {
 		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve claim list.")
 	}
@@ -91,20 +75,7 @@ func (h *Handler) GetClaims(c fiber.Ctx) error {
 		res = append(res, MapToClaimListResponse(cl))
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
-	if totalPages == 0 {
-		totalPages = 0
-	}
-
-	return c.Status(fiber.StatusOK).JSON(ClaimListWrapper{
-		Data: res,
-		Meta: ClaimMeta{
-			TotalData:  total,
-			Limit:      limit,
-			Offset:     offset,
-			TotalPages: totalPages,
-		},
-	})
+	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(res, limit, nextCursor))
 }
 
 func (h *Handler) GetClaimByID(c fiber.Ctx) error {
