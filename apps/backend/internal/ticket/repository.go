@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -41,72 +40,66 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTicket) error {
-	query := `
-		INSERT INTO service_tickets (
-			id, ticket_number, status, customer_name, customer_phone, 
-			device_brand, device_model, device_passcode, issue_description, 
-			repair_action, cost, warranty_days, notes, created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5, 
-			$6, $7, $8, $9, 
-			$10, $11, $12, $13, NOW(), NOW()
-		)
-		RETURNING created_at, updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("service_tickets").
+		Columns(
+			"id", "ticket_number", "status", "customer_name", "customer_phone",
+			"device_brand", "device_model", "device_passcode", "issue_description",
+			"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
+		).
+		Values(
+			t.ID, t.TicketNumber, t.Status, t.CustomerName, t.CustomerPhone,
+			t.DeviceBrand, t.DeviceModel, t.DevicePasscode, t.IssueDescription,
+			t.RepairAction, t.Cost, t.WarrantyDays, t.Notes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()"),
+		).
+		Suffix("RETURNING created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	err := querier.QueryRowxContext(ctx, query,
-		t.ID, t.TicketNumber, t.Status, t.CustomerName, t.CustomerPhone,
-		t.DeviceBrand, t.DeviceModel, t.DevicePasscode, t.IssueDescription,
-		t.RepairAction, t.Cost, t.WarrantyDays, t.Notes,
-	).Scan(&t.CreatedAt, &t.UpdatedAt)
+	err = querier.QueryRowxContext(ctx, query, args...).Scan(&t.CreatedAt, &t.UpdatedAt)
 	return err
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error) {
-	var selectQuery = `
-		SELECT 
-			id, ticket_number, status, customer_name, customer_phone, 
-			device_brand, device_model, device_passcode, issue_description, 
-			repair_action, cost, warranty_days, notes, created_at, updated_at
-		FROM service_tickets
-		WHERE deleted_at IS NULL
-	`
-
-	var conditions []string
-	var args []interface{}
-	argCount := 1
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := psql.Select(
+		"id", "ticket_number", "status", "customer_name", "customer_phone",
+		"device_brand", "device_model", "device_passcode", "issue_description",
+		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
+	).From("service_tickets").Where(squirrel.Eq{"deleted_at": nil})
 
 	if status != "" {
-		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
-		args = append(args, status)
-		argCount++
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"status": status})
 	}
 
 	if search != "" {
 		searchPattern := "%" + search + "%"
-		conditions = append(conditions, fmt.Sprintf("(ticket_number ILIKE $%d OR customer_name ILIKE $%d OR customer_phone ILIKE $%d)", argCount, argCount, argCount))
-		args = append(args, searchPattern)
-		argCount++
+		queryBuilder = queryBuilder.Where(squirrel.Or{
+			squirrel.Expr("ticket_number ILIKE ?", searchPattern),
+			squirrel.Expr("customer_name ILIKE ?", searchPattern),
+			squirrel.Expr("customer_phone ILIKE ?", searchPattern),
+		})
 	}
 
 	if cursor != "" {
 		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
 		if err == nil {
-			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
-			args = append(args, cursorTime, cursorID)
-			argCount += 2
+			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
 		}
 	}
 
-	if len(conditions) > 0 {
-		selectQuery += " AND " + strings.Join(conditions, " AND ")
+	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, "", err
 	}
 
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
-	args = append(args, limit+1)
-
 	var tickets []models.ServiceTicket
-	err := r.db.SelectContext(ctx, &tickets, selectQuery, args...)
+	err = r.db.SelectContext(ctx, &tickets, query, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -121,17 +114,22 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search 
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
-	query := `
-		SELECT 
-			id, ticket_number, status, customer_name, customer_phone, 
-			device_brand, device_model, device_passcode, issue_description, 
-			repair_action, cost, warranty_days, notes, created_at, updated_at
-		FROM service_tickets
-		WHERE id = $1 AND deleted_at IS NULL
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select(
+		"id", "ticket_number", "status", "customer_name", "customer_phone",
+		"device_brand", "device_model", "device_passcode", "issue_description",
+		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
+	).
+		From("service_tickets").
+		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var t models.ServiceTicket
-	err := r.db.GetContext(ctx, &t, query, id)
+	err = r.db.GetContext(ctx, &t, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -143,93 +141,34 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.S
 }
 
 func (r *sqlCommandRepository) Update(ctx context.Context, t *models.ServiceTicket) error {
-	query := `
-		UPDATE service_tickets
-		SET 
-			ticket_number = $2,
-			status = $3,
-			customer_name = $4,
-			customer_phone = $5,
-			device_brand = $6,
-			device_model = $7,
-			device_passcode = $8,
-			issue_description = $9,
-			repair_action = $10,
-			cost = $11,
-			warranty_days = $12,
-			notes = $13,
-			updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-		RETURNING updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("service_tickets").
+		Set("ticket_number", t.TicketNumber).
+		Set("status", t.Status).
+		Set("customer_name", t.CustomerName).
+		Set("customer_phone", t.CustomerPhone).
+		Set("device_brand", t.DeviceBrand).
+		Set("device_model", t.DeviceModel).
+		Set("device_passcode", t.DevicePasscode).
+		Set("issue_description", t.IssueDescription).
+		Set("repair_action", t.RepairAction).
+		Set("cost", t.Cost).
+		Set("warranty_days", t.WarrantyDays).
+		Set("notes", t.Notes).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": t.ID, "deleted_at": nil}).
+		Suffix("RETURNING updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	err := querier.QueryRowxContext(ctx, query,
-		t.ID, t.TicketNumber, t.Status, t.CustomerName, t.CustomerPhone,
-		t.DeviceBrand, t.DeviceModel, t.DevicePasscode, t.IssueDescription,
-		t.RepairAction, t.Cost, t.WarrantyDays, t.Notes,
-	).Scan(&t.UpdatedAt)
+	err = querier.QueryRowxContext(ctx, query, args...).Scan(&t.UpdatedAt)
 	return err
 }
 
 func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, string, error) {
-	var selectQuery = `
-		SELECT 
-			id, ticket_number, status, customer_name, customer_phone, 
-			device_brand, device_model, device_passcode, issue_description, 
-			repair_action, cost, warranty_days, notes, created_at, updated_at
-		FROM service_tickets
-		WHERE deleted_at IS NULL
-	`
-
-	var conditions []string
-	var args []interface{}
-	argCount := 1
-
-	if req.Search != "" {
-		searchPattern := "%" + req.Search + "%"
-		conditions = append(conditions, fmt.Sprintf("(id::text ILIKE $%d OR ticket_number ILIKE $%d OR customer_name ILIKE $%d OR device_brand ILIKE $%d OR device_model ILIKE $%d)", argCount, argCount, argCount, argCount, argCount))
-		args = append(args, searchPattern)
-		argCount++
-	}
-
-	if req.ExactDate != "" {
-		conditions = append(conditions, fmt.Sprintf("created_at::date = $%d", argCount))
-		args = append(args, req.ExactDate)
-		argCount++
-	} else {
-		if req.StartDate != "" {
-			conditions = append(conditions, fmt.Sprintf("created_at::date >= $%d", argCount))
-			args = append(args, req.StartDate)
-			argCount++
-		}
-		if req.EndDate != "" {
-			conditions = append(conditions, fmt.Sprintf("created_at::date <= $%d", argCount))
-			args = append(args, req.EndDate)
-			argCount++
-		}
-	}
-
-	if req.IsActive != nil {
-		if *req.IsActive {
-			conditions = append(conditions, "status NOT IN ('COMPLETED', 'RETURNED')")
-		} else {
-			conditions = append(conditions, "status IN ('COMPLETED', 'RETURNED')")
-		}
-	}
-
-	if req.Cursor != "" {
-		cursorTime, cursorID, err := utils.DecodeCursor(req.Cursor)
-		if err == nil {
-			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
-			args = append(args, cursorTime, cursorID)
-			argCount += 2
-		}
-	}
-
-	if len(conditions) > 0 {
-		selectQuery += " AND " + strings.Join(conditions, " AND ")
-	}
-
 	limit := req.Limit
 	if limit <= 0 {
 		limit = 10
@@ -238,11 +177,59 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		limit = utils.MaxLimit
 	}
 
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
-	args = append(args, limit+1)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := psql.Select(
+		"id", "ticket_number", "status", "customer_name", "customer_phone",
+		"device_brand", "device_model", "device_passcode", "issue_description",
+		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
+	).From("service_tickets").Where(squirrel.Eq{"deleted_at": nil})
+
+	if req.Search != "" {
+		searchPattern := "%" + req.Search + "%"
+		queryBuilder = queryBuilder.Where(squirrel.Or{
+			squirrel.Expr("id::text ILIKE ?", searchPattern),
+			squirrel.Expr("ticket_number ILIKE ?", searchPattern),
+			squirrel.Expr("customer_name ILIKE ?", searchPattern),
+			squirrel.Expr("device_brand ILIKE ?", searchPattern),
+			squirrel.Expr("device_model ILIKE ?", searchPattern),
+		})
+	}
+
+	if req.ExactDate != "" {
+		queryBuilder = queryBuilder.Where("created_at::date = ?", req.ExactDate)
+	} else {
+		if req.StartDate != "" {
+			queryBuilder = queryBuilder.Where("created_at::date >= ?", req.StartDate)
+		}
+		if req.EndDate != "" {
+			queryBuilder = queryBuilder.Where("created_at::date <= ?", req.EndDate)
+		}
+	}
+
+	if req.IsActive != nil {
+		if *req.IsActive {
+			queryBuilder = queryBuilder.Where("status NOT IN ('COMPLETED', 'RETURNED')")
+		} else {
+			queryBuilder = queryBuilder.Where("status IN ('COMPLETED', 'RETURNED')")
+		}
+	}
+
+	if req.Cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(req.Cursor)
+		if err == nil {
+			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
+		}
+	}
+
+	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, "", err
+	}
 
 	var tickets []models.ServiceTicket
-	err := r.db.SelectContext(ctx, &tickets, selectQuery, args...)
+	err = r.db.SelectContext(ctx, &tickets, query, args...)
 	if err != nil {
 		return nil, "", err
 	}
