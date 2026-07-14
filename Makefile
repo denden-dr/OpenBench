@@ -10,10 +10,10 @@ down:
 	podman compose down
 
 run:
-	cd apps/backend && go run cmd/api/main.go
+	cd apps/backend && go run ./cmd/api
 
 seed:
-	cd apps/backend && go run cmd/seed/main.go
+	cd apps/backend && go run ./cmd/seed
 
 mod-tidy:
 	cd apps/backend && go mod tidy
