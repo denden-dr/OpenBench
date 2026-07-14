@@ -9,12 +9,13 @@ import (
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/jmoiron/sqlx"
 )
 
 type QueryRepository interface {
-	FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error)
-	Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error)
+	FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error)
+	Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, string, error)
 	FindByID(ctx context.Context, id string) (*models.ServiceTicket, error)
 }
 
@@ -61,18 +62,12 @@ func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTick
 	return err
 }
 
-func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error) {
+func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error) {
 	var selectQuery = `
 		SELECT 
 			id, ticket_number, status, customer_name, customer_phone, 
 			device_brand, device_model, device_passcode, issue_description, 
 			repair_action, cost, warranty_days, notes, created_at, updated_at
-		FROM service_tickets
-		WHERE deleted_at IS NULL
-	`
-
-	var countQuery = `
-		SELECT COUNT(*)
 		FROM service_tickets
 		WHERE deleted_at IS NULL
 	`
@@ -94,30 +89,35 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search 
 		argCount++
 	}
 
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
+			args = append(args, cursorTime, cursorID)
+			argCount += 2
+		}
+	}
+
 	if len(conditions) > 0 {
-		whereClause := " AND " + strings.Join(conditions, " AND ")
-		selectQuery += whereClause
-		countQuery += whereClause
+		selectQuery += " AND " + strings.Join(conditions, " AND ")
 	}
 
-	// Get total count
-	var total int
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Add ordering and pagination to select
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
-	args = append(args, limit, offset)
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
+	args = append(args, limit+1)
 
 	var tickets []models.ServiceTicket
-	err = r.db.SelectContext(ctx, &tickets, selectQuery, args...)
+	err := r.db.SelectContext(ctx, &tickets, selectQuery, args...)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
-	return tickets, total, nil
+	var nextCursor string
+	if len(tickets) > limit {
+		nextCursor = utils.EncodeCursor(tickets[limit].CreatedAt, tickets[limit].ID)
+		tickets = tickets[:limit]
+	}
+
+	return tickets, nextCursor, nil
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
@@ -171,18 +171,12 @@ func (r *sqlCommandRepository) Update(ctx context.Context, t *models.ServiceTick
 	return err
 }
 
-func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
+func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, string, error) {
 	var selectQuery = `
 		SELECT 
 			id, ticket_number, status, customer_name, customer_phone, 
 			device_brand, device_model, device_passcode, issue_description, 
 			repair_action, cost, warranty_days, notes, created_at, updated_at
-		FROM service_tickets
-		WHERE deleted_at IS NULL
-	`
-
-	var countQuery = `
-		SELECT COUNT(*)
 		FROM service_tickets
 		WHERE deleted_at IS NULL
 	`
@@ -223,37 +217,41 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		}
 	}
 
-	if len(conditions) > 0 {
-		whereClause := " AND " + strings.Join(conditions, " AND ")
-		selectQuery += whereClause
-		countQuery += whereClause
+	if req.Cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(req.Cursor)
+		if err == nil {
+			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
+			args = append(args, cursorTime, cursorID)
+			argCount += 2
+		}
 	}
 
-	// Get total count
-	var total int
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
-	if err != nil {
-		return nil, 0, err
+	if len(conditions) > 0 {
+		selectQuery += " AND " + strings.Join(conditions, " AND ")
 	}
 
 	limit := req.Limit
 	if limit <= 0 {
 		limit = 10
 	}
-	offset := req.Offset
-	if offset < 0 {
-		offset = 0
+	if limit > utils.MaxLimit {
+		limit = utils.MaxLimit
 	}
 
-	// Add ordering and pagination to select
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
-	args = append(args, limit, offset)
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
+	args = append(args, limit+1)
 
 	var tickets []models.ServiceTicket
-	err = r.db.SelectContext(ctx, &tickets, selectQuery, args...)
+	err := r.db.SelectContext(ctx, &tickets, selectQuery, args...)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
-	return tickets, total, nil
+	var nextCursor string
+	if len(tickets) > limit {
+		nextCursor = utils.EncodeCursor(tickets[limit].CreatedAt, tickets[limit].ID)
+		tickets = tickets[:limit]
+	}
+
+	return tickets, nextCursor, nil
 }

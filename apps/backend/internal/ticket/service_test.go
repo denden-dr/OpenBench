@@ -22,20 +22,20 @@ func (m *mockRepository) Create(ctx context.Context, t *models.ServiceTicket) er
 	return args.Error(0)
 }
 
-func (m *mockRepository) FindAll(ctx context.Context, status string, search string, limit, offset int) ([]models.ServiceTicket, int, error) {
-	args := m.Called(ctx, status, search, limit, offset)
+func (m *mockRepository) FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error) {
+	args := m.Called(ctx, status, search, limit, cursor)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.ServiceTicket), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.ServiceTicket), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
-func (m *mockRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, int, error) {
+func (m *mockRepository) Search(ctx context.Context, req TicketSearchRequest) ([]models.ServiceTicket, string, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.ServiceTicket), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.ServiceTicket), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
 func (m *mockRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
@@ -557,12 +557,12 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		wgen := &mockWarrantyGenerator{}
-		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
+		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, "").Return([]models.ServiceTicket{*ticket2}, "next-cursor-123", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, total, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, 0)
+		res, nextCursor, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, "")
 		must.NoError(err)
-		is.Equal(1, total)
+		is.Equal("next-cursor-123", nextCursor)
 		must.Len(res, 1)
 		is.Equal("ticket-2", res[0].TicketID)
 		repo.AssertExpectations(t)
@@ -576,12 +576,12 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo := &mockRepository{}
 		bus := &mockEventBus{}
 		wgen := &mockWarrantyGenerator{}
-		repo.On("FindAll", mock.Anything, "", "Joko", 10, 0).Return([]models.ServiceTicket{*ticket2}, 1, nil)
+		repo.On("FindAll", mock.Anything, "", "Joko", 10, "").Return([]models.ServiceTicket{*ticket2}, "", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, total, err := svc.GetTickets(context.Background(), "", "Joko", 10, 0)
+		res, nextCursor, err := svc.GetTickets(context.Background(), "", "Joko", 10, "")
 		must.NoError(err)
-		is.Equal(1, total)
+		is.Empty(nextCursor)
 		must.Len(res, 1)
 		is.Equal("Joko Widodo", res[0].CustomerName)
 		repo.AssertExpectations(t)
@@ -610,14 +610,14 @@ func TestService_SearchTickets(t *testing.T) {
 		req := TicketSearchRequest{
 			Search: "Samsung",
 			Limit:  10,
-			Offset: 0,
+			Cursor: "",
 		}
-		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
+		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, "next-cursor-456", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, total, err := svc.SearchTickets(context.Background(), req)
+		res, nextCursor, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
-		is.Equal(1, total)
+		is.Equal("next-cursor-456", nextCursor)
 		must.Len(res, 1)
 		is.Equal("Samsung", res[0].DeviceBrand)
 		repo.AssertExpectations(t)
@@ -634,14 +634,14 @@ func TestService_SearchTickets(t *testing.T) {
 		req := TicketSearchRequest{
 			IsActive: &isActive,
 			Limit:    10,
-			Offset:   0,
+			Cursor:   "",
 		}
-		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, 1, nil)
+		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, "", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, total, err := svc.SearchTickets(context.Background(), req)
+		res, nextCursor, err := svc.SearchTickets(context.Background(), req)
 		must.NoError(err)
-		is.Equal(1, total)
+		is.Empty(nextCursor)
 		must.Len(res, 1)
 		repo.AssertExpectations(t)
 	})

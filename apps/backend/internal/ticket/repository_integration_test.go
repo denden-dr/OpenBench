@@ -137,16 +137,16 @@ func TestTicketRepository_Integration(t *testing.T) {
 		}
 
 		// 1. FindAll - Filter by Status
-		list, total, err := queryRepo.FindAll(ctx, string(models.StatusReceived), "", 10, 0)
+		list, nextCursor, err := queryRepo.FindAll(ctx, string(models.StatusReceived), "", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "TKT-001", list[0].TicketNumber)
 
 		// 2. FindAll - Search query (name/phone/number)
-		list, total, err = queryRepo.FindAll(ctx, "", "Budi", 10, 0)
+		list, nextCursor, err = queryRepo.FindAll(ctx, "", "Budi", 10, "")
 		require.NoError(t, err)
-		assert.Equal(t, 2, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 2)
 
 		// 3. Search - Active flag (IsActive true means NOT IN 'COMPLETED', 'RETURNED')
@@ -154,19 +154,19 @@ func TestTicketRepository_Integration(t *testing.T) {
 		searchReq := ticket.TicketSearchRequest{
 			IsActive: &isActive,
 			Limit:    10,
-			Offset:   0,
+			Cursor:   "",
 		}
-		list, total, err = queryRepo.Search(ctx, searchReq)
+		list, nextCursor, err = queryRepo.Search(ctx, searchReq)
 		require.NoError(t, err)
-		assert.Equal(t, 2, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 2)
 
 		// 4. Search - Inactive flag (IsActive false means IN 'COMPLETED', 'RETURNED')
 		isNotActive := false
 		searchReq.IsActive = &isNotActive
-		list, total, err = queryRepo.Search(ctx, searchReq)
+		list, nextCursor, err = queryRepo.Search(ctx, searchReq)
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "TKT-003", list[0].TicketNumber)
 
@@ -174,9 +174,9 @@ func TestTicketRepository_Integration(t *testing.T) {
 		isActive = true
 		searchReq.IsActive = &isActive
 		searchReq.Search = "MacBook"
-		list, total, err = queryRepo.Search(ctx, searchReq)
+		list, nextCursor, err = queryRepo.Search(ctx, searchReq)
 		require.NoError(t, err)
-		assert.Equal(t, 1, total)
+		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)
 		assert.Equal(t, "TKT-002", list[0].TicketNumber)
 	})
