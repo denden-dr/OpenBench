@@ -93,8 +93,8 @@ Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencaria
 * **Query Parameters**:
   * `status`: Filter status servis (`RECEIVED`, `REPAIRING`, `PENDING_CONFIRMATION`, `FIXED`, `COMPLETED`, `CANCELLED`, `RETURNED`). *Opsional*.
   * `search`: Pencarian nama pelanggan, nomor HP, nomor tiket, merk HP, atau model HP. *Opsional*.
-  * `limit`: Jumlah data per halaman. *Opsional, default 10*.
-  * `offset`: Offset halaman. *Opsional, default 0*.
+  * `limit`: Jumlah data per halaman. *Opsional, default 10, maks 25*.
+  * `cursor`: Token cursor untuk memuat halaman berikutnya. *Opsional*.
 
 * **Response (200 OK)**:
 ```json
@@ -111,10 +111,8 @@ Mendapatkan semua tiket servis, mendukung filter berdasarkan status dan pencaria
     }
   ],
   "meta": {
-    "total_data": 45,
     "limit": 10,
-    "offset": 0,
-    "total_pages": 5
+    "next_cursor": "ZXlKall... (base64)"
   }
 }
 ```
@@ -135,7 +133,7 @@ Mendapatkan tiket dengan filter yang lebih kompleks (seperti rentang tanggal dan
   "exact_date": "",
   "is_active": true,
   "limit": 10,
-  "offset": 0
+  "cursor": ""
 }
 ```
   *Keterangan Payload:*
@@ -159,10 +157,8 @@ Mendapatkan tiket dengan filter yang lebih kompleks (seperti rentang tanggal dan
     }
   ],
   "meta": {
-    "total_data": 45,
     "limit": 10,
-    "offset": 0,
-    "total_pages": 5
+    "next_cursor": "ZXlKall... (base64)"
   }
 }
 ```
@@ -453,7 +449,7 @@ Klaim garansi memiliki *lifecycle* (status) yang sama dengan tiket servis regule
 ### A. Inventori Aksesoris (Products)
 Mengelola daftar produk aksesoris dan ketersediaan stoknya secara manual.
 
-* **List Products**: `GET /api/v1/admin/products?search=kabel&limit=10&offset=0`
+* **List Products**: `GET /api/v1/admin/products?search=kabel&limit=10&cursor=`
 * **Detail Product**: `GET /api/v1/admin/products/:id`
 * **Tambah Product**: `POST /api/v1/admin/products`
   *Payload:*
@@ -520,7 +516,7 @@ Membuat transaksi baru (checkout) untuk penjualan aksesoris. Secara otomatis aka
 ### C. Riwayat Transaksi POS
 Melihat riwayat transaksi kasir yang telah berhasil dilakukan.
 
-* **List Transactions**: `GET /api/v1/admin/pos/transactions?limit=10&offset=0`
+* **List Transactions**: `GET /api/v1/admin/pos/transactions?limit=10&cursor=`
 * **Detail Transaction**: `GET /api/v1/admin/pos/transactions/:id`
 
 ---
