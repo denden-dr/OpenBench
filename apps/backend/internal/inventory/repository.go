@@ -9,12 +9,13 @@ import (
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/jmoiron/sqlx"
 )
 
 type QueryRepository interface {
 	FindByID(ctx context.Context, id string) (*models.Product, error)
-	FindAll(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error)
+	FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error)
 }
 
 type CommandRepository interface {
@@ -58,14 +59,9 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 	return &p, nil
 }
 
-func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error) {
+func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
 	var selectQuery = `
 		SELECT id, name, price, stock, created_at, updated_at
-		FROM products
-		WHERE deleted_at IS NULL
-	`
-	var countQuery = `
-		SELECT COUNT(*)
 		FROM products
 		WHERE deleted_at IS NULL
 	`
@@ -81,28 +77,35 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit, 
 		argCount++
 	}
 
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
+			args = append(args, cursorTime, cursorID)
+			argCount += 2
+		}
+	}
+
 	if len(conditions) > 0 {
-		whereClause := " AND " + strings.Join(conditions, " AND ")
-		selectQuery += whereClause
-		countQuery += whereClause
+		selectQuery += " AND " + strings.Join(conditions, " AND ")
 	}
 
-	var total int
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	selectQuery += fmt.Sprintf(" ORDER BY name ASC LIMIT $%d OFFSET $%d", argCount, argCount+1)
-	args = append(args, limit, offset)
+	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
+	args = append(args, limit+1)
 
 	var products []models.Product
-	err = r.db.SelectContext(ctx, &products, selectQuery, args...)
+	err := r.db.SelectContext(ctx, &products, selectQuery, args...)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
-	return products, total, nil
+	var nextCursor string
+	if len(products) > limit {
+		nextCursor = utils.EncodeCursor(products[limit].CreatedAt, products[limit].ID)
+		products = products[:limit]
+	}
+
+	return products, nextCursor, nil
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, p *models.Product) error {
