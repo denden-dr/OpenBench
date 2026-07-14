@@ -44,7 +44,11 @@ func globalErrorHandler(c fiber.Ctx, err error) error {
 		problemType = "/errors/unprocessable-entity"
 		detail = err.Error()
 	default:
-		slog.Error("Unhandled error caught by global ErrorHandler", "error", err, "path", c.Path(), "method", c.Method())
+		slog.ErrorContext(c.Context(), "Unhandled error caught by global ErrorHandler",
+			slog.Any("error", err),
+			slog.String("path", c.Path()),
+			slog.String("method", c.Method()),
+		)
 	}
 
 	return utils.SendProblem(c, code, problemType, title, detail)

@@ -37,6 +37,15 @@ func main() {
 	// Initialize Logger
 	logger.InitLogger(cfg.App.Env)
 
+	slog.Info("Application starting",
+		slog.String("app_name", cfg.App.AppName),
+		slog.String("env", cfg.App.Env),
+		slog.String("port", cfg.App.Port),
+		slog.String("allowed_origins", cfg.App.AllowedOrigins),
+		slog.String("db_host", cfg.DB.Host),
+		slog.String("db_name", cfg.DB.Name),
+	)
+
 	// 2. Initialize database connection pool
 	db, err := database.NewPostgresDB(cfg.DB)
 	if err != nil {
@@ -44,7 +53,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	slog.Info("Database connection pool established successfully")
+
+	slog.Info("Database connection pool established",
+		slog.Int("max_open_conns", int(cfg.DB.MaxConns)),
+		slog.Int("max_idle_conns", int(cfg.DB.MinConns)),
+		slog.Duration("max_conn_lifetime", cfg.DB.MaxConnLifetime),
+		slog.Duration("max_conn_idle_time", cfg.DB.MaxConnIdleTime),
+	)
 
 	// Initialize Event Bus
 	eventBus := events.NewAsyncEventBus(100)
