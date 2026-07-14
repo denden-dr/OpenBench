@@ -141,6 +141,32 @@ func TestService_CreateTicket(t *testing.T) {
 			mockErr:     errDb,
 			expectedErr: errDb,
 		},
+		{
+			name: "Failure - negative cost",
+			req: CreateTicketRequest{
+				CustomerName:     "Budi Santoso",
+				CustomerPhone:    "081234567890",
+				DeviceBrand:      "Samsung",
+				DeviceModel:      "Galaxy S23",
+				IssueDescription: "Layar pecah",
+				Cost:             -1000,
+			},
+			mockErr:     nil,
+			expectedErr: ErrInvalidInput,
+		},
+		{
+			name: "Failure - negative warranty days",
+			req: CreateTicketRequest{
+				CustomerName:     "Budi Santoso",
+				CustomerPhone:    "081234567890",
+				DeviceBrand:      "Samsung",
+				DeviceModel:      "Galaxy S23",
+				IssueDescription: "Layar pecah",
+				WarrantyDays:     -5,
+			},
+			mockErr:     nil,
+			expectedErr: ErrInvalidInput,
+		},
 	}
 
 	for _, tt := range tests {
@@ -180,7 +206,6 @@ func TestService_CreateTicket(t *testing.T) {
 }
 
 func TestService_UpdateTicketStatus(t *testing.T) {
-
 
 	tests := []struct {
 		name        string

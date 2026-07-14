@@ -44,7 +44,6 @@ type ClaimListResponse struct {
 	CreatedAt        time.Time                    `json:"created_at"`
 }
 
-
 type ChangeClaimStatusRequest struct {
 	Status models.ServiceTicketStatus `json:"status"`
 }

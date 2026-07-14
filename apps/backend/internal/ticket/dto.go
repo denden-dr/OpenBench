@@ -84,7 +84,6 @@ type TicketListResponse struct {
 	CreatedAt    time.Time                  `json:"created_at"`
 }
 
-
 type TicketStatusResponse struct {
 	TicketID  string                     `json:"ticket_id"`
 	Status    models.ServiceTicketStatus `json:"status"`

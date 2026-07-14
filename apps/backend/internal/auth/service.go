@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
-	"time"
 	"log/slog"
+	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
@@ -157,9 +157,9 @@ func (s *service) Logout(ctx context.Context, accessToken, refreshToken string) 
 		if !ok {
 			return
 		}
-		
+
 		expiresAt := time.Unix(int64(expFloat), 0)
-		
+
 		// If it's already expired, no need to blacklist
 		if time.Now().After(expiresAt) {
 			return

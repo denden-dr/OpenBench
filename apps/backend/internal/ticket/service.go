@@ -11,7 +11,6 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/events"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
-	"github.com/google/uuid"
 	"log/slog"
 )
 
@@ -62,10 +61,6 @@ func NewService(
 }
 
 func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error) {
-	if req.CustomerName == "" || req.CustomerPhone == "" || req.DeviceBrand == "" || req.DeviceModel == "" || req.IssueDescription == "" {
-		return nil, fmt.Errorf("%w: customer name, phone, device brand, model, and issue description are required", ErrInvalidInput)
-	}
-
 	ticketNum, err := s.generateTicketNumber()
 	if err != nil {
 		return nil, err
@@ -80,22 +75,25 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		encryptedPasscode = enc
 	}
 
-	ticket := &models.ServiceTicket{
-		ID:               uuid.New().String(),
+	var repairAction *string
+	if req.RepairAction != "" {
+		repairAction = &req.RepairAction
+	}
+
+	ticket, err := models.NewServiceTicket(models.CreateTicketParams{
 		TicketNumber:     ticketNum,
-		Status:           models.StatusReceived,
 		CustomerName:     req.CustomerName,
 		CustomerPhone:    req.CustomerPhone,
 		DeviceBrand:      req.DeviceBrand,
 		DeviceModel:      req.DeviceModel,
 		DevicePasscode:   encryptedPasscode,
 		IssueDescription: req.IssueDescription,
+		RepairAction:     repairAction,
 		Cost:             req.Cost,
 		WarrantyDays:     req.WarrantyDays,
-	}
-
-	if req.RepairAction != "" {
-		ticket.RepairAction = &req.RepairAction
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
 	if err := s.commandRepo.Create(ctx, ticket); err != nil {
@@ -407,4 +405,3 @@ func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.Ser
 	}
 	return nil
 }
-

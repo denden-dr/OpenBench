@@ -92,9 +92,9 @@ func TestPosHandler_Integration(t *testing.T) {
 
 		var respData struct {
 			Data struct {
-				ID            string                     `json:"id"`
-				PaymentMethod string                     `json:"payment_method"`
-				TotalAmount   int64                      `json:"total_amount"`
+				ID            string                      `json:"id"`
+				PaymentMethod string                      `json:"payment_method"`
+				TotalAmount   int64                       `json:"total_amount"`
 				Items         []models.PosTransactionItem `json:"items"`
 			} `json:"data"`
 		}
@@ -128,8 +128,8 @@ func TestPosHandler_Integration(t *testing.T) {
 
 		var respData struct {
 			Data struct {
-				ID          string                     `json:"id"`
-				TotalAmount int64                      `json:"total_amount"`
+				ID          string                      `json:"id"`
+				TotalAmount int64                       `json:"total_amount"`
 				Items       []models.PosTransactionItem `json:"items"`
 			} `json:"data"`
 		}
