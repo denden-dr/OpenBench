@@ -23,6 +23,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 )
 
 func main() {
@@ -89,8 +90,12 @@ func main() {
 
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
-		AppName: cfg.App.AppName,
+		AppName:      cfg.App.AppName,
+		ErrorHandler: globalErrorHandler,
 	})
+
+	// Register recover middleware
+	app.Use(recover.New())
 
 	// Register structured logging middleware
 	app.Use(logger.NewMiddleware())
