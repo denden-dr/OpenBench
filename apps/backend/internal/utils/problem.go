@@ -15,17 +15,19 @@ type ProblemDetail struct {
 }
 
 func SendProblem(c fiber.Ctx, status int, problemType, title, detail string) error {
-	c.Set("Content-Type", "application/problem+json")
-
 	if strings.HasPrefix(problemType, "/") {
 		problemType = c.BaseURL() + problemType
 	}
 
-	return c.Status(status).JSON(ProblemDetail{
+	err := c.Status(status).JSON(ProblemDetail{
 		Type:     problemType,
 		Title:    title,
 		Status:   status,
 		Detail:   detail,
 		Instance: c.Path(),
 	})
+	if err == nil {
+		c.Set("Content-Type", "application/problem+json")
+	}
+	return err
 }
