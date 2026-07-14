@@ -98,7 +98,17 @@ func (s *service) GetWarrantyByTicketID(ctx context.Context, ticketID string) (*
 	// Dynamic check if warranty has expired
 	if w.Status == models.WarrantyStatusActive && time.Now().After(w.EndDate) {
 		w.Status = models.WarrantyStatusExpired
-		_ = s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
+		if err := s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil); err != nil {
+			slog.WarnContext(ctx, "Failed to auto-expire warranty",
+				slog.String("warranty_id", w.ID),
+				slog.Any("error", err),
+			)
+		} else {
+			slog.InfoContext(ctx, "Warranty auto-expired",
+				slog.String("warranty_id", w.ID),
+				slog.Time("end_date", w.EndDate),
+			)
+		}
 	}
 
 	return w, nil
@@ -165,7 +175,17 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 	// Check if active
 	if w.Status == models.WarrantyStatusActive && time.Now().After(w.EndDate) {
 		w.Status = models.WarrantyStatusExpired
-		_ = s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil)
+		if err := s.commandRepo.UpdateWarrantyStatus(ctx, w.ID, models.WarrantyStatusExpired, nil); err != nil {
+			slog.WarnContext(ctx, "Failed to auto-expire warranty",
+				slog.String("warranty_id", w.ID),
+				slog.Any("error", err),
+			)
+		} else {
+			slog.InfoContext(ctx, "Warranty auto-expired",
+				slog.String("warranty_id", w.ID),
+				slog.Time("end_date", w.EndDate),
+			)
+		}
 	}
 
 	if w.Status != models.WarrantyStatusActive {
