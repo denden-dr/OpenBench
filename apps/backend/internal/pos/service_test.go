@@ -22,12 +22,12 @@ func (m *mockPosRepo) FindByID(ctx context.Context, id string) (*models.PosTrans
 	return nil, args.Error(1)
 }
 
-func (m *mockPosRepo) FindAll(ctx context.Context, limit, offset int) ([]models.PosTransaction, int, error) {
-	args := m.Called(ctx, limit, offset)
+func (m *mockPosRepo) FindAll(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error) {
+	args := m.Called(ctx, limit, cursor)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.PosTransaction), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.PosTransaction), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
 func (m *mockPosRepo) Create(ctx context.Context, t *models.PosTransaction) error {
@@ -47,12 +47,12 @@ func (m *mockInventoryQueryRepo) FindByID(ctx context.Context, id string) (*mode
 	return nil, args.Error(1)
 }
 
-func (m *mockInventoryQueryRepo) FindAll(ctx context.Context, search string, limit, offset int) ([]models.Product, int, error) {
-	args := m.Called(ctx, search, limit, offset)
+func (m *mockInventoryQueryRepo) FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
+	args := m.Called(ctx, search, limit, cursor)
 	if args.Get(0) != nil {
-		return args.Get(0).([]models.Product), args.Int(1), args.Error(2)
+		return args.Get(0).([]models.Product), args.String(1), args.Error(2)
 	}
-	return nil, args.Int(1), args.Error(2)
+	return nil, args.String(1), args.Error(2)
 }
 
 type mockInventoryCommandRepo struct {

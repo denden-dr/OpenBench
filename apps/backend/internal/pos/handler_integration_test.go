@@ -141,7 +141,7 @@ func TestPosHandler_Integration(t *testing.T) {
 	})
 
 	t.Run("Get Transactions List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/transactions?limit=10&offset=0", nil)
+		req, err := http.NewRequest("GET", "/transactions?limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)
@@ -154,12 +154,12 @@ func TestPosHandler_Integration(t *testing.T) {
 				TotalAmount int64  `json:"total_amount"`
 			} `json:"data"`
 			Meta struct {
-				TotalData int `json:"total_data"`
+				Limit int `json:"limit"`
 			} `json:"meta"`
 		}
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
-		assert.Equal(t, 1, respData.Meta.TotalData)
+		assert.Equal(t, 10, respData.Meta.Limit)
 		require.Len(t, respData.Data, 1)
 		assert.Equal(t, createdTxID, respData.Data[0].ID)
 	})

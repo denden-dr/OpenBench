@@ -2,8 +2,6 @@ package pos
 
 import (
 	"errors"
-	"math"
-	"strconv"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -60,36 +58,12 @@ func (h *Handler) GetTransactionByID(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetTransactions(c fiber.Ctx) error {
-	limitStr := c.Query("limit")
-	limit := 10
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
-	}
+	limit, cursor := utils.ParseCursorPagination(c)
 
-	offsetStr := c.Query("offset")
-	offset := 0
-	if offsetStr != "" {
-		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
-			offset = o
-		}
-	}
-
-	transactions, total, err := h.service.GetTransactions(c.Context(), limit, offset)
+	transactions, nextCursor, err := h.service.GetTransactions(c.Context(), limit, cursor)
 	if err != nil {
 		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve transaction list.")
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data": transactions,
-		"meta": fiber.Map{
-			"total_data":  total,
-			"limit":       limit,
-			"offset":      offset,
-			"total_pages": totalPages,
-		},
-	})
+	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(transactions, limit, nextCursor))
 }
