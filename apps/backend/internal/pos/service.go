@@ -7,11 +7,18 @@ import (
 	"log/slog"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
-	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/google/uuid"
 )
+
+type InventoryProductReader interface {
+	FindByID(ctx context.Context, id string) (*models.Product, error)
+}
+
+type InventoryStockWriter interface {
+	UpdateStock(ctx context.Context, id string, quantityChange int) error
+}
 
 var (
 	ErrTransactionNotFound = errors.New("transaction not found")
@@ -26,26 +33,26 @@ type Service interface {
 }
 
 type service struct {
-	posQueryRepo         QueryRepository
-	posCommandRepo       CommandRepository
-	inventoryQueryRepo   inventory.QueryRepository
-	inventoryCommandRepo inventory.CommandRepository
-	txManager            database.TxManager
+	posQueryRepo   QueryRepository
+	posCommandRepo CommandRepository
+	inventoryReader InventoryProductReader
+	inventoryWriter InventoryStockWriter
+	txManager      database.TxManager
 }
 
 func NewService(
 	posQueryRepo QueryRepository,
 	posCommandRepo CommandRepository,
-	inventoryQueryRepo inventory.QueryRepository,
-	inventoryCommandRepo inventory.CommandRepository,
+	inventoryReader InventoryProductReader,
+	inventoryWriter InventoryStockWriter,
 	txManager database.TxManager,
 ) Service {
 	return &service{
-		posQueryRepo:         posQueryRepo,
-		posCommandRepo:       posCommandRepo,
-		inventoryQueryRepo:   inventoryQueryRepo,
-		inventoryCommandRepo: inventoryCommandRepo,
-		txManager:            txManager,
+		posQueryRepo:    posQueryRepo,
+		posCommandRepo:  posCommandRepo,
+		inventoryReader: inventoryReader,
+		inventoryWriter: inventoryWriter,
+		txManager:       txManager,
 	}
 }
 
@@ -80,7 +87,7 @@ func (s *service) Checkout(ctx context.Context, req models.CheckoutRequest) (*mo
 		txItems = nil
 
 		for _, itemReq := range req.Items {
-			p, err := s.inventoryQueryRepo.FindByID(txCtx, itemReq.ProductID)
+			p, err := s.inventoryReader.FindByID(txCtx, itemReq.ProductID)
 			if err != nil {
 				return err
 			}
@@ -92,7 +99,7 @@ func (s *service) Checkout(ctx context.Context, req models.CheckoutRequest) (*mo
 				return fmt.Errorf("%w: %s (available: %d, requested: %d)", ErrInsufficientStock, p.Name, p.Stock, itemReq.Quantity)
 			}
 
-			err = s.inventoryCommandRepo.UpdateStock(txCtx, p.ID, -itemReq.Quantity)
+			err = s.inventoryWriter.UpdateStock(txCtx, p.ID, -itemReq.Quantity)
 			if err != nil {
 				return err
 			}
