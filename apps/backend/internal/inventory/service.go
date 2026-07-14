@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
@@ -72,6 +73,13 @@ func (s *service) CreateProduct(ctx context.Context, req CreateProductRequest) (
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "Product created",
+		slog.String("product_id", p.ID),
+		slog.String("name", p.Name),
+		slog.Int64("price", p.Price),
+		slog.Int("stock", p.Stock),
+	)
+
 	return p, nil
 }
 
@@ -103,6 +111,13 @@ func (s *service) UpdateProduct(ctx context.Context, id string, req UpdateProduc
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "Product updated",
+		slog.String("product_id", p.ID),
+		slog.String("name", p.Name),
+		slog.Int64("price", p.Price),
+		slog.Int("stock", p.Stock),
+	)
+
 	return p, nil
 }
 
@@ -120,7 +135,19 @@ func (s *service) AdjustStock(ctx context.Context, id string, quantityChange int
 		return fmt.Errorf("%w: stock cannot be less than 0", ErrInvalidInput)
 	}
 
-	return s.commandRepo.UpdateStock(ctx, id, quantityChange)
+	if err := s.commandRepo.UpdateStock(ctx, id, quantityChange); err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, "Product stock adjusted",
+		slog.String("product_id", id),
+		slog.String("product_name", p.Name),
+		slog.Int("quantity_change", quantityChange),
+		slog.Int("stock_before", p.Stock),
+		slog.Int("stock_after", p.Stock+quantityChange),
+	)
+
+	return nil
 }
 
 func (s *service) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
@@ -152,5 +179,14 @@ func (s *service) DeleteProduct(ctx context.Context, id string) error {
 	if p == nil {
 		return ErrProductNotFound
 	}
-	return s.commandRepo.Delete(ctx, id)
+	if err := s.commandRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, "Product deleted",
+		slog.String("product_id", id),
+		slog.String("product_name", p.Name),
+	)
+
+	return nil
 }
