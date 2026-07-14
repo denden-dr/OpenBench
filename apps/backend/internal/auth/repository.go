@@ -20,7 +20,7 @@ type QueryRepository interface {
 type CommandRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	BlacklistToken(ctx context.Context, jti string, expiresAt time.Time) error
-	DeleteExpiredBlacklistedTokens(ctx context.Context) error
+	DeleteExpiredBlacklistedTokens(ctx context.Context) (int64, error)
 }
 
 type sqlQueryRepository struct {
@@ -114,16 +114,25 @@ func (r *sqlCommandRepository) BlacklistToken(ctx context.Context, jti string, e
 	return err
 }
 
-func (r *sqlCommandRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) error {
+func (r *sqlCommandRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) (int64, error) {
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	query, args, err := psql.Delete("token_blacklists").
 		Where(squirrel.LtOrEq{"expires_at": squirrel.Expr("NOW()")}).
 		ToSql()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	querier := database.GetQuerier(ctx, r.db)
-	_, err = querier.ExecContext(ctx, query, args...)
-	return err
+	result, err := querier.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
 }

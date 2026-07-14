@@ -41,9 +41,9 @@ func (m *mockRepository) BlacklistToken(ctx context.Context, jti string, expires
 	return args.Error(0)
 }
 
-func (m *mockRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) error {
+func (m *mockRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) (int64, error) {
 	args := m.Called(ctx)
-	return args.Error(0)
+	return int64(args.Int(0)), args.Error(1)
 }
 
 var errDb = errors.New("db connection failure")
