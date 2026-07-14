@@ -171,6 +171,8 @@ func (s *service) Logout(ctx context.Context, accessToken, refreshToken string) 
 	blacklistToken(accessToken, s.cfg.Auth.AccessSecret)
 	blacklistToken(refreshToken, s.cfg.Auth.RefreshSecret)
 
+	slog.InfoContext(ctx, "User logged out successfully")
+
 	return nil
 }
 
