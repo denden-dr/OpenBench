@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -42,14 +41,18 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.Product, error) {
-	query := `
-		SELECT id, name, price, stock, created_at, updated_at
-		FROM products
-		WHERE id = $1 AND deleted_at IS NULL
-		LIMIT 1
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
+		From("products").
+		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var p models.Product
-	err := r.db.GetContext(ctx, &p, query, id)
+	err = r.db.GetContext(ctx, &p, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -60,41 +63,32 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
-	var selectQuery = `
-		SELECT id, name, price, stock, created_at, updated_at
-		FROM products
-		WHERE deleted_at IS NULL
-	`
-
-	var conditions []string
-	var args []interface{}
-	argCount := 1
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
+		From("products").
+		Where(squirrel.Eq{"deleted_at": nil})
 
 	if search != "" {
 		searchPattern := "%" + search + "%"
-		conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", argCount))
-		args = append(args, searchPattern)
-		argCount++
+		queryBuilder = queryBuilder.Where(squirrel.Expr("name ILIKE ?", searchPattern))
 	}
 
 	if cursor != "" {
 		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
 		if err == nil {
-			conditions = append(conditions, fmt.Sprintf("(created_at, id) < ($%d, $%d)", argCount, argCount+1))
-			args = append(args, cursorTime, cursorID)
-			argCount += 2
+			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
 		}
 	}
 
-	if len(conditions) > 0 {
-		selectQuery += " AND " + strings.Join(conditions, " AND ")
+	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, "", err
 	}
 
-	selectQuery += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", argCount)
-	args = append(args, limit+1)
-
 	var products []models.Product
-	err := r.db.SelectContext(ctx, &products, selectQuery, args...)
+	err = r.db.SelectContext(ctx, &products, query, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -109,44 +103,66 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit i
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, p *models.Product) error {
-	query := `
-		INSERT INTO products (id, name, price, stock, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, NOW(), NOW())
-		RETURNING created_at, updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("products").
+		Columns("id", "name", "price", "stock", "created_at", "updated_at").
+		Values(p.ID, p.Name, p.Price, p.Stock, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
+		Suffix("RETURNING created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	return querier.QueryRowxContext(ctx, query, p.ID, p.Name, p.Price, p.Stock).Scan(&p.CreatedAt, &p.UpdatedAt)
+	return querier.QueryRowxContext(ctx, query, args...).Scan(&p.CreatedAt, &p.UpdatedAt)
 }
 
 func (r *sqlCommandRepository) Update(ctx context.Context, p *models.Product) error {
-	query := `
-		UPDATE products
-		SET name = $2, price = $3, stock = $4, updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-		RETURNING updated_at
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("products").
+		Set("name", p.Name).
+		Set("price", p.Price).
+		Set("stock", p.Stock).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": p.ID, "deleted_at": nil}).
+		Suffix("RETURNING updated_at").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	return querier.QueryRowxContext(ctx, query, p.ID, p.Name, p.Price, p.Stock).Scan(&p.UpdatedAt)
+	return querier.QueryRowxContext(ctx, query, args...).Scan(&p.UpdatedAt)
 }
 
 func (r *sqlCommandRepository) UpdateStock(ctx context.Context, id string, quantityChange int) error {
-	query := `
-		UPDATE products
-		SET stock = stock + $2, updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("products").
+		Set("stock", squirrel.Expr("stock + ?", quantityChange)).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, id, quantityChange)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }
 
 func (r *sqlCommandRepository) Delete(ctx context.Context, id string) error {
-	query := `
-		UPDATE products
-		SET deleted_at = NOW(), updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-	`
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("products").
+		Set("deleted_at", squirrel.Expr("NOW()")).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
 	querier := database.GetQuerier(ctx, r.db)
-	_, err := querier.ExecContext(ctx, query, id)
+	_, err = querier.ExecContext(ctx, query, args...)
 	return err
 }

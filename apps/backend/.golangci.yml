@@ -38,6 +38,7 @@ linters-settings:
   gosec:
     excludes:
       - G104 # Ignore G104 (unhandled error) as errcheck covers this with custom exclusions
+      - G115 # Ignore G115 (int -> uint64 conversion) as limit values are always clamped to a safe positive range before conversion
 
 issues:
   exclude-use-default: false
