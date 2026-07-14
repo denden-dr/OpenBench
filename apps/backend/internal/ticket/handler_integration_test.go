@@ -25,10 +25,10 @@ type fakeWarrantyGenerator struct{}
 
 func (f *fakeWarrantyGenerator) CreateWarranty(ctx context.Context, ticketID string, warrantyDays int) (*models.Warranty, error) {
 	return &models.Warranty{
-		ID:           "warr-123",
-		TicketID:     ticketID,
-		Status:       models.WarrantyStatusActive,
-		Notes:        nil,
+		ID:       "warr-123",
+		TicketID: ticketID,
+		Status:   models.WarrantyStatusActive,
+		Notes:    nil,
 	}, nil
 }
 

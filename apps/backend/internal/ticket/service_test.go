@@ -207,7 +207,6 @@ func TestService_CreateTicket(t *testing.T) {
 
 func TestService_UpdateTicketStatus(t *testing.T) {
 
-
 	tests := []struct {
 		name        string
 		ticketID    string

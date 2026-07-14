@@ -89,7 +89,7 @@ func Load() (*Config, error) {
 	if len(cfg.App.EncryptionKey) != 32 {
 		return nil, fmt.Errorf("app.encryption_key (APP_ENCRYPTION_KEY) must be exactly 32 characters long")
 	}
-	
+
 	// DB Validation
 	if cfg.DB.Host == "" {
 		return nil, fmt.Errorf("db.host (DB_HOST) is required")

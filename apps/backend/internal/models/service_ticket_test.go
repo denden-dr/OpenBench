@@ -86,11 +86,11 @@ func TestNewServiceTicket_Invariants(t *testing.T) {
 		{
 			name: "Failure - empty issue description",
 			params: CreateTicketParams{
-				TicketNumber:     "TKT-1234",
-				CustomerName:     "Budi Santoso",
-				CustomerPhone:    "081234567890",
-				DeviceBrand:      "Samsung",
-				DeviceModel:      "Galaxy S23",
+				TicketNumber:  "TKT-1234",
+				CustomerName:  "Budi Santoso",
+				CustomerPhone: "081234567890",
+				DeviceBrand:   "Samsung",
+				DeviceModel:   "Galaxy S23",
 			},
 			expectedErr: ErrMissingIssueDescription,
 		},

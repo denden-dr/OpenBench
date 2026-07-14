@@ -108,4 +108,3 @@ func NewServiceTicket(params CreateTicketParams) (*ServiceTicket, error) {
 		WarrantyDays:     params.WarrantyDays,
 	}, nil
 }
-

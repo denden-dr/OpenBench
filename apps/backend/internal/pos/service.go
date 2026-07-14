@@ -26,7 +26,7 @@ type Service interface {
 
 type service struct {
 	posQueryRepo         QueryRepository
-	posCommandRepo        CommandRepository
+	posCommandRepo       CommandRepository
 	inventoryQueryRepo   inventory.QueryRepository
 	inventoryCommandRepo inventory.CommandRepository
 	txManager            database.TxManager
@@ -41,7 +41,7 @@ func NewService(
 ) Service {
 	return &service{
 		posQueryRepo:         posQueryRepo,
-		posCommandRepo:        posCommandRepo,
+		posCommandRepo:       posCommandRepo,
 		inventoryQueryRepo:   inventoryQueryRepo,
 		inventoryCommandRepo: inventoryCommandRepo,
 		txManager:            txManager,

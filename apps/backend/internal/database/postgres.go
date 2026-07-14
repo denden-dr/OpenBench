@@ -96,4 +96,3 @@ func NewPostgresDB(cfg config.DBConfig) (*sqlx.DB, error) {
 	sqlxDB := sqlx.NewDb(wrappedDB, "pgx")
 	return sqlxDB, nil
 }
-

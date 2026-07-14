@@ -405,4 +405,3 @@ func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.Ser
 	}
 	return nil
 }
-
