@@ -19,6 +19,8 @@ func generateTestToken(secret string, method jwt.SigningMethod, userID string, r
 		"sub":  userID,
 		"role": role,
 		"exp":  expiry.Unix(),
+		"iss":  "OpenBench",
+		"aud":  "OpenBench-Client",
 	})
 	return token.SignedString([]byte(secret))
 }
@@ -54,6 +56,7 @@ func TestRequireAuth(t *testing.T) {
 	tests := []struct {
 		name           string
 		cookieValue    string
+		headerValue    string
 		expectedStatus int
 	}{
 		{
@@ -61,6 +64,14 @@ func TestRequireAuth(t *testing.T) {
 			cookieValue: func() string {
 				tok, _ := generateTestToken(secret, jwt.SigningMethodHS256, "u123", "ADMIN", time.Now().Add(time.Hour))
 				return tok
+			}(),
+			expectedStatus: fiber.StatusOK,
+		},
+		{
+			name: "valid token in auth header",
+			headerValue: func() string {
+				tok, _ := generateTestToken(secret, jwt.SigningMethodHS256, "u123", "ADMIN", time.Now().Add(time.Hour))
+				return "Bearer " + tok
 			}(),
 			expectedStatus: fiber.StatusOK,
 		},
@@ -94,6 +105,8 @@ func TestRequireAuth(t *testing.T) {
 					"sub":  "u123",
 					"role": "ADMIN",
 					"exp":  time.Now().Add(time.Hour).Unix(),
+					"iss":  "OpenBench",
+					"aud":  "OpenBench-Client",
 				})
 				tok, _ := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
 				return tok
@@ -112,6 +125,10 @@ func TestRequireAuth(t *testing.T) {
 					Name:  "access_token",
 					Value: tt.cookieValue,
 				})
+			}
+
+			if tt.headerValue != "" {
+				req.Header.Set("Authorization", tt.headerValue)
 			}
 
 			resp, err := app.Test(req)
