@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration
+.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench
 
 up:
 	podman compose up -d
@@ -39,3 +39,5 @@ migrate-up:
 migrate-down:
 	migrate -path apps/backend/migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down
 
+bench:
+	cd apps/backend && go test -bench=. -benchmem ./...
