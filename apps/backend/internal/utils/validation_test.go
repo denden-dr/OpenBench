@@ -33,3 +33,17 @@ func TestValidateStruct(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func BenchmarkValidateStruct(b *testing.B) {
+	s := testStruct{
+		Name:  "Denden",
+		Email: "denden@example.com",
+		Age:   20,
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_ = ValidateStruct(s)
+	}
+}
