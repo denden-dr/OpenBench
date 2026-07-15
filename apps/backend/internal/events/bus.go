@@ -2,9 +2,13 @@ package events
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
+	"time"
 )
+
+var ErrEventBusOverloaded = errors.New("event bus buffer is full")
 
 type EventType string
 
@@ -95,9 +99,17 @@ func (b *AsyncEventBus) dispatch(ctx context.Context, event Event) {
 }
 
 func (b *AsyncEventBus) Publish(ctx context.Context, event Event) error {
+	pubCtx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+	defer cancel()
+
 	select {
 	case <-b.ctx.Done():
 		return context.Canceled
+	case <-pubCtx.Done():
+		if errors.Is(pubCtx.Err(), context.DeadlineExceeded) {
+			return ErrEventBusOverloaded
+		}
+		return pubCtx.Err()
 	case b.ch <- eventWrapper{ctx: ctx, event: event}:
 		return nil
 	}
