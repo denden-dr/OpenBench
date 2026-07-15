@@ -7,42 +7,42 @@ import (
 )
 
 type CreateTicketRequest struct {
-	CustomerName     string `json:"customer_name"`
-	CustomerPhone    string `json:"customer_phone"`
-	DeviceBrand      string `json:"device_brand"`
-	DeviceModel      string `json:"device_model"`
+	CustomerName     string `json:"customer_name" validate:"required"`
+	CustomerPhone    string `json:"customer_phone" validate:"required"`
+	DeviceBrand      string `json:"device_brand" validate:"required"`
+	DeviceModel      string `json:"device_model" validate:"required"`
 	DevicePasscode   string `json:"device_passcode"`
-	IssueDescription string `json:"issue_description"`
+	IssueDescription string `json:"issue_description" validate:"required"`
 	RepairAction     string `json:"repair_action"`
-	Cost             int64  `json:"cost"`
-	WarrantyDays     int    `json:"warranty_days"`
+	Cost             int64  `json:"cost" validate:"min=0"`
+	WarrantyDays     int    `json:"warranty_days" validate:"min=0"`
 }
 
 type UpdateTicketRequest struct {
-	CustomerName     string `json:"customer_name"`
-	CustomerPhone    string `json:"customer_phone"`
-	IssueDescription string `json:"issue_description"`
+	CustomerName     string `json:"customer_name" validate:"required"`
+	CustomerPhone    string `json:"customer_phone" validate:"required"`
+	IssueDescription string `json:"issue_description" validate:"required"`
 	RepairAction     string `json:"repair_action"`
-	Cost             int64  `json:"cost"`
-	WarrantyDays     int    `json:"warranty_days"`
+	Cost             int64  `json:"cost" validate:"min=0"`
+	WarrantyDays     int    `json:"warranty_days" validate:"min=0"`
 	Notes            string `json:"notes"`
 }
 
 type ChangeStatusRequest struct {
-	Status models.ServiceTicketStatus `json:"status"`
+	Status models.ServiceTicketStatus `json:"status" validate:"required,oneof=RECEIVED REPAIRING PENDING_CONFIRMATION FIXED COMPLETED CANCELLED RETURNED"`
 }
 
 type EmergencyUpdateTicketRequest struct {
-	CustomerName     string                     `json:"customer_name"`
-	CustomerPhone    string                     `json:"customer_phone"`
-	DeviceBrand      string                     `json:"device_brand"`
-	DeviceModel      string                     `json:"device_model"`
+	CustomerName     string                     `json:"customer_name" validate:"required"`
+	CustomerPhone    string                     `json:"customer_phone" validate:"required"`
+	DeviceBrand      string                     `json:"device_brand" validate:"required"`
+	DeviceModel      string                     `json:"device_model" validate:"required"`
 	DevicePasscode   string                     `json:"device_passcode"`
-	Status           models.ServiceTicketStatus `json:"status"`
-	IssueDescription string                     `json:"issue_description"`
+	Status           models.ServiceTicketStatus `json:"status" validate:"required,oneof=RECEIVED REPAIRING PENDING_CONFIRMATION FIXED COMPLETED CANCELLED RETURNED"`
+	IssueDescription string                     `json:"issue_description" validate:"required"`
 	RepairAction     string                     `json:"repair_action"`
-	Cost             int64                      `json:"cost"`
-	WarrantyDays     int                        `json:"warranty_days"`
+	Cost             int64                      `json:"cost" validate:"min=0"`
+	WarrantyDays     int                        `json:"warranty_days" validate:"min=0"`
 	Notes            string                     `json:"notes"`
 }
 
