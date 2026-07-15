@@ -20,8 +20,8 @@ var (
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password string) (*LoginResponse, error)
-	Refresh(ctx context.Context, refreshToken string) (*RefreshResponse, error)
+	Login(ctx context.Context, email, password string) (LoginResponse, error)
+	Refresh(ctx context.Context, refreshToken string) (RefreshResponse, error)
 	Logout(ctx context.Context, accessToken, refreshToken string) error
 }
 
@@ -39,30 +39,30 @@ func NewService(queryRepo QueryRepository, commandRepo CommandRepository, cfg *c
 	}
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*LoginResponse, error) {
+func (s *service) Login(ctx context.Context, email, password string) (LoginResponse, error) {
 	user, err := s.queryRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return LoginResponse{}, err
 	}
 	if user == nil {
 		slog.WarnContext(ctx, "Failed login attempt - user not found", slog.String("email", email))
-		return nil, ErrInvalidCredentials
+		return LoginResponse{}, ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		slog.WarnContext(ctx, "Failed login attempt - invalid password", slog.String("email", email))
-		return nil, ErrInvalidCredentials
+		return LoginResponse{}, ErrInvalidCredentials
 	}
 
 	accessToken, err := s.generateAccessToken(user)
 	if err != nil {
-		return nil, err
+		return LoginResponse{}, err
 	}
 
 	refreshToken, err := s.generateRefreshToken(user)
 	if err != nil {
-		return nil, err
+		return LoginResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "User logged in successfully",
@@ -70,7 +70,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*LoginResp
 		slog.String("user_id", user.ID),
 	)
 
-	return &LoginResponse{
+	return LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    time.Now().Add(s.cfg.Auth.AccessExpiry),
@@ -82,7 +82,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*LoginResp
 	}, nil
 }
 
-func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshResponse, error) {
+func (s *service) Refresh(ctx context.Context, refreshToken string) (RefreshResponse, error) {
 	token, err := jwt.Parse(refreshToken, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, ErrInvalidToken
@@ -91,17 +91,17 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 	}, jwt.WithIssuer("OpenBench"), jwt.WithAudience("OpenBench-Client"))
 
 	if err != nil || !token.Valid {
-		return nil, ErrInvalidToken
+		return RefreshResponse{}, ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, ErrInvalidToken
+		return RefreshResponse{}, ErrInvalidToken
 	}
 
 	email, ok := claims["email"].(string)
 	if !ok {
-		return nil, ErrInvalidToken
+		return RefreshResponse{}, ErrInvalidToken
 	}
 
 	// Blacklist the old refresh token (Refresh Token Rotation)
@@ -116,20 +116,20 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 
 	user, err := s.queryRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return RefreshResponse{}, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return RefreshResponse{}, ErrUserNotFound
 	}
 
 	newAccessToken, err := s.generateAccessToken(user)
 	if err != nil {
-		return nil, err
+		return RefreshResponse{}, err
 	}
 
 	newRefreshToken, err := s.generateRefreshToken(user)
 	if err != nil {
-		return nil, err
+		return RefreshResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "Token refreshed successfully",
@@ -137,7 +137,7 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 		slog.String("user_id", user.ID),
 	)
 
-	return &RefreshResponse{
+	return RefreshResponse{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 		ExpiresAt:    time.Now().Add(s.cfg.Auth.AccessExpiry),
