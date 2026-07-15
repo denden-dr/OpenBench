@@ -207,3 +207,48 @@ func TestService_Checkout_ProductNotFound(t *testing.T) {
 	invQueryRepo.AssertExpectations(t)
 	invCommandRepo.AssertExpectations(t)
 }
+
+func BenchmarkCheckout(b *testing.B) {
+	posRepo := &mockPosRepo{}
+	invQueryRepo := &mockInventoryQueryRepo{}
+	invCommandRepo := &mockInventoryCommandRepo{}
+	txManager := &mockTxManager{}
+
+	svc := NewService(posRepo, posRepo, invQueryRepo, invCommandRepo, txManager)
+
+	product := &models.Product{
+		ID:    "prod-1",
+		Name:  "Tempered Glass",
+		Price: 50000,
+		Stock: 10,
+	}
+
+	req := models.CheckoutRequest{
+		PaymentMethod: models.PaymentMethodCash,
+		Items: []models.CheckoutItemRequest{
+			{
+				ProductID: "prod-1",
+				Quantity:  2,
+			},
+		},
+	}
+
+	invQueryRepo.On("FindByID", mock.Anything, "prod-1").Return(product, nil)
+	invCommandRepo.On("UpdateStock", mock.Anything, "prod-1", -2).Return(nil)
+	posRepo.On("Create", mock.Anything, mock.AnythingOfType("*models.PosTransaction")).Return(nil)
+
+	expectedTx := &models.PosTransaction{
+		ID:            "tx-123",
+		PaymentMethod: models.PaymentMethodCash,
+		TotalAmount:   100000,
+	}
+	posRepo.On("FindByID", mock.Anything, mock.AnythingOfType("string")).Return(expectedTx, nil)
+
+	ctx := context.Background()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = svc.Checkout(ctx, req)
+	}
+}
