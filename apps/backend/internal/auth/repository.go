@@ -27,24 +27,33 @@ type CommandRepository interface {
 type sqlQueryRepository struct {
 	db    *sqlx.DB
 	cache *hot.HotCache[string, bool]
+	psql  squirrel.StatementBuilderType
 }
 
 type sqlCommandRepository struct {
 	db    *sqlx.DB
 	cache *hot.HotCache[string, bool]
+	psql  squirrel.StatementBuilderType
 }
 
 func NewQueryRepository(db *sqlx.DB, cache *hot.HotCache[string, bool]) QueryRepository {
-	return &sqlQueryRepository{db: db, cache: cache}
+	return &sqlQueryRepository{
+		db:    db,
+		cache: cache,
+		psql:  squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func NewCommandRepository(db *sqlx.DB, cache *hot.HotCache[string, bool]) CommandRepository {
-	return &sqlCommandRepository{db: db, cache: cache}
+	return &sqlCommandRepository{
+		db:    db,
+		cache: cache,
+		psql:  squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
+	query, args, err := r.psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
 		From("users").
 		Where(squirrel.Eq{"email": email, "deleted_at": nil}).
 		Limit(1).
@@ -65,8 +74,7 @@ func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (
 }
 
 func (r *sqlCommandRepository) CreateUser(ctx context.Context, user *models.User) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("users").
+	query, args, err := r.psql.Insert("users").
 		Columns("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at").
 		Values(user.ID, user.Email, user.PasswordHash, user.FullName, user.Role, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		ToSql()
@@ -84,8 +92,7 @@ func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string)
 		return isBlacklisted, nil
 	}
 
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("1").
+	query, args, err := r.psql.Select("1").
 		From("token_blacklists").
 		Where(squirrel.Eq{"jti": jti}).
 		Limit(1).
@@ -109,8 +116,7 @@ func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string)
 }
 
 func (r *sqlCommandRepository) BlacklistToken(ctx context.Context, jti string, expiresAt time.Time) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("token_blacklists").
+	query, args, err := r.psql.Insert("token_blacklists").
 		Columns("jti", "expires_at").
 		Values(jti, expiresAt).
 		Suffix("ON CONFLICT (jti) DO NOTHING").
@@ -130,8 +136,7 @@ func (r *sqlCommandRepository) BlacklistToken(ctx context.Context, jti string, e
 }
 
 func (r *sqlCommandRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) (int64, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Delete("token_blacklists").
+	query, args, err := r.psql.Delete("token_blacklists").
 		Where(squirrel.LtOrEq{"expires_at": squirrel.Expr("NOW()")}).
 		ToSql()
 	if err != nil {

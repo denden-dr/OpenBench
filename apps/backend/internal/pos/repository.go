@@ -22,24 +22,31 @@ type CommandRepository interface {
 }
 
 type sqlQueryRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 type sqlCommandRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
-	return &sqlQueryRepository{db: db}
+	return &sqlQueryRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func NewCommandRepository(db *sqlx.DB) CommandRepository {
-	return &sqlCommandRepository{db: db}
+	return &sqlCommandRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.PosTransaction, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryTx, argsTx, err := psql.Select("id", "payment_method", "total_amount", "created_at").
+	queryTx, argsTx, err := r.psql.Select("id", "payment_method", "total_amount", "created_at").
 		From("pos_transactions").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -57,7 +64,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 		return nil, err
 	}
 
-	queryItems, argsItems, err := psql.Select(
+	queryItems, argsItems, err := r.psql.Select(
 		"pti.id", "pti.transaction_id", "pti.product_id", "pti.quantity", "pti.price",
 		"COALESCE(p.name, 'Deleted Product') as product_name",
 	).
@@ -78,8 +85,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := psql.Select("id", "payment_method", "total_amount", "created_at").
+	queryBuilder := r.psql.Select("id", "payment_method", "total_amount", "created_at").
 		From("pos_transactions")
 
 	if cursor != "" {
@@ -112,8 +118,7 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, limit int, cursor stri
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, t *models.PosTransaction) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryTx, argsTx, err := psql.Insert("pos_transactions").
+	queryTx, argsTx, err := r.psql.Insert("pos_transactions").
 		Columns("id", "payment_method", "total_amount", "created_at").
 		Values(t.ID, t.PaymentMethod, t.TotalAmount, squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at").
@@ -129,7 +134,7 @@ func (r *sqlCommandRepository) Create(ctx context.Context, t *models.PosTransact
 	}
 
 	if len(t.Items) > 0 {
-		insertBuilder := psql.Insert("pos_transaction_items").
+		insertBuilder := r.psql.Insert("pos_transaction_items").
 			Columns("id", "transaction_id", "product_id", "quantity", "price")
 
 		for i := range t.Items {
