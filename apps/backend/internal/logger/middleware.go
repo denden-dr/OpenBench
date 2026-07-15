@@ -37,7 +37,8 @@ func NewMiddleware() fiber.Handler {
 		method := c.Method()
 		path := c.Path()
 
-		if err != nil {
+		switch {
+		case err != nil:
 			slog.ErrorContext(ctx, "HTTP Request Error",
 				slog.Int("status", status),
 				slog.Duration("latency", latency),
@@ -45,14 +46,14 @@ func NewMiddleware() fiber.Handler {
 				slog.String("path", path),
 				slog.Any("error", err),
 			)
-		} else if status >= 400 {
+		case status >= 400:
 			slog.WarnContext(ctx, "HTTP Request Warning",
 				slog.Int("status", status),
 				slog.Duration("latency", latency),
 				slog.String("method", method),
 				slog.String("path", path),
 			)
-		} else {
+		default:
 			slog.InfoContext(ctx, "HTTP Request Success",
 				slog.Int("status", status),
 				slog.Duration("latency", latency),

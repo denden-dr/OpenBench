@@ -127,11 +127,12 @@ func TestAuthService_Login(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
-			if tt.mockErr != nil {
+			switch {
+			case tt.mockErr != nil:
 				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(nil, tt.mockErr)
-			} else if tt.name == "user not found" || tt.name == "empty email" {
+			case tt.name == "user not found" || tt.name == "empty email":
 				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(nil, nil)
-			} else {
+			default:
 				repo.On("GetUserByEmail", mock.Anything, tt.email).Return(user, nil)
 			}
 
