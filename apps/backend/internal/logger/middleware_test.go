@@ -57,3 +57,20 @@ func TestNewMiddleware_ExistingRequestID(t *testing.T) {
 	val := capturedCtx.Value(RequestIDKey)
 	assert.Equal(t, "custom-req-id", val)
 }
+
+func BenchmarkNewMiddleware(b *testing.B) {
+	app := fiber.New()
+	app.Use(NewMiddleware())
+
+	app.Get("/test", func(c fiber.Ctx) error {
+		return c.SendString("ok")
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = app.Test(req)
+	}
+}

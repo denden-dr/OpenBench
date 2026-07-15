@@ -27,3 +27,26 @@ func TestCursorInvalidDecoding(t *testing.T) {
 	_, _, err = DecodeCursor("YW55IGNhcm5hbCBwbGVhc3VyZS4=") // decodes to "any carnal pleasure." without "|"
 	assert.Error(t, err)
 }
+
+func BenchmarkEncodeCursor(b *testing.B) {
+	now := time.Now().UTC()
+	id := "test-id-123"
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_ = EncodeCursor(now, id)
+	}
+}
+
+func BenchmarkDecodeCursor(b *testing.B) {
+	now := time.Now().UTC()
+	id := "test-id-123"
+	encoded := EncodeCursor(now, id)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _, _ = DecodeCursor(encoded)
+	}
+}

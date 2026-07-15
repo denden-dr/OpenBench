@@ -246,3 +246,26 @@ func TestAuthService_Refresh(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkPasswordHashing(b *testing.B) {
+	password := []byte("secretpassword123")
+	cost := bcrypt.DefaultCost
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = bcrypt.GenerateFromPassword(password, cost)
+	}
+}
+
+func BenchmarkPasswordComparison(b *testing.B) {
+	password := []byte("secretpassword123")
+	cost := bcrypt.DefaultCost
+	hashed, _ := bcrypt.GenerateFromPassword(password, cost)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_ = bcrypt.CompareHashAndPassword(hashed, password)
+	}
+}

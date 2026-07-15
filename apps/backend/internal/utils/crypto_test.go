@@ -38,3 +38,26 @@ func TestEncryptDecrypt(t *testing.T) {
 	_, err = Decrypt("00", key)
 	assert.Error(t, err)
 }
+
+func BenchmarkEncrypt(b *testing.B) {
+	key := "this_is_a_secret_key_32_chars_ok"
+	plainText := "my-secret-passcode-12345"
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = Encrypt(plainText, key)
+	}
+}
+
+func BenchmarkDecrypt(b *testing.B) {
+	key := "this_is_a_secret_key_32_chars_ok"
+	plainText := "my-secret-passcode-12345"
+	encrypted, _ := Encrypt(plainText, key)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = Decrypt(encrypted, key)
+	}
+}
