@@ -216,8 +216,7 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 			return err
 		}
 
-		switch ticket.Status {
-		case models.StatusCompleted:
+		if ticket.Status == models.StatusCompleted {
 			if err := s.handleTicketCompletion(txCtx, ticket); err != nil {
 				return err
 			}
@@ -352,8 +351,7 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 			return err
 		}
 
-		switch ticket.Status {
-		case models.StatusCompleted:
+		if ticket.Status == models.StatusCompleted {
 			if err := s.handleTicketCompletion(txCtx, ticket); err != nil {
 				return err
 			}

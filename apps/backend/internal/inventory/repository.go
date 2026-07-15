@@ -25,24 +25,31 @@ type CommandRepository interface {
 }
 
 type sqlQueryRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 type sqlCommandRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
-	return &sqlQueryRepository{db: db}
+	return &sqlQueryRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func NewCommandRepository(db *sqlx.DB) CommandRepository {
-	return &sqlCommandRepository{db: db}
+	return &sqlCommandRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.Product, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
+	query, args, err := r.psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
 		From("products").
 		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
 		Limit(1).
@@ -63,8 +70,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
+	queryBuilder := r.psql.Select("id", "name", "price", "stock", "created_at", "updated_at").
 		From("products").
 		Where(squirrel.Eq{"deleted_at": nil})
 
@@ -103,8 +109,7 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, search string, limit i
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, p *models.Product) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("products").
+	query, args, err := r.psql.Insert("products").
 		Columns("id", "name", "price", "stock", "created_at", "updated_at").
 		Values(p.ID, p.Name, p.Price, p.Stock, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
@@ -118,8 +123,7 @@ func (r *sqlCommandRepository) Create(ctx context.Context, p *models.Product) er
 }
 
 func (r *sqlCommandRepository) Update(ctx context.Context, p *models.Product) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("products").
+	query, args, err := r.psql.Update("products").
 		Set("name", p.Name).
 		Set("price", p.Price).
 		Set("stock", p.Stock).
@@ -136,8 +140,7 @@ func (r *sqlCommandRepository) Update(ctx context.Context, p *models.Product) er
 }
 
 func (r *sqlCommandRepository) UpdateStock(ctx context.Context, id string, quantityChange int) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("products").
+	query, args, err := r.psql.Update("products").
 		Set("stock", squirrel.Expr("stock + ?", quantityChange)).
 		Set("updated_at", squirrel.Expr("NOW()")).
 		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
@@ -152,8 +155,7 @@ func (r *sqlCommandRepository) UpdateStock(ctx context.Context, id string, quant
 }
 
 func (r *sqlCommandRepository) Delete(ctx context.Context, id string) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("products").
+	query, args, err := r.psql.Update("products").
 		Set("deleted_at", squirrel.Expr("NOW()")).
 		Set("updated_at", squirrel.Expr("NOW()")).
 		Where(squirrel.Eq{"id": id, "deleted_at": nil}).

@@ -1,8 +1,6 @@
 package inventory
 
 import (
-	"errors"
-
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
 )
@@ -16,7 +14,7 @@ func NewHandler(service Service) *Handler {
 }
 
 type AdjustStockRequest struct {
-	QuantityChange int `json:"quantity_change"`
+	QuantityChange int `json:"quantity_change" validate:"required"`
 }
 
 type ProductResponse struct {
@@ -31,15 +29,16 @@ type ProductResponse struct {
 func (h *Handler) CreateProduct(c fiber.Ctx) error {
 	var req CreateProductRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	p, err := h.service.CreateProduct(c.Context(), req)
 	if err != nil {
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to create product.")
+		return err
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -50,23 +49,21 @@ func (h *Handler) CreateProduct(c fiber.Ctx) error {
 func (h *Handler) UpdateProduct(c fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Product ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
 	}
 
 	var req UpdateProductRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	p, err := h.service.UpdateProduct(c.Context(), id, req)
 	if err != nil {
-		if errors.Is(err, ErrProductNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Product not found.")
-		}
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to update product.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -77,28 +74,26 @@ func (h *Handler) UpdateProduct(c fiber.Ctx) error {
 func (h *Handler) AdjustStock(c fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Product ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
 	}
 
 	var req AdjustStockRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	err := h.service.AdjustStock(c.Context(), id, req.QuantityChange)
 	if err != nil {
-		if errors.Is(err, ErrProductNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Product not found.")
-		}
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to adjust stock.")
+		return err
 	}
 
 	p, err := h.service.GetProductByID(c.Context(), id)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to fetch updated product.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -109,15 +104,12 @@ func (h *Handler) AdjustStock(c fiber.Ctx) error {
 func (h *Handler) GetProductByID(c fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Product ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
 	}
 
 	p, err := h.service.GetProductByID(c.Context(), id)
 	if err != nil {
-		if errors.Is(err, ErrProductNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Product not found.")
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve product details.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -132,7 +124,7 @@ func (h *Handler) GetProducts(c fiber.Ctx) error {
 
 	products, nextCursor, err := h.service.GetProducts(c.Context(), search, limit, cursor)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve product list.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(products, limit, nextCursor))
@@ -141,15 +133,12 @@ func (h *Handler) GetProducts(c fiber.Ctx) error {
 func (h *Handler) DeleteProduct(c fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Product ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
 	}
 
 	err := h.service.DeleteProduct(c.Context(), id)
 	if err != nil {
-		if errors.Is(err, ErrProductNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Product not found.")
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to delete product.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

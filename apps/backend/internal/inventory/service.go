@@ -18,15 +18,15 @@ var (
 )
 
 type CreateProductRequest struct {
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
-	Stock int    `json:"stock"`
+	Name  string `json:"name" validate:"required"`
+	Price int64  `json:"price" validate:"required,min=0"`
+	Stock int    `json:"stock" validate:"min=0"`
 }
 
 type UpdateProductRequest struct {
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
-	Stock int    `json:"stock"`
+	Name  string `json:"name" validate:"required"`
+	Price int64  `json:"price" validate:"required,min=0"`
+	Stock int    `json:"stock" validate:"min=0"`
 }
 
 type Service interface {

@@ -28,24 +28,31 @@ type CommandRepository interface {
 }
 
 type sqlQueryRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 type sqlCommandRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
-	return &sqlQueryRepository{db: db}
+	return &sqlQueryRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func NewCommandRepository(db *sqlx.DB) CommandRepository {
-	return &sqlCommandRepository{db: db}
+	return &sqlCommandRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.Warranty) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("warranties").
+	query, args, err := r.psql.Insert("warranties").
 		Columns("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
 		Values(w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
@@ -59,8 +66,7 @@ func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.War
 }
 
 func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
 		From("warranties").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -81,8 +87,7 @@ func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*
 }
 
 func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
 		From("warranties").
 		Where(squirrel.Eq{"ticket_id": ticketID}).
 		Limit(1).
@@ -103,8 +108,7 @@ func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketI
 }
 
 func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("warranties").
+	query, args, err := r.psql.Update("warranties").
 		Set("status", status).
 		Set("notes", notes).
 		Set("updated_at", squirrel.Expr("NOW()")).
@@ -120,8 +124,7 @@ func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id stri
 }
 
 func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("claims").
+	query, args, err := r.psql.Insert("claims").
 		Columns("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
 		Values(c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
@@ -135,8 +138,7 @@ func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim)
 }
 
 func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
 		From("claims").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -157,8 +159,7 @@ func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*mod
 }
 
 func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+	queryBuilder := r.psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
 		From("claims")
 
 	if status != "" {
@@ -203,8 +204,7 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 }
 
 func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("claims").
+	query, args, err := r.psql.Update("claims").
 		Set("status", c.Status).
 		Set("issue_description", c.IssueDescription).
 		Set("repair_action", c.RepairAction).
@@ -222,8 +222,7 @@ func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim)
 }
 
 func (r *sqlCommandRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("claims").
+	query, args, err := r.psql.Update("claims").
 		Set("status", status).
 		Set("evaluation_status", evalStatus).
 		Set("evaluation_notes", evalNotes).

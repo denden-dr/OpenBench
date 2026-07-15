@@ -24,24 +24,31 @@ type CommandRepository interface {
 }
 
 type sqlQueryRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 type sqlCommandRepository struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	psql squirrel.StatementBuilderType
 }
 
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
-	return &sqlQueryRepository{db: db}
+	return &sqlQueryRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func NewCommandRepository(db *sqlx.DB) CommandRepository {
-	return &sqlCommandRepository{db: db}
+	return &sqlCommandRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTicket) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Insert("service_tickets").
+	query, args, err := r.psql.Insert("service_tickets").
 		Columns(
 			"id", "ticket_number", "status", "customer_name", "customer_phone",
 			"device_brand", "device_model", "device_passcode", "issue_description",
@@ -64,8 +71,7 @@ func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTick
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := psql.Select(
+	queryBuilder := r.psql.Select(
 		"id", "ticket_number", "status", "customer_name", "customer_phone",
 		"device_brand", "device_model", "device_passcode", "issue_description",
 		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
@@ -114,8 +120,7 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search 
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Select(
+	query, args, err := r.psql.Select(
 		"id", "ticket_number", "status", "customer_name", "customer_phone",
 		"device_brand", "device_model", "device_passcode", "issue_description",
 		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
@@ -141,8 +146,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.S
 }
 
 func (r *sqlCommandRepository) Update(ctx context.Context, t *models.ServiceTicket) error {
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	query, args, err := psql.Update("service_tickets").
+	query, args, err := r.psql.Update("service_tickets").
 		Set("ticket_number", t.TicketNumber).
 		Set("status", t.Status).
 		Set("customer_name", t.CustomerName).
@@ -177,8 +181,7 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		limit = utils.MaxLimit
 	}
 
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := psql.Select(
+	queryBuilder := r.psql.Select(
 		"id", "ticket_number", "status", "customer_name", "customer_phone",
 		"device_brand", "device_model", "device_passcode", "issue_description",
 		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/apierrors"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
 	"github.com/gofiber/fiber/v3"
@@ -35,7 +36,9 @@ func TestInventoryHandler_Integration(t *testing.T) {
 	handler := inventory.NewHandler(service)
 
 	// Setup Fiber App
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: apierrors.GlobalErrorHandler,
+	})
 	app.Post("/products", handler.CreateProduct)
 	app.Get("/products", handler.GetProducts)
 	app.Get("/products/:id", handler.GetProductByID)

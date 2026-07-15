@@ -16,6 +16,9 @@ linters:
     - gosec
     - bodyclose
     - sqlclosecheck
+    - errorlint
+    - gocritic
+    - nolintlint
 
 linters-settings:
   govet:

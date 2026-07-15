@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"errors"
-
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
@@ -23,19 +21,16 @@ func NewHandler(service Service, cfg *config.Config) *Handler {
 func (h *Handler) Login(c fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
 	}
 
-	if req.Email == "" || req.Password == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Email and Password are required.")
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	result, err := h.service.Login(c, req.Email, req.Password)
 	if err != nil {
-		if errors.Is(err, ErrInvalidCredentials) {
-			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Invalid email or password.")
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "An internal server error occurred.")
+		return err
 	}
 
 	// Set Access Token Cookie
@@ -68,12 +63,12 @@ func (h *Handler) Login(c fiber.Ctx) error {
 func (h *Handler) Refresh(c fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken == "" {
-		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token is missing.")
+		return fiber.NewError(fiber.StatusUnauthorized, "Refresh token is missing.")
 	}
 
 	result, err := h.service.Refresh(c, refreshToken)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Refresh token is invalid or expired.")
+		return err
 	}
 
 	// Set new Access Token Cookie

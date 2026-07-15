@@ -16,8 +16,8 @@ type WarrantyResponse struct {
 }
 
 type CreateClaimRequest struct {
-	WarrantyID       string `json:"warranty_id"`
-	IssueDescription string `json:"issue_description"`
+	WarrantyID       string `json:"warranty_id" validate:"required"`
+	IssueDescription string `json:"issue_description" validate:"required"`
 }
 
 type ClaimResponse struct {
@@ -45,7 +45,7 @@ type ClaimListResponse struct {
 }
 
 type ChangeClaimStatusRequest struct {
-	Status models.ServiceTicketStatus `json:"status"`
+	Status models.ServiceTicketStatus `json:"status" validate:"required,oneof=RECEIVED REPAIRING PENDING_CONFIRMATION FIXED COMPLETED CANCELLED RETURNED"`
 }
 
 type ClaimStatusResponse struct {
@@ -55,13 +55,13 @@ type ClaimStatusResponse struct {
 }
 
 type UpdateClaimRequest struct {
-	IssueDescription string `json:"issue_description"`
+	IssueDescription string `json:"issue_description" validate:"required"`
 	RepairAction     string `json:"repair_action"`
 	Notes            string `json:"notes"`
 }
 
 type EvaluateClaimRequest struct {
-	Status models.ClaimEvaluationStatus `json:"status"`
+	Status models.ClaimEvaluationStatus `json:"status" validate:"required,oneof=PENDING ACCEPTED REJECTED VOID"`
 	Notes  string                       `json:"notes"`
 }
 
@@ -72,7 +72,7 @@ type EvaluateClaimResponse struct {
 }
 
 type UpdateWarrantyStatusRequest struct {
-	Status models.WarrantyStatus `json:"status"`
+	Status models.WarrantyStatus `json:"status" validate:"required,oneof=ACTIVE EXPIRED VOID"`
 	Notes  string                `json:"notes"`
 }
 

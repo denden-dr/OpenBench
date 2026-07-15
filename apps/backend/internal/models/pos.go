@@ -27,11 +27,11 @@ type PosTransactionItem struct {
 }
 
 type CheckoutItemRequest struct {
-	ProductID string `json:"product_id"`
-	Quantity  int    `json:"quantity"`
+	ProductID string `json:"product_id" validate:"required"`
+	Quantity  int    `json:"quantity" validate:"required,gt=0"`
 }
 
 type CheckoutRequest struct {
-	PaymentMethod PaymentMethod         `json:"payment_method"`
-	Items         []CheckoutItemRequest `json:"items"`
+	PaymentMethod PaymentMethod         `json:"payment_method" validate:"required,oneof=CASH QRIS"`
+	Items         []CheckoutItemRequest `json:"items" validate:"required,min=1,dive"`
 }

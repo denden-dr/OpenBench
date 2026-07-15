@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
+	"github.com/denden-dr/OpenBench/apps/backend/internal/apierrors"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/auth"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
@@ -52,7 +53,9 @@ func TestAuthHandler_Integration(t *testing.T) {
 	authHandler := auth.NewHandler(authService, cfg)
 
 	// Setup App
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: apierrors.GlobalErrorHandler,
+	})
 	authGroup := app.Group("/api/v1/auth")
 	authGroup.Post("/login", authHandler.Login)
 	authGroup.Post("/refresh", authHandler.Refresh)

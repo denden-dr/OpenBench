@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/denden-dr/OpenBench/apps/backend/internal/apierrors"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/inventory"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
@@ -47,7 +48,9 @@ func TestPosHandler_Integration(t *testing.T) {
 	handler := pos.NewHandler(service)
 
 	// Setup Fiber App
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: apierrors.GlobalErrorHandler,
+	})
 	app.Post("/checkout", handler.Checkout)
 	app.Get("/transactions", handler.GetTransactions)
 	app.Get("/transactions/:id", handler.GetTransactionByID)

@@ -25,10 +25,16 @@ func main() {
 
 	logger.InitLogger(cfg.App.Env)
 
+	if err := run(cfg); err != nil {
+		slog.Error("Seed failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(cfg *config.Config) error {
 	db, err := database.NewPostgresDB(cfg.DB)
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer db.Close()
 
@@ -43,11 +49,11 @@ func main() {
 
 	slog.Info("Running database seeder...")
 	if err := SeedDefaultAdmin(ctx, authQueryRepo, authCommandRepo, cfg); err != nil {
-		slog.Error("Failed to seed default admin", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	slog.Info("Database seeding completed.")
+	return nil
 }
 
 func SeedDefaultAdmin(ctx context.Context, queryRepo auth.QueryRepository, commandRepo auth.CommandRepository, cfg *config.Config) error {
