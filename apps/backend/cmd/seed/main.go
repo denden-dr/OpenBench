@@ -12,6 +12,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/logger"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/google/uuid"
+	"github.com/samber/hot"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,8 +32,11 @@ func main() {
 	}
 	defer db.Close()
 
-	authQueryRepo := auth.NewQueryRepository(db)
-	authCommandRepo := auth.NewCommandRepository(db)
+	cache := hot.NewHotCache[string, bool](hot.WTinyLFU, 100).Build()
+	defer cache.StopJanitor()
+
+	authQueryRepo := auth.NewQueryRepository(db, cache)
+	authCommandRepo := auth.NewCommandRepository(db, cache)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
