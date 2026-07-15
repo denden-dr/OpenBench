@@ -16,6 +16,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/samber/hot"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -42,8 +43,11 @@ func TestAuthHandler_Integration(t *testing.T) {
 		},
 	}
 
-	cmdRepo := auth.NewCommandRepository(db)
-	queryRepo := auth.NewQueryRepository(db)
+	cache := hot.NewHotCache[string, bool](hot.WTinyLFU, 100).Build()
+	defer cache.StopJanitor()
+
+	cmdRepo := auth.NewCommandRepository(db, cache)
+	queryRepo := auth.NewQueryRepository(db, cache)
 	authService := auth.NewService(queryRepo, cmdRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg)
 

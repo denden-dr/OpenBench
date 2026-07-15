@@ -10,6 +10,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/testutils"
 	"github.com/google/uuid"
+	"github.com/samber/hot"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,8 +23,11 @@ func TestAuthRepository_Integration(t *testing.T) {
 	require.NoError(t, err)
 	defer teardown()
 
-	cmdRepo := auth.NewCommandRepository(db)
-	queryRepo := auth.NewQueryRepository(db)
+	cache := hot.NewHotCache[string, bool](hot.WTinyLFU, 100).Build()
+	defer cache.StopJanitor()
+
+	cmdRepo := auth.NewCommandRepository(db, cache)
+	queryRepo := auth.NewQueryRepository(db, cache)
 
 	t.Run("CreateUser and GetUserByEmail", func(t *testing.T) {
 		err := testutils.CleanTable(db, "users")

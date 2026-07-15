@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/denden-dr/OpenBench/apps/backend/config"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
@@ -12,7 +13,14 @@ import (
 
 func RequireAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		accessToken := c.Cookies("access_token")
+		var accessToken string
+		authHeader := c.Get("Authorization")
+		if len(authHeader) > 7 && strings.HasPrefix(authHeader, "Bearer ") {
+			accessToken = authHeader[7:]
+		} else {
+			accessToken = c.Cookies("access_token")
+		}
+
 		if accessToken == "" {
 			return utils.SendProblem(c, fiber.StatusUnauthorized, "/errors/unauthorized", "Unauthorized Access", "Access token is missing.")
 		}
@@ -22,7 +30,7 @@ func RequireAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
 			return []byte(cfg.Auth.AccessSecret), nil
-		})
+		}, jwt.WithIssuer("OpenBench"), jwt.WithAudience("OpenBench-Client"))
 
 		if err != nil || !token.Valid {
 			slog.WarnContext(c.Context(), "Access attempt with invalid token",

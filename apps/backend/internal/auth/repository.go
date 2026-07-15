@@ -10,6 +10,7 @@ import (
 	"github.com/denden-dr/OpenBench/apps/backend/internal/database"
 	"github.com/denden-dr/OpenBench/apps/backend/internal/models"
 	"github.com/jmoiron/sqlx"
+	"github.com/samber/hot"
 )
 
 type QueryRepository interface {
@@ -24,19 +25,21 @@ type CommandRepository interface {
 }
 
 type sqlQueryRepository struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache *hot.HotCache[string, bool]
 }
 
 type sqlCommandRepository struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache *hot.HotCache[string, bool]
 }
 
-func NewQueryRepository(db *sqlx.DB) QueryRepository {
-	return &sqlQueryRepository{db: db}
+func NewQueryRepository(db *sqlx.DB, cache *hot.HotCache[string, bool]) QueryRepository {
+	return &sqlQueryRepository{db: db, cache: cache}
 }
 
-func NewCommandRepository(db *sqlx.DB) CommandRepository {
-	return &sqlCommandRepository{db: db}
+func NewCommandRepository(db *sqlx.DB, cache *hot.HotCache[string, bool]) CommandRepository {
+	return &sqlCommandRepository{db: db, cache: cache}
 }
 
 func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -77,6 +80,10 @@ func (r *sqlCommandRepository) CreateUser(ctx context.Context, user *models.User
 }
 
 func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
+	if isBlacklisted, found, _ := r.cache.Get(jti); found {
+		return isBlacklisted, nil
+	}
+
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	query, args, err := psql.Select("1").
 		From("token_blacklists").
@@ -91,10 +98,13 @@ func (r *sqlQueryRepository) IsTokenBlacklisted(ctx context.Context, jti string)
 	err = r.db.GetContext(ctx, &exists, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			r.cache.Set(jti, false)
 			return false, nil
 		}
 		return false, err
 	}
+
+	r.cache.Set(jti, true)
 	return true, nil
 }
 
@@ -111,7 +121,12 @@ func (r *sqlCommandRepository) BlacklistToken(ctx context.Context, jti string, e
 
 	querier := database.GetQuerier(ctx, r.db)
 	_, err = querier.ExecContext(ctx, query, args...)
-	return err
+	if err != nil {
+		return err
+	}
+
+	r.cache.Set(jti, true)
+	return nil
 }
 
 func (r *sqlCommandRepository) DeleteExpiredBlacklistedTokens(ctx context.Context) (int64, error) {

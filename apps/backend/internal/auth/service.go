@@ -88,7 +88,7 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 			return nil, ErrInvalidToken
 		}
 		return []byte(s.cfg.Auth.RefreshSecret), nil
-	})
+	}, jwt.WithIssuer("OpenBench"), jwt.WithAudience("OpenBench-Client"))
 
 	if err != nil || !token.Valid {
 		return nil, ErrInvalidToken
@@ -104,6 +104,16 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 		return nil, ErrInvalidToken
 	}
 
+	// Blacklist the old refresh token (Refresh Token Rotation)
+	if jti, ok := claims["jti"].(string); ok && jti != "" {
+		if expFloat, ok := claims["exp"].(float64); ok {
+			expiresAt := time.Unix(int64(expFloat), 0)
+			if time.Now().Before(expiresAt) {
+				_ = s.commandRepo.BlacklistToken(ctx, jti, expiresAt)
+			}
+		}
+	}
+
 	user, err := s.queryRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -117,14 +127,20 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (*RefreshRes
 		return nil, err
 	}
 
+	newRefreshToken, err := s.generateRefreshToken(user)
+	if err != nil {
+		return nil, err
+	}
+
 	slog.InfoContext(ctx, "Token refreshed successfully",
 		slog.String("email", user.Email),
 		slog.String("user_id", user.ID),
 	)
 
 	return &RefreshResponse{
-		AccessToken: newAccessToken,
-		ExpiresAt:   time.Now().Add(s.cfg.Auth.AccessExpiry),
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+		ExpiresAt:    time.Now().Add(s.cfg.Auth.AccessExpiry),
 	}, nil
 }
 
@@ -184,6 +200,8 @@ func (s *service) generateAccessToken(user *models.User) (string, error) {
 		"jti":   uuid.New().String(),
 		"exp":   time.Now().Add(s.cfg.Auth.AccessExpiry).Unix(),
 		"iat":   time.Now().Unix(),
+		"iss":   "OpenBench",
+		"aud":   "OpenBench-Client",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -197,6 +215,8 @@ func (s *service) generateRefreshToken(user *models.User) (string, error) {
 		"jti":   uuid.New().String(),
 		"exp":   time.Now().Add(s.cfg.Auth.RefreshExpiry).Unix(),
 		"iat":   time.Now().Unix(),
+		"iss":   "OpenBench",
+		"aud":   "OpenBench-Client",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

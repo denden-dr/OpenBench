@@ -195,6 +195,7 @@ func TestAuthService_Refresh(t *testing.T) {
 			name:         "successful refresh",
 			refreshToken: loginResult.RefreshToken,
 			setupMock: func(repo *mockRepository) {
+				repo.On("BlacklistToken", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(user, nil)
 			},
 			expectedErr: nil,
@@ -215,6 +216,7 @@ func TestAuthService_Refresh(t *testing.T) {
 			name:         "user not found in db during refresh",
 			refreshToken: loginResult.RefreshToken,
 			setupMock: func(repo *mockRepository) {
+				repo.On("BlacklistToken", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				repo.On("GetUserByEmail", mock.Anything, user.Email).Return(nil, nil)
 			},
 			expectedErr: ErrUserNotFound,
