@@ -87,6 +87,17 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 		MaxAge:   int(h.cfg.Auth.AccessExpiry.Seconds()),
 	})
 
+	// Set new Refresh Token Cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    result.RefreshToken,
+		Path:     "/api/v1/auth/refresh",
+		HTTPOnly: true,
+		Secure:   h.cfg.App.Env == "production",
+		SameSite: "Strict",
+		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
+	})
+
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse[*RefreshResponse]{
 		Data: result,
 	})

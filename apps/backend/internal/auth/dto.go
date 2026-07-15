@@ -29,6 +29,7 @@ type LoginResponse struct {
 }
 
 type RefreshResponse struct {
-	AccessToken string    `json:"access_token"`
-	ExpiresAt   time.Time `json:"expires_at"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"-"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
