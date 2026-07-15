@@ -1,8 +1,6 @@
 package ticket
 
 import (
-	"errors"
-
 	"github.com/denden-dr/OpenBench/apps/backend/internal/utils"
 	"github.com/gofiber/fiber/v3"
 )
@@ -18,15 +16,16 @@ func NewHandler(service Service) *Handler {
 func (h *Handler) CreateTicket(c fiber.Ctx) error {
 	var req CreateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	res, err := h.service.CreateTicket(c.Context(), req)
 	if err != nil {
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to create service ticket.")
+		return err
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -42,7 +41,7 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 
 	tickets, nextCursor, err := h.service.GetTickets(c.Context(), status, search, limit, cursor)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket list.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(tickets, limit, nextCursor))
@@ -51,7 +50,7 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 func (h *Handler) SearchTickets(c fiber.Ctx) error {
 	var req TicketSearchRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
 	}
 
 	if req.Limit <= 0 {
@@ -63,7 +62,7 @@ func (h *Handler) SearchTickets(c fiber.Ctx) error {
 
 	tickets, nextCursor, err := h.service.SearchTickets(c.Context(), req)
 	if err != nil {
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to perform ticket search.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(tickets, req.Limit, nextCursor))
@@ -72,15 +71,12 @@ func (h *Handler) SearchTickets(c fiber.Ctx) error {
 func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
 	}
 
 	res, err := h.service.GetTicketByID(c.Context(), ticketID)
 	if err != nil {
-		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to retrieve ticket details.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -91,23 +87,21 @@ func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
 	}
 
 	var req ChangeStatusRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	res, err := h.service.UpdateTicketStatus(c.Context(), ticketID, req)
 	if err != nil {
-		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
-		}
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to update ticket status.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -118,23 +112,21 @@ func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
 func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
 	}
 
 	var req UpdateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	res, err := h.service.UpdateTicketDetails(c.Context(), ticketID, req)
 	if err != nil {
-		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
-		}
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to update ticket details.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -145,23 +137,21 @@ func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
 func (h *Handler) EmergencyUpdateTicket(c fiber.Ctx) error {
 	ticketID := c.Params("ticket_id")
 	if ticketID == "" {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Ticket ID is required.")
+		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
 	}
 
 	var req EmergencyUpdateTicketRequest
 	if err := c.Bind().JSON(&req); err != nil {
-		return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", "Invalid JSON format.")
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		return err
 	}
 
 	res, err := h.service.EmergencyUpdateTicket(c.Context(), ticketID, req)
 	if err != nil {
-		if errors.Is(err, ErrTicketNotFound) {
-			return utils.SendProblem(c, fiber.StatusNotFound, "/errors/not-found", "Not Found", "Service ticket not found.")
-		}
-		if errors.Is(err, ErrInvalidInput) {
-			return utils.SendProblem(c, fiber.StatusBadRequest, "/errors/bad-request", "Bad Request", err.Error())
-		}
-		return utils.SendProblem(c, fiber.StatusInternalServerError, "/errors/internal-server-error", "Internal Server Error", "Failed to perform emergency ticket update.")
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
