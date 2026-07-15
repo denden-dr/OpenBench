@@ -2,7 +2,6 @@ package apierrors
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -33,11 +32,13 @@ func GlobalErrorHandler(c fiber.Ctx, err error) error {
 		code = fiber.StatusBadRequest
 		title = "Validation Failed"
 		problemType = "/errors/bad-request"
-		var out []string
-		for _, fe := range ve {
-			out = append(out, fmt.Sprintf("Field '%s' failed validation on tag '%s'", fe.Field(), fe.Tag()))
+		lang := c.Get("Accept-Language")
+		locale := "en"
+		if strings.HasPrefix(strings.ToLower(lang), "id") {
+			locale = "id"
 		}
-		detail = "Validation failed: " + strings.Join(out, ", ")
+		translatedErrs := utils.TranslateValidationErrors(ve, locale)
+		detail = "Validation failed: " + strings.Join(translatedErrs, ", ")
 
 	case errors.Is(err, auth.ErrInvalidCredentials) || errors.Is(err, auth.ErrInvalidToken):
 		code = fiber.StatusUnauthorized
@@ -106,11 +107,24 @@ func GlobalErrorHandler(c fiber.Ctx, err error) error {
 				detail = err.Error()
 			}
 		} else {
-			slog.ErrorContext(c.Context(), "Unhandled error caught by global ErrorHandler",
-				slog.Any("error", err),
-				slog.String("path", c.Path()),
-				slog.String("method", c.Method()),
-			)
+			type stackTracer interface {
+				StackTrace() string
+			}
+			var st stackTracer
+			if errors.As(err, &st) {
+				slog.ErrorContext(c.Context(), "Unhandled error caught by global ErrorHandler",
+					slog.Any("error", err),
+					slog.String("stack_trace", st.StackTrace()),
+					slog.String("path", c.Path()),
+					slog.String("method", c.Method()),
+				)
+			} else {
+				slog.ErrorContext(c.Context(), "Unhandled error caught by global ErrorHandler",
+					slog.Any("error", err),
+					slog.String("path", c.Path()),
+					slog.String("method", c.Method()),
+				)
+			}
 		}
 	}
 
