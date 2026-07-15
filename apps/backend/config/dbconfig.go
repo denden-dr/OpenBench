@@ -2,15 +2,16 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 )
 
 type DBConfig struct {
-	Host            string        `mapstructure:"host"`
-	Port            string        `mapstructure:"port"`
-	User            string        `mapstructure:"user"`
-	Password        string        `mapstructure:"password"`
-	Name            string        `mapstructure:"name"`
+	Host            string        `mapstructure:"host" validate:"required"`
+	Port            string        `mapstructure:"port" validate:"required"`
+	User            string        `mapstructure:"user" validate:"required"`
+	Password        string        `mapstructure:"password" validate:"required"`
+	Name            string        `mapstructure:"name" validate:"required"`
 	SSLMode         string        `mapstructure:"sslmode"`
 	MaxConns        int32         `mapstructure:"max_conns"`
 	MinConns        int32         `mapstructure:"min_conns"`
@@ -22,6 +23,16 @@ type DBConfig struct {
 }
 
 func (db DBConfig) DSN() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		db.User, db.Password, db.Host, db.Port, db.Name, db.SSLMode)
+	u := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(db.User, db.Password),
+		Host:   fmt.Sprintf("%s:%s", db.Host, db.Port),
+		Path:   db.Name,
+	}
+	q := u.Query()
+	if db.SSLMode != "" {
+		q.Set("sslmode", db.SSLMode)
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
 }

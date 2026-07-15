@@ -2,7 +2,8 @@
   "app": {
     "env": "development",
     "name": "OpenBench API",
-    "port": "3000"
+    "port": "3000",
+    "allowed_origins": "http://localhost:5173,http://localhost:3000"
   },
   "db": {
     "max_conns": 25,
