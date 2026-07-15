@@ -163,4 +163,3 @@ func TestDBConfig_DSN(t *testing.T) {
 	assert.Contains(t, dsn, "p%40ss%3Aword%23123")
 	assert.Contains(t, dsn, "sslmode=verify-full")
 }
-

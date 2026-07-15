@@ -33,11 +33,11 @@ type Service interface {
 }
 
 type service struct {
-	posQueryRepo   QueryRepository
-	posCommandRepo CommandRepository
+	posQueryRepo    QueryRepository
+	posCommandRepo  CommandRepository
 	inventoryReader InventoryProductReader
 	inventoryWriter InventoryStockWriter
-	txManager      database.TxManager
+	txManager       database.TxManager
 }
 
 func NewService(
