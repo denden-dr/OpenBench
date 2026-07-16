@@ -7,7 +7,8 @@ import (
 
 // Module encapsulates the external-facing handlers of the pos package.
 type Module struct {
-	Handler *Handler
+	Handler    *Handler
+	WebHandler *WebHandler
 }
 
 // NewModule initializes the entire pos domain layer.
@@ -21,6 +22,7 @@ func NewModule(
 	cr := NewCommandRepository(db)
 	svc := NewService(qr, cr, invReader, invWriter, txManager)
 	return Module{
-		Handler: NewHandler(svc),
+		Handler:    NewHandler(svc),
+		WebHandler: NewWebHandler(svc),
 	}
 }

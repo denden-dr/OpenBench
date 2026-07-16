@@ -1,0 +1,87 @@
+package layouts
+
+import "github.com/dimmerz92/go-icons/lucide"
+
+templ AdminLayout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - OpenBench Admin</title>
+			<!-- Tailwind CSS -->
+			<link href="/static/css/style.css" rel="stylesheet"/>
+
+			<!-- HTMX -->
+			<script src="https://unpkg.com/htmx.org@1.9.11" defer></script>
+			<!-- Alpine.js -->
+			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		</head>
+		<body class="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-primary selection:text-white flex overflow-hidden">
+			<!-- Animated Gradient Background -->
+			<div class="fixed inset-0 z-[-1] h-full w-full bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+			
+			<!-- Sidebar -->
+			<aside class="w-64 flex-shrink-0 h-screen border-r border-slate-200/50 bg-white/50 backdrop-blur-xl flex flex-col transition-all duration-300 z-20">
+				<!-- Logo Area -->
+				<div class="h-16 flex items-center px-6 border-b border-slate-200/50">
+					<div class="flex items-center gap-3 text-primary font-bold text-xl tracking-tight">
+						<div class="p-1.5 bg-primary/10 rounded-lg">
+							@lucide.Hexagon(templ.Attributes{"class": "w-6 h-6"})
+						</div>
+						OpenBench
+					</div>
+				</div>
+
+				<!-- Navigation -->
+				<nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+					<a href="/" class="flex items-center gap-3 px-3 py-2.5 bg-primary text-white rounded-xl font-medium shadow-sm shadow-primary/20 transition-all">
+						@lucide.LayoutDashboard(templ.Attributes{"class": "w-5 h-5"})
+						Dashboard
+					</a>
+					<a href="/tickets" class="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-medium transition-all">
+						@lucide.Wrench(templ.Attributes{"class": "w-5 h-5"})
+						Service Tickets
+					</a>
+					<a href="/pos" class="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-medium transition-all">
+						@lucide.Store(templ.Attributes{"class": "w-5 h-5"})
+						POS & Inventory
+					</a>
+					<a href="/warranties" class="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-medium transition-all">
+						@lucide.ShieldAlert(templ.Attributes{"class": "w-5 h-5"})
+						Warranty Claims
+					</a>
+				</nav>
+
+				<!-- User Profile / Footer -->
+				<div class="p-4 border-t border-slate-200/50">
+					<button class="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-all" hx-post="/api/v1/auth/logout" hx-redirect="/">
+						@lucide.LogOut(templ.Attributes{"class": "w-5 h-5"})
+						Logout
+					</button>
+				</div>
+			</aside>
+
+			<!-- Main Content -->
+			<main class="flex-1 h-screen overflow-y-auto">
+				<!-- Top Header -->
+				<header class="h-16 flex items-center justify-between px-8 border-b border-slate-200/50 bg-white/50 backdrop-blur-xl sticky top-0 z-10">
+					<h1 class="text-lg font-semibold text-slate-800">{ title }</h1>
+					<div class="flex items-center gap-4">
+						<button class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
+							@lucide.Bell(templ.Attributes{"class": "w-5 h-5"})
+						</button>
+						<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+							A
+						</div>
+					</div>
+				</header>
+
+				<!-- Page Content -->
+				<div class="p-8 max-w-7xl mx-auto">
+					{ children... }
+				</div>
+			</main>
+		</body>
+	</html>
+}

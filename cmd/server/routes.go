@@ -28,7 +28,7 @@ func registerRoutes(
 	app.Get("/health", healthHandler.HealthCheckPublic)
 
 	// Register Web UI Routes
-	registerWebRoutes(app, authMod)
+	registerWebRoutes(app, cfg, authMod, ticketMod, posMod, warrantyMod)
 
 	// Register JSON API Routes
 	registerAPIRoutes(app, cfg, healthHandler, authMod, warrantyMod, ticketMod, inventoryMod, posMod)
