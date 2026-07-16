@@ -55,7 +55,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
 	})
 
-	return c.Status(fiber.StatusOK).JSON(SuccessResponse[*LoginResponse]{
+	return c.Status(fiber.StatusOK).JSON(SuccessResponse[LoginResponse]{
 		Data: result,
 	})
 }
@@ -93,7 +93,7 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
 	})
 
-	return c.Status(fiber.StatusOK).JSON(SuccessResponse[*RefreshResponse]{
+	return c.Status(fiber.StatusOK).JSON(SuccessResponse[RefreshResponse]{
 		Data: result,
 	})
 }

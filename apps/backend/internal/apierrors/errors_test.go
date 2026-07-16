@@ -84,18 +84,19 @@ func TestGlobalErrorHandler_DomainErrors(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
-	t.Run("Validation Failed", func(t *testing.T) {
+	t.Run("Validation Failed - English", func(t *testing.T) {
 		type valStruct struct {
 			Name string `validate:"required"`
 		}
-		app.Post("/validate", func(c fiber.Ctx) error {
+		app.Post("/validate-en", func(c fiber.Ctx) error {
 			var req valStruct
 			_ = c.Bind().JSON(&req)
 			return utils.ValidateStruct(req)
 		})
 
-		req := httptest.NewRequest("POST", "/validate", nil)
+		req := httptest.NewRequest("POST", "/validate-en", nil)
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept-Language", "en")
 		resp, err := app.Test(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
@@ -106,7 +107,33 @@ func TestGlobalErrorHandler_DomainErrors(t *testing.T) {
 		var problem utils.ProblemDetail
 		err = json.Unmarshal(bodyBytes, &problem)
 		require.NoError(t, err)
-		assert.Contains(t, problem.Detail, "Validation failed")
+		assert.Contains(t, problem.Detail, "Validation failed: Name is a required field")
+	})
+
+	t.Run("Validation Failed - Indonesian", func(t *testing.T) {
+		type valStruct struct {
+			Name string `validate:"required"`
+		}
+		app.Post("/validate-id", func(c fiber.Ctx) error {
+			var req valStruct
+			_ = c.Bind().JSON(&req)
+			return utils.ValidateStruct(req)
+		})
+
+		req := httptest.NewRequest("POST", "/validate-id", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept-Language", "id")
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		var problem utils.ProblemDetail
+		err = json.Unmarshal(bodyBytes, &problem)
+		require.NoError(t, err)
+		assert.Contains(t, problem.Detail, "Validation failed: Name wajib diisi")
 	})
 
 	t.Run("Fiber Errors", func(t *testing.T) {

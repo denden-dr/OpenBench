@@ -24,13 +24,13 @@ type WarrantyGenerator interface {
 }
 
 type Service interface {
-	CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error)
+	CreateTicket(ctx context.Context, req CreateTicketRequest) (TicketResponse, error)
 	GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error)
 	SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, string, error)
-	GetTicketByID(ctx context.Context, id string) (*TicketResponse, error)
-	UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (*TicketStatusResponse, error)
-	UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (*TicketResponse, error)
-	EmergencyUpdateTicket(ctx context.Context, id string, req EmergencyUpdateTicketRequest) (*TicketResponse, error)
+	GetTicketByID(ctx context.Context, id string) (TicketResponse, error)
+	UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (TicketStatusResponse, error)
+	UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (TicketResponse, error)
+	EmergencyUpdateTicket(ctx context.Context, id string, req EmergencyUpdateTicketRequest) (TicketResponse, error)
 }
 
 type service struct {
@@ -60,17 +60,17 @@ func NewService(
 	}
 }
 
-func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*TicketResponse, error) {
+func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (TicketResponse, error) {
 	ticketNum, err := s.generateTicketNumber()
 	if err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 
 	encryptedPasscode := ""
 	if req.DevicePasscode != "" {
 		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to encrypt passcode: %w", err)
+			return TicketResponse{}, fmt.Errorf("failed to encrypt passcode: %w", err)
 		}
 		encryptedPasscode = enc
 	}
@@ -93,11 +93,11 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 		WarrantyDays:     req.WarrantyDays,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
+		return TicketResponse{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
 	if err := s.commandRepo.Create(ctx, ticket); err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "Service ticket created",
@@ -116,7 +116,7 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (*T
 	}
 
 	res := MapToTicketResponse(ticket)
-	return &res, nil
+	return res, nil
 }
 
 func (s *service) GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error) {
@@ -161,13 +161,13 @@ func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([
 	return res, nextCursor, nil
 }
 
-func (s *service) GetTicketByID(ctx context.Context, id string) (*TicketResponse, error) {
+func (s *service) GetTicketByID(ctx context.Context, id string) (TicketResponse, error) {
 	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 	if ticket == nil {
-		return nil, ErrTicketNotFound
+		return TicketResponse{}, ErrTicketNotFound
 	}
 
 	if ticket.DevicePasscode != "" {
@@ -180,12 +180,12 @@ func (s *service) GetTicketByID(ctx context.Context, id string) (*TicketResponse
 	}
 
 	res := MapToTicketResponse(ticket)
-	return &res, nil
+	return res, nil
 }
 
-func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (*TicketStatusResponse, error) {
+func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (TicketStatusResponse, error) {
 	if req.Status == "" {
-		return nil, fmt.Errorf("%w: status is required", ErrInvalidInput)
+		return TicketStatusResponse{}, fmt.Errorf("%w: status is required", ErrInvalidInput)
 	}
 
 	// Validate status enum
@@ -194,19 +194,19 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		models.StatusFixed, models.StatusCompleted, models.StatusCancelled, models.StatusReturned:
 		// Valid
 	default:
-		return nil, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
+		return TicketStatusResponse{}, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
 	}
 
 	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return TicketStatusResponse{}, err
 	}
 	if ticket == nil {
-		return nil, ErrTicketNotFound
+		return TicketStatusResponse{}, ErrTicketNotFound
 	}
 
 	if ticket.Status == req.Status {
-		return nil, fmt.Errorf("%w: ticket is already in %s status", ErrInvalidInput, req.Status)
+		return TicketStatusResponse{}, fmt.Errorf("%w: ticket is already in %s status", ErrInvalidInput, req.Status)
 	}
 
 	ticket.Status = req.Status
@@ -226,7 +226,7 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 	})
 
 	if err != nil {
-		return nil, err
+		return TicketStatusResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "Service ticket status updated",
@@ -235,24 +235,24 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		slog.String("status", string(ticket.Status)),
 	)
 
-	return &TicketStatusResponse{
+	return TicketStatusResponse{
 		TicketID:  ticket.ID,
 		Status:    ticket.Status,
 		UpdatedAt: ticket.UpdatedAt,
 	}, nil
 }
 
-func (s *service) UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (*TicketResponse, error) {
+func (s *service) UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (TicketResponse, error) {
 	if req.CustomerName == "" || req.CustomerPhone == "" || req.IssueDescription == "" {
-		return nil, fmt.Errorf("%w: customer name, phone, and issue description are required", ErrInvalidInput)
+		return TicketResponse{}, fmt.Errorf("%w: customer name, phone, and issue description are required", ErrInvalidInput)
 	}
 
 	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 	if ticket == nil {
-		return nil, ErrTicketNotFound
+		return TicketResponse{}, ErrTicketNotFound
 	}
 
 	ticket.CustomerName = req.CustomerName
@@ -274,7 +274,7 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 	}
 
 	if err := s.commandRepo.Update(ctx, ticket); err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "Service ticket details updated",
@@ -290,12 +290,12 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 	}
 
 	res := MapToTicketResponse(ticket)
-	return &res, nil
+	return res, nil
 }
 
-func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req EmergencyUpdateTicketRequest) (*TicketResponse, error) {
+func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req EmergencyUpdateTicketRequest) (TicketResponse, error) {
 	if req.CustomerName == "" || req.CustomerPhone == "" || req.DeviceBrand == "" || req.DeviceModel == "" || req.IssueDescription == "" || req.Status == "" {
-		return nil, fmt.Errorf("%w: customer name, phone, device brand, model, issue description, and status are required", ErrInvalidInput)
+		return TicketResponse{}, fmt.Errorf("%w: customer name, phone, device brand, model, issue description, and status are required", ErrInvalidInput)
 	}
 
 	// Validate status enum
@@ -304,22 +304,22 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		models.StatusFixed, models.StatusCompleted, models.StatusCancelled, models.StatusReturned:
 		// Valid
 	default:
-		return nil, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
+		return TicketResponse{}, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
 	}
 
 	ticket, err := s.queryRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 	if ticket == nil {
-		return nil, ErrTicketNotFound
+		return TicketResponse{}, ErrTicketNotFound
 	}
 
 	encryptedPasscode := ""
 	if req.DevicePasscode != "" {
 		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to encrypt passcode: %w", err)
+			return TicketResponse{}, fmt.Errorf("failed to encrypt passcode: %w", err)
 		}
 		encryptedPasscode = enc
 	}
@@ -361,7 +361,7 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 	})
 
 	if err != nil {
-		return nil, err
+		return TicketResponse{}, err
 	}
 
 	slog.InfoContext(ctx, "Emergency ticket update performed",
@@ -378,7 +378,7 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 	}
 
 	res := MapToTicketResponse(ticket)
-	return &res, nil
+	return res, nil
 }
 
 func (s *service) generateTicketNumber() (string, error) {

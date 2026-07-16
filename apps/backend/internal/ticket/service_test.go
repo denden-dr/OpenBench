@@ -740,10 +740,10 @@ func TestService_UpdateTicketStatus_Rollback(t *testing.T) {
 	// Call UpdateTicketStatus
 	res, err := svc.UpdateTicketStatus(context.Background(), "ticket-rollback", ChangeStatusRequest{Status: models.StatusCompleted})
 
-	// Verify that error from CreateWarranty is propagated and res is nil
+	// Verify that error from CreateWarranty is propagated and res is zero
 	must.Error(err)
 	is.Contains(err.Error(), "failed to create warranty within transaction")
-	is.Nil(res)
+	is.Zero(res)
 
 	repo.AssertExpectations(t)
 	wgen.AssertExpectations(t)
