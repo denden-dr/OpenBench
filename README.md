@@ -18,18 +18,19 @@ Seiring perkembangannya, OpenBench kini telah dilengkapi berbagai utilitas pendu
 
 Meskipun ditujukan untuk kemudahan bisnis, OpenBench dibangun di atas fondasi teknologi modern yang menjamin kecepatan, keamanan, dan keandalan tingkat tinggi (Enterprise-Grade):
 
+- **Fullstack Architecture**: Menggunakan pendekatan **GOTTH Stack** (Go, Templ, Tailwind, HTMX) untuk pengembangan web interaktif tanpa penderitaan SPA kompleks.
 - **Backend**: [Golang](https://go.dev/) dengan framework [Fiber v3](https://gofiber.io/) (Kinerja sangat cepat dan efisien).
-- **Database**: [PostgreSQL 16](https://www.postgresql.org/) (Sistem database relasional paling tangguh).
-- **Database Access**: `sqlx` dipadukan dengan `pgx/v5` untuk eksekusi SQL yang efisien, aman, dan mendukung manajemen transaksi basis data berkinerja tinggi.
+- **Frontend Engine**: Komponen HTML reaktif menggunakan [Templ](https://templ.guide/), penataan gaya lewat Tailwind CSS (Binary CLI), serta interaktivitas dari [HTMX](https://htmx.org/) dan Alpine.js.
+- **Database**: [PostgreSQL 16](https://www.postgresql.org/) dengan akses melalui `sqlx` dan `pgx/v5` (eksekusi SQL efisien & mendukung *atomic transactions*).
 - **Infrastruktur**: Containerized menggunakan Docker/Podman (dilengkapi dengan *Testcontainers* untuk *integration test*).
-- **Konfigurasi**: 12-Factor App methodology dengan *strict environment variables loading* (menggunakan Viper).
+- **UI Design System**: Mengimplementasikan estetika *Glassmorphism*, *Self-hosted custom fonts*, dan standar Lucide Icons.
 
 ---
 
 ## Panduan Instalasi (Untuk Developer / Teknisi)
 
 ### Persyaratan Sistem
-- [Go](https://go.dev/doc/install) versi 1.25 atau lebih baru.
+- [Go](https://go.dev/doc/install) versi 1.26.1 atau lebih baru.
 - [Docker](https://docs.docker.com/get-docker/) atau [Podman](https://podman.io/) (beserta docker-compose/podman-compose).
 - Make utility.
 
@@ -48,12 +49,17 @@ Meskipun ditujukan untuk kemudahan bisnis, OpenBench dibangun di atas fondasi te
    make up
    ```
 
-3. **Menjalankan Server Web API**
-   Jalankan backend server:
+3. **Menjalankan Aplikasi (Mode Development)**
+   Untuk pengembangan dengan pengalaman terbaik yang dilengkapi fitur *hot-reload* (otomatis me-rebuild Go, Templ, dan Tailwind CSS setiap ada perubahan file), jalankan:
+   ```bash
+   make dev
+   ```
+   *(Pastikan Anda telah menginstal utilitas Air melalui `go install github.com/air-verse/air@latest`)*.
+   
+   Jika Anda hanya ingin menjalankan aplikasi sekali jalan (tanpa *hot-reload*):
    ```bash
    make run
    ```
-   Server akan berjalan dan secara otomatis mencoba terhubung ke database (dilengkapi dengan sistem ketahanan *Exponential Backoff Retry* jika database lambat merespon).
 
 4. **Menjalankan Pengujian (Testing)**
    Proyek ini dilengkapi dengan modul pengujian dan integrasi otomatis yang mendalam. Jalankan perintah berikut untuk menguji seluruh logika:

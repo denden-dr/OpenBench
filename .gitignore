@@ -14,21 +14,17 @@ Thumbs.db
 .classpath
 .settings/
 
-# Node / Frontend
+# Node / Frontend / Web UI
 node_modules/
 dist/
-/apps/frontend/.svelte-kit/
-/apps/frontend/build/
-/apps/frontend/.vercel/
-/apps/frontend/.netlify/
-/apps/frontend/.wrangler/
+/ui/static/node_modules/
+/ui/static/dist/
 playwright-report/
 test-results/
-apps/frontend/build_output.txt
 
 # Go / Backend
-/apps/backend/bin/
-/apps/backend/vendor/
+/bin/
+/vendor/
 *.exe
 *.exe~
 *.dll
@@ -61,3 +57,12 @@ tmp/
 temp/
 __pycache__/
 *.py[cod]
+
+# Generated Frontend Assets
+ui/static/css/style.css
+*_templ.go
+*_templ.txt
+
+# Tailwind Binary (if downloaded locally)
+tailwindcss
+tailwindcss-*
