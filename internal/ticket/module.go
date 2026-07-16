@@ -8,7 +8,8 @@ import (
 
 // Module encapsulates the external-facing handlers of the ticket package.
 type Module struct {
-	Handler *Handler
+	Handler    *Handler
+	WebHandler *WebHandler
 }
 
 // NewModule initializes the entire ticket domain layer.
@@ -23,6 +24,7 @@ func NewModule(
 	cr := NewCommandRepository(db)
 	svc := NewService(qr, cr, txManager, warrantyGen, eventBus, encryptionKey)
 	return Module{
-		Handler: NewHandler(svc),
+		Handler:    NewHandler(svc),
+		WebHandler: NewWebHandler(svc),
 	}
 }

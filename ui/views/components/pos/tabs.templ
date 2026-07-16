@@ -1,0 +1,28 @@
+package pos_components
+
+import (
+	"github.com/dimmerz92/go-icons/lucide"
+)
+
+templ POSTabs(activeTab string) {
+	<div class="mb-6 flex space-x-2 border-b border-slate-200/60 pb-px">
+		<a href="/pos" class={ "px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors flex items-center gap-2", 
+			templ.KV("bg-white border-x border-t border-slate-200/60 text-primary", activeTab == "checkout"), 
+			templ.KV("text-slate-500 hover:text-slate-700 hover:bg-slate-50", activeTab != "checkout") }>
+			@lucide.Calculator(templ.Attributes{"class": "w-4 h-4"})
+			Checkout (POS)
+		</a>
+		<a href="/pos/inventory" class={ "px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors flex items-center gap-2", 
+			templ.KV("bg-white border-x border-t border-slate-200/60 text-primary", activeTab == "inventory"), 
+			templ.KV("text-slate-500 hover:text-slate-700 hover:bg-slate-50", activeTab != "inventory") }>
+			@lucide.Package(templ.Attributes{"class": "w-4 h-4"})
+			Inventory Management
+		</a>
+		<a href="/pos/history" class={ "px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors flex items-center gap-2", 
+			templ.KV("bg-white border-x border-t border-slate-200/60 text-primary", activeTab == "history"), 
+			templ.KV("text-slate-500 hover:text-slate-700 hover:bg-slate-50", activeTab != "history") }>
+			@lucide.History(templ.Attributes{"class": "w-4 h-4"})
+			Transaction History
+		</a>
+	</div>
+}

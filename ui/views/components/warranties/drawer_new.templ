@@ -1,0 +1,103 @@
+package warranty_components
+
+import (
+	"github.com/dimmerz92/go-icons/lucide"
+)
+
+templ DrawerNewClaim() {
+	<!-- Drawer Overlay & Container (Alpine.js) -->
+	<div 
+		x-data="{ open: false }" 
+		x-init="setTimeout(() => open = true, 10)"
+		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+		class="relative z-50" 
+		aria-labelledby="slide-over-title" 
+		role="dialog" 
+		aria-modal="true">
+		
+		<!-- Background backdrop -->
+		<div 
+			x-show="open" 
+			x-transition:enter="ease-in-out duration-300" 
+			x-transition:enter-start="opacity-0" 
+			x-transition:enter-end="opacity-100" 
+			x-transition:leave="ease-in-out duration-300" 
+			x-transition:leave-start="opacity-100" 
+			x-transition:leave-end="opacity-0"
+			class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity"></div>
+
+		<div class="fixed inset-0 overflow-hidden">
+			<div class="absolute inset-0 overflow-hidden">
+				<div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+					<!-- Slide-over panel -->
+					<div 
+						x-show="open" 
+						x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500" 
+						x-transition:enter-start="translate-x-full" 
+						x-transition:enter-end="translate-x-0" 
+						x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500" 
+						x-transition:leave-start="translate-x-0" 
+						x-transition:leave-end="translate-x-full"
+						class="pointer-events-auto w-screen max-w-md"
+						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)">
+						
+						<div class="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl">
+							<!-- Header -->
+							<div class="px-6 py-6 border-b border-slate-200/60 bg-slate-50/50">
+								<div class="flex items-start justify-between">
+									<h2 class="text-xl font-bold text-slate-900" id="slide-over-title">Submit New Claim</h2>
+									<div class="ml-3 flex h-7 items-center">
+										<button 
+											@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+											type="button" 
+											class="relative rounded-md bg-white text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary">
+											<span class="absolute -inset-2.5"></span>
+											<span class="sr-only">Close panel</span>
+											@lucide.X(templ.Attributes{"class": "h-6 w-6"})
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Form Content -->
+							<div class="relative flex-1 px-6 py-6">
+								<form class="space-y-6">
+									<div>
+										<label for="warranty_code" class="block text-sm font-medium leading-6 text-slate-900">Warranty Code</label>
+										<div class="mt-2">
+											<input type="text" name="warranty_code" id="warranty_code" placeholder="e.g. WR-3A9B2C1D" class="block w-full font-mono rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
+										</div>
+										<p class="mt-2 text-xs text-slate-500">Enter the warranty code printed on the customer's receipt.</p>
+									</div>
+
+									<hr class="border-slate-100"/>
+
+									<div>
+										<label for="reason" class="block text-sm font-medium leading-6 text-slate-900">Issue Description / Claim Reason</label>
+										<div class="mt-2">
+											<textarea id="reason" name="reason" rows="4" placeholder="Explain the issue in detail..." class="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"></textarea>
+										</div>
+									</div>
+								</form>
+							</div>
+
+							<!-- Footer Action -->
+							<div class="border-t border-slate-200/60 bg-slate-50 px-6 py-4 flex justify-end gap-3">
+								<button 
+									@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+									type="button" 
+									class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
+									Cancel
+								</button>
+								<button type="button" class="px-4 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 shadow-sm transition-colors flex items-center gap-2">
+									@lucide.Send(templ.Attributes{"class": "w-4 h-4"})
+									Submit Claim
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}

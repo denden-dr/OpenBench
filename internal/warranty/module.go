@@ -7,8 +7,9 @@ import (
 
 // Module encapsulates the external-facing handlers and services of the warranty package.
 type Module struct {
-	Handler *Handler
-	Service Service
+	Handler    *Handler
+	WebHandler *WebHandler
+	Service    Service
 }
 
 // NewModule initializes the entire warranty domain layer.
@@ -17,7 +18,8 @@ func NewModule(db *sqlx.DB, txManager database.TxManager) Module {
 	cr := NewCommandRepository(db)
 	svc := NewService(qr, cr, txManager)
 	return Module{
-		Handler: NewHandler(svc),
-		Service: svc,
+		Handler:    NewHandler(svc),
+		WebHandler: NewWebHandler(svc),
+		Service:    svc,
 	}
 }
