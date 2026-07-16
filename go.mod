@@ -1,9 +1,13 @@
-module github.com/denden-dr/OpenBench/apps/backend
+module github.com/denden-dr/OpenBench
 
-go 1.25.8
+go 1.26.1
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/a-h/templ v0.3.1020
+	github.com/dimmerz92/go-icons v0.31.0
+	github.com/go-playground/locales v0.14.1
+	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -13,6 +17,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lmittmann/tint v1.1.3
+	github.com/samber/hot v0.13.0
 	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
@@ -46,8 +51,6 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-playground/locales v0.14.1 // indirect
-	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gofiber/schema v1.8.0 // indirect
 	github.com/gofiber/utils/v2 v2.1.1 // indirect
@@ -86,7 +89,6 @@ require (
 	github.com/rogpeppe/go-internal v1.15.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/samber/go-singleflightx v0.3.2 // indirect
-	github.com/samber/hot v0.13.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.5 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect

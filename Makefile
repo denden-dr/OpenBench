@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench
+.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench templ tailwind-build tailwind-watch
 
 up:
 	podman compose up -d
@@ -9,35 +9,48 @@ up:
 down:
 	podman compose down
 
-run:
-	cd apps/backend && go run ./cmd/api
+templ:
+	templ generate
+
+tailwind-build:
+	npx -y tailwindcss@3 -i ./ui/static/css/input.css -o ./ui/static/css/style.css --minify
+
+tailwind-watch:
+	npx -y tailwindcss@3 -i ./ui/static/css/input.css -o ./ui/static/css/style.css --watch
+
+run: templ tailwind-build
+	go run ./cmd/server
+
+# Development with hot-reload (Go, Templ, Tailwind)
+dev:
+	air
 
 seed:
-	cd apps/backend && go run ./cmd/seed
+	go run ./cmd/seed
 
 mod-tidy:
-	cd apps/backend && go mod tidy
+	go mod tidy
 
 fmt:
-	cd apps/backend && go fmt ./...
+	go fmt ./...
 
 lint:
-	cd apps/backend && golangci-lint run ./...
+	golangci-lint run ./...
 
-build:
-	cd apps/backend && go build -o bin/api cmd/api/main.go
+build: templ
+	go build -o bin/server cmd/server/main.go
 
 test:
-	cd apps/backend && go test -v ./...
+	go test -v ./...
 
 test-integration:
-	cd apps/backend && go test -v -tags=integration ./...
+	go test -v -tags=integration ./...
 
 migrate-up:
-	migrate -path apps/backend/migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
+	migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
 
 migrate-down:
-	migrate -path apps/backend/migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down
+	migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down
 
 bench:
-	cd apps/backend && go test -bench=. -benchmem ./...
+	go test -bench=. -benchmem ./...
