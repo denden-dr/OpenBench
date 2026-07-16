@@ -23,9 +23,12 @@ func registerRoutes(
 	posMod pos.Module,
 ) {
 	healthHandler := health.NewHealthHandler(db)
-	
+
 	// Global Public Health Route
 	app.Get("/health", healthHandler.HealthCheckPublic)
+
+	// Register Web UI Routes
+	registerWebRoutes(app, authMod)
 
 	// Register JSON API Routes
 	registerAPIRoutes(app, cfg, healthHandler, authMod, warrantyMod, ticketMod, inventoryMod, posMod)

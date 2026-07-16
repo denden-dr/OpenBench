@@ -1,0 +1,27 @@
+package layouts
+
+templ BaseLayout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - OpenBench</title>
+			<!-- Tailwind CSS -->
+			<link href="/static/css/style.css" rel="stylesheet"/>
+
+			<!-- HTMX -->
+			<script src="https://unpkg.com/htmx.org@1.9.11" defer></script>
+			<!-- Alpine.js -->
+			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		</head>
+		<body class="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-primary selection:text-white">
+			<!-- Animated Gradient Background -->
+			<div class="fixed inset-0 z-[-1] h-full w-full bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+			
+			<main class="w-full h-full min-h-screen flex items-center justify-center p-4">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
