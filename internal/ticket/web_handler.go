@@ -40,7 +40,7 @@ func (h *WebHandler) NewTicketPage(c fiber.Ctx) error {
 func (h *WebHandler) TicketDetailPage(c fiber.Ctx) error {
 	isHTMX := c.Get("HX-Request") == "true"
 	ticketID := c.Params("id")
-	
+
 	drawerComponent := ticket_components.DrawerTicketDetail(ticketID)
 
 	if isHTMX {
