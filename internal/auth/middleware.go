@@ -96,3 +96,55 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 		return utils.SendProblem(c, fiber.StatusForbidden, "/errors/forbidden", "Forbidden Access", "Access denied: you do not have permission to access this resource.")
 	}
 }
+
+// RequireWebAuth is for HTML pages. It redirects to /login instead of returning JSON.
+func RequireWebAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		var accessToken string
+		authHeader := c.Get("Authorization")
+		if len(authHeader) > 7 && strings.HasPrefix(authHeader, "Bearer ") {
+			accessToken = authHeader[7:]
+		} else {
+			accessToken = c.Cookies("access_token")
+		}
+
+		if accessToken == "" {
+			return c.Redirect().To("/login")
+		}
+
+		token, err := jwt.Parse(accessToken, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return []byte(cfg.Auth.AccessSecret), nil
+		}, jwt.WithIssuer("OpenBench"), jwt.WithAudience("OpenBench-Client"))
+
+		if err != nil || !token.Valid {
+			return c.Redirect().To("/login")
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			return c.Redirect().To("/login")
+		}
+
+		userID, ok := claims["sub"].(string)
+		if !ok {
+			return c.Redirect().To("/login")
+		}
+
+		jti, ok := claims["jti"].(string)
+		if ok && jti != "" {
+			isBlacklisted, err := queryRepo.IsTokenBlacklisted(c.Context(), jti)
+			if err != nil || isBlacklisted {
+				return c.Redirect().To("/login")
+			}
+		}
+
+		role, _ := claims["role"].(string)
+		c.Locals("userID", userID)
+		c.Locals("userRole", role)
+
+		return c.Next()
+	}
+}
