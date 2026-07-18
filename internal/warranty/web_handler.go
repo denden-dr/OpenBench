@@ -35,7 +35,7 @@ func (h *WebHandler) WarrantiesPage(c fiber.Ctx) error {
 		return utils.Render(c, admin_pages.WarrantiesRows(vms))
 	}
 
-	return utils.Render(c, admin_pages.WarrantiesPage(vms, nil))
+	return utils.Render(c, admin_pages.WarrantiesPage("warranties", vms, nil))
 }
 
 // NewClaimPage handles GET /warranties/claims/new
@@ -50,7 +50,7 @@ func (h *WebHandler) NewClaimPage(c fiber.Ctx) error {
 	claims, _, _ := h.service.GetClaims(c.Context(), "", "", 50, "")
 	vms := viewmodels.NewClaimVMs(claims)
 
-	return utils.Render(c, admin_pages.WarrantiesPage(vms, drawerComponent))
+	return utils.Render(c, admin_pages.WarrantiesPage("warranties", vms, drawerComponent))
 }
 
 // ClaimDetailPage handles GET /warranties/claims/:id
@@ -73,7 +73,7 @@ func (h *WebHandler) ClaimDetailPage(c fiber.Ctx) error {
 	claims, _, _ := h.service.GetClaims(c.Context(), "", "", 50, "")
 	vms := viewmodels.NewClaimVMs(claims)
 
-	return utils.Render(c, admin_pages.WarrantiesPage(vms, drawerComponent))
+	return utils.Render(c, admin_pages.WarrantiesPage("warranties", vms, drawerComponent))
 }
 
 // VerifyClaim handles POST /warranties/claims/verify

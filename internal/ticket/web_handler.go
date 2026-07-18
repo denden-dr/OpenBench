@@ -45,7 +45,7 @@ func (h *WebHandler) TicketsPage(c fiber.Ctx) error {
 		}
 	}
 
-	return utils.Render(c, admin_pages.TicketsPage(vms, nil))
+	return utils.Render(c, admin_pages.TicketsPage("tickets", vms, nil))
 }
 
 // NewTicketPage handles GET /tickets/new
@@ -76,7 +76,7 @@ func (h *WebHandler) NewTicketPage(c fiber.Ctx) error {
 		}
 	}
 
-	return utils.Render(c, admin_pages.TicketsPage(vms, drawerComponent))
+	return utils.Render(c, admin_pages.TicketsPage("tickets", vms, drawerComponent))
 }
 
 // TicketDetailPage handles GET /tickets/:id
@@ -136,7 +136,7 @@ func (h *WebHandler) TicketDetailPage(c fiber.Ctx) error {
 		}
 	}
 
-	return utils.Render(c, admin_pages.TicketsPage(vms, drawerComponent))
+	return utils.Render(c, admin_pages.TicketsPage("tickets", vms, drawerComponent))
 }
 
 // CreateTicketWeb handles POST /tickets

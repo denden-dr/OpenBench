@@ -27,7 +27,7 @@ func (h *WebHandler) CheckoutPage(c fiber.Ctx) error {
 	if err != nil {
 		products = []models.Product{}
 	}
-	return utils.Render(c, admin_pages.POSCheckoutPage(viewmodels.NewProductVMs(products)))
+	return utils.Render(c, admin_pages.POSCheckoutPage("pos", viewmodels.NewProductVMs(products)))
 }
 
 // InventoryPage handles GET /pos/inventory
@@ -45,7 +45,7 @@ func (h *WebHandler) InventoryPage(c fiber.Ctx) error {
 	if c.Get("HX-Request") == "true" && search != "" {
 		return utils.Render(c, admin_pages.POSInventoryRows(vms))
 	}
-	return utils.Render(c, admin_pages.POSInventoryPage(vms, nil))
+	return utils.Render(c, admin_pages.POSInventoryPage("pos", vms, nil))
 }
 
 // NewProductPage handles GET /pos/inventory/new
@@ -61,7 +61,7 @@ func (h *WebHandler) NewProductPage(c fiber.Ctx) error {
 	if err != nil {
 		products = []models.Product{}
 	}
-	return utils.Render(c, admin_pages.POSInventoryPage(viewmodels.NewProductVMs(products), drawerComponent))
+	return utils.Render(c, admin_pages.POSInventoryPage("pos", viewmodels.NewProductVMs(products), drawerComponent))
 }
 
 // HistoryPage handles GET /pos/history
@@ -70,5 +70,5 @@ func (h *WebHandler) HistoryPage(c fiber.Ctx) error {
 	if err != nil {
 		transactions = []models.PosTransaction{}
 	}
-	return utils.Render(c, admin_pages.POSHistoryPage(viewmodels.NewTransactionVMs(transactions)))
+	return utils.Render(c, admin_pages.POSHistoryPage("pos", viewmodels.NewTransactionVMs(transactions)))
 }

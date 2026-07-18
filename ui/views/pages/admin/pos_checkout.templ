@@ -8,15 +8,14 @@ import (
 	"github.com/denden-dr/OpenBench/internal/utils"
 )
 
-templ POSCheckoutPage(products []viewmodels.ProductVM) {
-	@layouts.AdminLayout("POS & Inventory") {
+templ POSCheckoutPage(activePage string, products []viewmodels.ProductVM) {
+	@layouts.AdminLayout("POS & Inventory", activePage, "A") {
 		<div>
 			@pos_components.POSTabs("checkout")
-			
+
 			<div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-14rem)]" x-data="cartComponent()">
 				<!-- Left Area: Product Grid -->
 				<div class="flex-1 flex flex-col h-full bg-slate-50/50 rounded-2xl border border-slate-200/60 overflow-hidden">
-					<!-- Search & Filter -->
 					<div class="p-4 bg-white border-b border-slate-200/60">
 						<div class="relative w-full">
 							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -26,15 +25,14 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 						</div>
 					</div>
 
-					<!-- Grid -->
 					<div class="flex-1 overflow-y-auto p-4">
 						<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
 							for _, p := range products {
-								<div 
+								<div
 									x-show={ "searchQuery === '' || '" + p.Name + "'.toLowerCase().includes(searchQuery.toLowerCase())" }
 									@click={ "addToCart('" + p.ID + "', '" + p.Name + "', " + utils.IntToString(int(p.Price)) + ", " + utils.IntToString(p.Stock) + ")" }
 									class={
-										"bg-white border border-slate-200/60 rounded-xl p-3 shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group",
+										"bg-white border border-slate-200/60 rounded-xl p-3 shadow-sm hover:shadow-lg hover:border-primary/50 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group",
 										templ.KV("opacity-50 pointer-events-none", p.IsOutOfStock),
 									}>
 									<div class="aspect-square bg-slate-100 rounded-lg mb-3 flex items-center justify-center text-slate-300 group-hover:text-primary/50 transition-colors relative">
@@ -61,7 +59,7 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 
 				<!-- Right Area: Shopping Cart -->
 				<div class="w-full lg:w-96 flex flex-col bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden h-full relative">
-					
+
 					<!-- Loading Overlay -->
 					<div x-show="loading" style="display: none;" class="absolute inset-0 z-10 bg-white/70 backdrop-blur-sm flex items-center justify-center">
 						<div class="flex flex-col items-center">
@@ -164,7 +162,8 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 						loading: false,
 						errorMsg: '',
 						successMsg: false,
-						
+						errorTimeout: null,
+
 						get cartTotal() {
 							return this.cart.reduce((total, item) => total + (item.price * item.qty), 0);
 						},
@@ -172,37 +171,40 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 						formatIDR(amount) {
 							return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
 						},
-						
+
+						showError(msg) {
+							if (this.errorTimeout) clearTimeout(this.errorTimeout);
+							this.errorMsg = msg;
+							this.errorTimeout = setTimeout(() => { this.errorMsg = ''; }, 5000);
+						},
+
 						addToCart(id, name, price, stock) {
 							if (stock <= 0) {
-								this.errorMsg = 'Item is out of stock';
-								setTimeout(() => this.errorMsg = '', 3000);
+								this.showError('Item is out of stock');
 								return;
 							}
-							
+
 							const existing = this.cart.find(i => i.id === id);
 							if (existing) {
 								if (existing.qty < stock) {
 									existing.qty++;
 								} else {
-									this.errorMsg = 'Cannot add more than available stock';
-									setTimeout(() => this.errorMsg = '', 3000);
+									this.showError('Cannot add more than available stock');
 								}
 							} else {
 								this.cart.push({ id, name, price, qty: 1, stock });
 							}
 						},
-						
+
 						increaseQty(index) {
 							const item = this.cart[index];
 							if (item.qty < item.stock) {
 								item.qty++;
 							} else {
-								this.errorMsg = 'Cannot exceed available stock';
-								setTimeout(() => this.errorMsg = '', 3000);
+								this.showError('Cannot exceed available stock');
 							}
 						},
-						
+
 						decreaseQty(index) {
 							if (this.cart[index].qty > 1) {
 								this.cart[index].qty--;
@@ -210,19 +212,19 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 								this.cart.splice(index, 1);
 							}
 						},
-						
+
 						resetCart() {
 							this.cart = [];
 							this.errorMsg = '';
 							this.successMsg = false;
 						},
-						
+
 						async checkout(paymentMethod) {
 							if (this.cart.length === 0) return;
-							
+
 							this.loading = true;
 							this.errorMsg = '';
-							
+
 							const payload = {
 								payment_method: paymentMethod,
 								items: this.cart.map(item => ({
@@ -230,22 +232,22 @@ templ POSCheckoutPage(products []viewmodels.ProductVM) {
 									quantity: item.qty
 								}))
 							};
-							
+
 							try {
 								const res = await fetch('/api/v1/admin/pos/checkout', {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
 									body: JSON.stringify(payload)
 								});
-								
+
 								if (!res.ok) {
 									const data = await res.json();
 									throw new Error(data.message || 'Checkout failed');
 								}
-								
+
 								this.successMsg = true;
 							} catch (err) {
-								this.errorMsg = err.message;
+								this.showError(err.message);
 							} finally {
 								this.loading = false;
 							}

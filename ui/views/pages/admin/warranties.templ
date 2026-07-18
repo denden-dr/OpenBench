@@ -6,40 +6,36 @@ import (
 	"github.com/dimmerz92/go-icons/lucide"
 )
 
-templ WarrantiesPage(claims []viewmodels.ClaimVM, drawerContent templ.Component) {
-	@layouts.AdminLayout("Warranty Claims") {
+templ WarrantiesPage(activePage string, claims []viewmodels.ClaimVM, drawerContent templ.Component) {
+	@layouts.AdminLayout("Warranty Claims", activePage, "A") {
 		<div class="space-y-6">
-			
-			<!-- Header & Actions -->
+
 			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div class="flex items-center gap-4 flex-1">
-					<!-- Search Bar -->
 					<div class="relative max-w-md w-full">
 						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
 							@lucide.Search(templ.Attributes{"class": "w-5 h-5"})
 						</div>
-						<input type="text" 
+						<input type="text"
 							name="search"
-							hx-get="/warranties" 
+							hx-get="/warranties"
 							hx-target="#warranties-table-body"
 							hx-swap="outerHTML"
 							hx-trigger="input changed delay:300ms, search"
-							class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+							class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all"
 							placeholder="Search Claim Number, Ticket ID, or Customer..."/>
 					</div>
-					
-					<!-- Filters -->
+
 					<div class="flex gap-2">
-						<button hx-get="/warranties" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg">All</button>
-						<button hx-get="/warranties?status=PENDING" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Pending</button>
-						<button hx-get="/warranties?status=ACCEPTED" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Approved</button>
+						<button hx-get="/warranties" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors">All</button>
+						<button hx-get="/warranties?status=PENDING" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg transition-colors">Pending</button>
+						<button hx-get="/warranties?status=ACCEPTED" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg transition-colors">Approved</button>
 					</div>
 				</div>
 
-				<!-- New Claim Button -->
-				<button 
-					hx-get="/warranties/claims/new" 
-					hx-target="#slideover-container" 
+				<button
+					hx-get="/warranties/claims/new"
+					hx-target="#slideover-container"
 					hx-push-url="true"
 					class="px-4 py-2 bg-primary text-white rounded-xl font-medium shadow-sm hover:bg-primary/90 transition-colors flex items-center gap-2">
 					@lucide.Plus(templ.Attributes{"class": "w-5 h-5"})
@@ -47,7 +43,6 @@ templ WarrantiesPage(claims []viewmodels.ClaimVM, drawerContent templ.Component)
 				</button>
 			</div>
 
-			<!-- Warranties Table -->
 			<div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="min-w-full divide-y divide-slate-200/60">
@@ -66,7 +61,6 @@ templ WarrantiesPage(claims []viewmodels.ClaimVM, drawerContent templ.Component)
 				</div>
 			</div>
 
-			<!-- Slideover Container -->
 			<div id="slideover-container">
 				if drawerContent != nil {
 					@drawerContent

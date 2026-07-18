@@ -7,16 +7,15 @@ import (
 	"github.com/dimmerz92/go-icons/lucide"
 )
 
-templ POSInventoryPage(products []viewmodels.ProductVM, drawerContent templ.Component) {
-	@layouts.AdminLayout("POS & Inventory") {
+templ POSInventoryPage(activePage string, products []viewmodels.ProductVM, drawerContent templ.Component) {
+	@layouts.AdminLayout("POS & Inventory", activePage, "A") {
 		<div>
 			@pos_components.POSTabs("inventory")
-			
+
 			<div class="space-y-6">
 				<!-- Header & Actions -->
 				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 					<div class="flex items-center gap-4 flex-1">
-						<!-- Search Bar -->
 						<div class="relative max-w-md w-full">
 							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
 								@lucide.Search(templ.Attributes{"class": "w-5 h-5"})
@@ -34,13 +33,12 @@ templ POSInventoryPage(products []viewmodels.ProductVM, drawerContent templ.Comp
 						</div>
 					</div>
 
-					<!-- New Product Button -->
 					<button
 						type="button"
 						hx-get="/pos/inventory/new"
 						hx-target="#slideover-container"
 						hx-swap="innerHTML"
-						class="px-4 py-2 bg-slate-900 text-white rounded-xl font-medium shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
+						class="px-4 py-2 bg-primary text-white rounded-xl font-medium shadow-sm hover:bg-primary/90 transition-colors flex items-center gap-2">
 						@lucide.Plus(templ.Attributes{"class": "w-5 h-5"})
 						Add Product
 					</button>
@@ -66,7 +64,6 @@ templ POSInventoryPage(products []viewmodels.ProductVM, drawerContent templ.Comp
 					</div>
 				</div>
 
-				<!-- Slideover Container: HTMX loads drawer content here -->
 				<div id="slideover-container">
 					if drawerContent != nil {
 						@drawerContent
