@@ -83,6 +83,8 @@ func Load() (*Config, error) {
 
 	// Bind environment variables that don't match the mapstructure structure directly
 	envBindings := map[string]string{
+		"app.env":             "APP_ENV",
+		"app.name":            "APP_NAME",
 		"app.port":            "PORT",
 		"app.allowed_origins": "CORS_ALLOWED_ORIGINS",
 		"app.encryption_key":  "APP_ENCRYPTION_KEY",

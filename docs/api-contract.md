@@ -366,7 +366,7 @@ Digunakan untuk mendaftarkan HP kustomer ke antrean perbaikan (klaim garansi). H
 * **Request Body**:
 ```json
 {
-  "warranty_id": "w-5432-1098",
+  "ticket_number": "TKT-20260714-1234",
   "issue_description": "Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu"
 }
 ```

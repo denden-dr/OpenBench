@@ -57,7 +57,7 @@ func run(cfg *config.Config) error {
 }
 
 func SeedDefaultAdmin(ctx context.Context, queryRepo auth.QueryRepository, commandRepo auth.CommandRepository, cfg *config.Config) error {
-	if cfg.App.Env != "development" {
+	if cfg.App.Env != "development" && cfg.App.Env != "testing" {
 		return nil
 	}
 
