@@ -3,13 +3,12 @@ package admin_pages
 import (
 	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
 	"github.com/dimmerz92/go-icons/lucide"
+	"github.com/denden-dr/OpenBench/ui/views/components/shared"
 )
 
-// POSInventoryRows is a partial template that renders only the <tr> rows.
-// It is returned by the HTMX search endpoint to swap only the table body.
 templ POSInventoryRows(products []viewmodels.ProductVM) {
 	for _, p := range products {
-		<tr class="hover:bg-slate-50/50 transition-colors">
+		<tr class="hover:bg-slate-50/80 transition-colors duration-150">
 			<td class="px-6 py-4 whitespace-nowrap">
 				<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
 					@lucide.Package(templ.Attributes{"class": "w-5 h-5"})
@@ -27,16 +26,16 @@ templ POSInventoryRows(products []viewmodels.ProductVM) {
 			</td>
 			<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 				<div class="flex items-center justify-end gap-3">
-					<button type="button" aria-label="Edit product" class="text-slate-400 hover:text-slate-600">@lucide.Pencil(templ.Attributes{"class": "w-4 h-4"})</button>
-					<button type="button" aria-label="Delete product" class="text-red-400 hover:text-red-600">@lucide.Trash2(templ.Attributes{"class": "w-4 h-4"})</button>
+					<button type="button" aria-label="Edit product" class="text-slate-400 hover:text-slate-600 transition-colors">@lucide.Pencil(templ.Attributes{"class": "w-4 h-4"})</button>
+					<button type="button" aria-label="Delete product" class="text-red-400 hover:text-red-600 transition-colors">@lucide.Trash2(templ.Attributes{"class": "w-4 h-4"})</button>
 				</div>
 			</td>
 		</tr>
 	}
 	if len(products) == 0 {
 		<tr>
-			<td colspan="5" class="px-6 py-10 text-center text-slate-500">
-				No products found.
+			<td colspan="5" class="px-6 py-0">
+				@shared.EmptyState(lucide.Package(templ.Attributes{"class": "w-8 h-8"}), "No products found", "Add your first product or accessory to start selling at the POS.", "Add Product", "/pos/inventory/new", "#slideover-container")
 			</td>
 		</tr>
 	}
