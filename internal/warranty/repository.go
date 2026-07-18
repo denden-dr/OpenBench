@@ -15,8 +15,11 @@ import (
 type QueryRepository interface {
 	FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error)
 	FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error)
+	FindWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error)
 	FindClaimByID(ctx context.Context, id string) (*models.Claim, error)
+	FindClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error)
 	FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error)
+	FindAllClaimSummaries(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ClaimSummary, string, error)
 }
 
 type CommandRepository interface {
@@ -90,6 +93,28 @@ func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketI
 	query, args, err := r.psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
 		From("warranties").
 		Where(squirrel.Eq{"ticket_id": ticketID}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var w models.Warranty
+	err = r.db.GetContext(ctx, &w, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &w, nil
+}
+
+func (r *sqlQueryRepository) FindWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error) {
+	query, args, err := r.psql.Select("w.id", "w.ticket_id", "w.start_date", "w.end_date", "w.status", "w.notes", "w.created_at", "w.updated_at").
+		From("warranties w").
+		Join("service_tickets st ON w.ticket_id = st.id").
+		Where(squirrel.Eq{"st.ticket_number": ticketNumber}).
 		Limit(1).
 		ToSql()
 	if err != nil {
@@ -201,6 +226,105 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 	}
 
 	return claims, nextCursor, nil
+}
+
+func (r *sqlQueryRepository) FindClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error) {
+	query, args, err := r.psql.Select(
+		"c.id as claim_id",
+		"c.claim_number",
+		"w.id as warranty_id",
+		"w.status as warranty_status",
+		"st.id as ticket_id",
+		"st.ticket_number",
+		"st.customer_name",
+		"st.device_brand",
+		"st.device_model",
+		"c.status",
+		"c.evaluation_status",
+		"c.issue_description",
+		"c.created_at",
+	).
+		From("claims c").
+		Join("warranties w ON c.warranty_id = w.id").
+		Join("service_tickets st ON w.ticket_id = st.id").
+		Where(squirrel.Eq{"c.id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var summary models.ClaimSummary
+	err = r.db.GetContext(ctx, &summary, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &summary, nil
+}
+
+func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ClaimSummary, string, error) {
+	queryBuilder := r.psql.Select(
+		"c.id as claim_id",
+		"c.claim_number",
+		"w.id as warranty_id",
+		"w.status as warranty_status",
+		"st.id as ticket_id",
+		"st.ticket_number",
+		"st.customer_name",
+		"st.device_brand",
+		"st.device_model",
+		"c.status",
+		"c.evaluation_status",
+		"c.issue_description",
+		"c.created_at",
+	).
+		From("claims c").
+		Join("warranties w ON c.warranty_id = w.id").
+		Join("service_tickets st ON w.ticket_id = st.id")
+
+	if status != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"c.status": status})
+	}
+
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		queryBuilder = queryBuilder.Where(squirrel.Or{
+			squirrel.Expr("c.claim_number ILIKE ?", searchPattern),
+			squirrel.Expr("st.ticket_number ILIKE ?", searchPattern),
+			squirrel.Expr("st.customer_name ILIKE ?", searchPattern),
+		})
+	}
+
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			queryBuilder = queryBuilder.Where("(c.created_at, c.id) < (?, ?)", cursorTime, cursorID)
+		}
+	}
+
+	queryBuilder = queryBuilder.OrderBy("c.created_at DESC", "c.id DESC").Limit(uint64(limit + 1))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, "", err
+	}
+
+	var summaries []models.ClaimSummary
+	err = r.db.SelectContext(ctx, &summaries, query, args...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var nextCursor string
+	if len(summaries) > limit {
+		nextCursor = utils.EncodeCursor(summaries[limit].CreatedAt, summaries[limit].ClaimID)
+		summaries = summaries[:limit]
+	}
+
+	return summaries, nextCursor, nil
 }
 
 func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {

@@ -36,6 +36,14 @@ func (m *mockRepository) FindWarrantyByTicketID(ctx context.Context, ticketID st
 	return nil, args.Error(1)
 }
 
+func (m *mockRepository) FindWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error) {
+	args := m.Called(ctx, ticketNumber)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.Warranty), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *mockRepository) UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error {
 	args := m.Called(ctx, id, status, notes)
 	return args.Error(0)
@@ -60,6 +68,22 @@ func (m *mockRepository) FindAllClaims(ctx context.Context, status string, searc
 		return args.Get(0).([]models.Claim), args.String(1), args.Error(2)
 	}
 	return nil, args.String(1), args.Error(2)
+}
+
+func (m *mockRepository) FindAllClaimSummaries(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ClaimSummary, string, error) {
+	args := m.Called(ctx, status, search, limit, cursor)
+	if args.Get(0) != nil {
+		return args.Get(0).([]models.ClaimSummary), args.String(1), args.Error(2)
+	}
+	return nil, args.String(1), args.Error(2)
+}
+
+func (m *mockRepository) FindClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.ClaimSummary), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (m *mockRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
@@ -237,11 +261,11 @@ func TestService_CreateClaim(t *testing.T) {
 		{
 			name: "Success - Active Warranty",
 			req: CreateClaimRequest{
-				WarrantyID:       "w-active",
+				TicketNumber:     "TKT-123",
 				IssueDescription: "Touchscreen error",
 			},
 			setupMock: func(repo *mockRepository) {
-				repo.On("FindWarrantyByID", mock.Anything, "w-active").Return(activeWarranty, nil)
+				repo.On("FindWarrantyByTicketNumber", mock.Anything, "TKT-123").Return(activeWarranty, nil)
 				repo.On("CreateClaim", mock.Anything, mock.AnythingOfType("*models.Claim")).Return(nil)
 			},
 			expectedErr: nil,
@@ -249,18 +273,18 @@ func TestService_CreateClaim(t *testing.T) {
 		{
 			name: "Failure - Expired Warranty",
 			req: CreateClaimRequest{
-				WarrantyID:       "w-expired",
+				TicketNumber:     "TKT-EXP",
 				IssueDescription: "Touchscreen error",
 			},
 			setupMock: func(repo *mockRepository) {
-				repo.On("FindWarrantyByID", mock.Anything, "w-expired").Return(expiredWarranty, nil)
+				repo.On("FindWarrantyByTicketNumber", mock.Anything, "TKT-EXP").Return(expiredWarranty, nil)
 			},
 			expectedErr: ErrWarrantyNotActive,
 		},
 		{
 			name: "Failure - Empty Input",
 			req: CreateClaimRequest{
-				WarrantyID:       "",
+				TicketNumber:     "",
 				IssueDescription: "Touchscreen error",
 			},
 			setupMock:   func(repo *mockRepository) {},

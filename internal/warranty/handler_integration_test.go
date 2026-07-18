@@ -138,7 +138,7 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 
 	t.Run("Create Claim", func(t *testing.T) {
 		body := warranty.CreateClaimRequest{
-			WarrantyID:       w.ID,
+			TicketNumber:     baseTicket.TicketNumber,
 			IssueDescription: "Speaker still doesn't work after screen repair",
 		}
 		bodyBytes, _ := json.Marshal(body)
@@ -257,7 +257,7 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 	})
 
 	t.Run("Get Claims List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/claims?status=REPAIRING&search=Speaker&limit=10&cursor=", nil)
+		req, err := http.NewRequest("GET", "/claims?status=REPAIRING&search=Michael&limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)
