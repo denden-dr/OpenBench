@@ -1,0 +1,50 @@
+package admin_pages
+
+import (
+	"fmt"
+	"github.com/denden-dr/OpenBench/internal/models"
+	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
+)
+
+templ WarrantiesRows(claims []viewmodels.ClaimVM) {
+	<tbody id="warranties-table-body" class="bg-white divide-y divide-slate-200/60">
+		for _, c := range claims {
+			<tr class="hover:bg-slate-50/50 transition-colors">
+				<td class="px-6 py-4 whitespace-nowrap">
+					<div class="text-sm font-medium text-slate-900 font-mono" title={ c.WarrantyID }>
+						{ c.ClaimNumber }
+					</div>
+				</td>
+				<td class="px-6 py-4 whitespace-nowrap">
+					<a href={ templ.SafeURL(fmt.Sprintf("/tickets/%s", c.TicketNumber)) } class="text-sm font-medium text-primary hover:underline">
+						{ c.TicketNumber }
+					</a>
+				</td>
+				<td class="px-6 py-4 whitespace-nowrap">
+					<div class="text-sm text-slate-900">{ c.CustomerName }</div>
+					<div class="text-sm text-slate-500">{ c.DeviceSummary }</div>
+				</td>
+				<td class="px-6 py-4 whitespace-nowrap">
+					<span class={ c.StatusBadgeClass }>
+						{ string(c.EvaluationStatus) }
+					</span>
+				</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{ c.CreatedAtFormatted }</td>
+				<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+					if c.EvaluationStatus == models.ClaimEvaluationPending {
+						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">Verify</button>
+					} else {
+						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-slate-500 hover:text-slate-700">Detail</button>
+					}
+				</td>
+			</tr>
+		}
+		if len(claims) == 0 {
+			<tr>
+				<td colspan="6" class="px-6 py-10 text-center text-slate-500 text-sm">
+					No warranty claims found.
+				</td>
+			</tr>
+		}
+	</tbody>
+}
