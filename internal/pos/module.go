@@ -23,6 +23,6 @@ func NewModule(
 	svc := NewService(qr, cr, invReader, invWriter, txManager)
 	return Module{
 		Handler:    NewHandler(svc),
-		WebHandler: NewWebHandler(svc),
+		WebHandler: NewWebHandler(svc, invReader),
 	}
 }

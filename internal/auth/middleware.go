@@ -109,6 +109,7 @@ func RequireWebAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler
 		}
 
 		if accessToken == "" {
+			slog.WarnContext(c.Context(), "WebAuth: accessToken is empty")
 			return c.Redirect().To("/login")
 		}
 
@@ -120,16 +121,19 @@ func RequireWebAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler
 		}, jwt.WithIssuer("OpenBench"), jwt.WithAudience("OpenBench-Client"))
 
 		if err != nil || !token.Valid {
+			slog.WarnContext(c.Context(), "WebAuth: invalid token", slog.Any("error", err))
 			return c.Redirect().To("/login")
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
+			slog.WarnContext(c.Context(), "WebAuth: invalid claims format")
 			return c.Redirect().To("/login")
 		}
 
 		userID, ok := claims["sub"].(string)
 		if !ok {
+			slog.WarnContext(c.Context(), "WebAuth: sub claim missing")
 			return c.Redirect().To("/login")
 		}
 
@@ -137,6 +141,7 @@ func RequireWebAuth(cfg *config.Config, queryRepo QueryRepository) fiber.Handler
 		if ok && jti != "" {
 			isBlacklisted, err := queryRepo.IsTokenBlacklisted(c.Context(), jti)
 			if err != nil || isBlacklisted {
+				slog.WarnContext(c.Context(), "WebAuth: token blacklisted", slog.Any("error", err), slog.Bool("blacklisted", isBlacklisted))
 				return c.Redirect().To("/login")
 			}
 		}

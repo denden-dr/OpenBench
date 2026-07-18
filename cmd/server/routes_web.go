@@ -22,11 +22,12 @@ func registerWebRoutes(app *fiber.App, cfg *config.Config, authMod auth.Module, 
 		return utils.Render(c, admin_pages.DashboardPage())
 	})
 
-	// Ticket Routes (Protected)
 	ticketsGroup := app.Group("/tickets", webAuth)
 	ticketsGroup.Get("/", ticketMod.WebHandler.TicketsPage)
+	ticketsGroup.Post("/", ticketMod.WebHandler.CreateTicketWeb)
 	ticketsGroup.Get("/new", ticketMod.WebHandler.NewTicketPage)
 	ticketsGroup.Get("/:id", ticketMod.WebHandler.TicketDetailPage)
+	ticketsGroup.Put("/:id", ticketMod.WebHandler.UpdateTicketWeb)
 
 	// POS & Inventory Routes (Protected)
 	posGroup := app.Group("/pos", webAuth)
@@ -39,6 +40,8 @@ func registerWebRoutes(app *fiber.App, cfg *config.Config, authMod auth.Module, 
 	warrantiesGroup := app.Group("/warranties", webAuth)
 	warrantiesGroup.Get("/", warrantyMod.WebHandler.WarrantiesPage)
 	warrantiesGroup.Get("/claims/new", warrantyMod.WebHandler.NewClaimPage)
+	warrantiesGroup.Post("/claims/verify", warrantyMod.WebHandler.VerifyClaim)
+	warrantiesGroup.Post("/claims/submit", warrantyMod.WebHandler.SubmitClaim)
 	warrantiesGroup.Get("/claims/:id", warrantyMod.WebHandler.ClaimDetailPage)
 
 	// Web Auth Routes

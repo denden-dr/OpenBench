@@ -2,10 +2,11 @@ package admin_pages
 
 import (
 	"github.com/denden-dr/OpenBench/ui/views/layouts"
+	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
 	"github.com/dimmerz92/go-icons/lucide"
 )
 
-templ TicketsPage(drawerContent templ.Component) {
+templ TicketsPage(tickets []viewmodels.TicketListVM, drawerContent templ.Component) {
 	@layouts.AdminLayout("Service Tickets") {
 		<div class="space-y-6">
 			
@@ -17,14 +18,14 @@ templ TicketsPage(drawerContent templ.Component) {
 						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
 							@lucide.Search(templ.Attributes{"class": "w-5 h-5"})
 						</div>
-						<input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search name, phone, or ticket ID..."/>
+						<input type="text" name="search" hx-get="/tickets" hx-target="#tickets-table-body" hx-select="#tickets-table-body" hx-swap="outerHTML" hx-trigger="keyup changed delay:500ms" class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search name, phone, or ticket ID..."/>
 					</div>
 					
 					<!-- Filters -->
-					<div class="flex gap-2">
-						<button class="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg">All</button>
-						<button class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Received</button>
-						<button class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">In Progress</button>
+					<div class="flex gap-2" hx-target="#tickets-table-body" hx-select="#tickets-table-body" hx-swap="outerHTML">
+						<button hx-get="/tickets" class="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg">All</button>
+						<button hx-get="/tickets?status=RECEIVED" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Received</button>
+						<button hx-get="/tickets?status=REPAIRING" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">In Progress</button>
 					</div>
 				</div>
 
@@ -53,50 +54,55 @@ templ TicketsPage(drawerContent templ.Component) {
 								<th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
 							</tr>
 						</thead>
-						<tbody class="bg-white divide-y divide-slate-200/60">
-							<!-- Mock Data Row 1 -->
-							<tr class="hover:bg-slate-50/50 transition-colors">
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">TKT-20260716-001</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900 font-medium">Budi Santoso</div>
-									<div class="text-sm text-slate-500">081234567890</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900">Samsung Galaxy S23</div>
-									<div class="text-sm text-slate-500 truncate max-w-[150px]">Broken screen</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-										RECEIVED
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">16 Jul 2026</td>
-								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-									<button hx-get="/tickets/TKT-20260716-001" hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">View</button>
-								</td>
-							</tr>
-							
-							<!-- Mock Data Row 2 -->
-							<tr class="hover:bg-slate-50/50 transition-colors">
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">TKT-20260716-002</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900 font-medium">Andi Wijaya</div>
-									<div class="text-sm text-slate-500">085678912345</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900">iPhone 13 Pro</div>
-									<div class="text-sm text-slate-500 truncate max-w-[150px]">Battery dies fast</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-										REPAIRING
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">16 Jul 2026</td>
-								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-									<button hx-get="/tickets/TKT-20260716-002" hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">View</button>
-								</td>
-							</tr>
+						<tbody id="tickets-table-body" class="bg-white divide-y divide-slate-200/60">
+							for _, t := range tickets {
+								<tr class="hover:bg-slate-50/50 transition-colors">
+									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{ t.TicketNumber }</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										<div class="text-sm text-slate-900 font-medium">{ t.CustomerName }</div>
+										<div class="text-sm text-slate-500">{ t.CustomerPhone }</div>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										<div class="text-sm text-slate-900">{ t.DeviceBrand } { t.DeviceModel }</div>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										switch t.Status {
+											case "RECEIVED":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+													RECEIVED
+												</span>
+											case "REPAIRING":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+													REPAIRING
+												</span>
+											case "PENDING_CONFIRMATION":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+													PENDING
+												</span>
+											case "FIXED":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+													FIXED
+												</span>
+											case "COMPLETED":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+													COMPLETED
+												</span>
+											case "CANCELLED":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+													CANCELLED
+												</span>
+											case "RETURNED":
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+													RETURNED
+												</span>
+										}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{ t.CreatedAt.Format("02 Jan 2006") }</td>
+									<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+										<button hx-get={ "/tickets/" + t.TicketID } hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">View</button>
+									</td>
+								</tr>
+							}
 						</tbody>
 					</table>
 				</div>

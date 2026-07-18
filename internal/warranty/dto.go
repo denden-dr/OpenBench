@@ -16,7 +16,7 @@ type WarrantyResponse struct {
 }
 
 type CreateClaimRequest struct {
-	WarrantyID       string `json:"warranty_id" validate:"required"`
+	TicketNumber     string `json:"ticket_number" validate:"required"`
 	IssueDescription string `json:"issue_description" validate:"required"`
 }
 
@@ -109,9 +109,9 @@ func MapToClaimResponse(c *models.Claim) ClaimResponse {
 	}
 }
 
-func MapToClaimListResponse(c models.Claim) ClaimListResponse {
+func MapToClaimListResponse(c models.ClaimSummary) ClaimListResponse {
 	return ClaimListResponse{
-		ClaimID:          c.ID,
+		ClaimID:          c.ClaimID,
 		ClaimNumber:      c.ClaimNumber,
 		WarrantyID:       c.WarrantyID,
 		Status:           c.Status,

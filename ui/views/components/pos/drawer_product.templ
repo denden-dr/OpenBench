@@ -60,12 +60,50 @@ templ DrawerNewProduct() {
 							</div>
 
 							<!-- Form Content -->
-							<div class="relative flex-1 px-6 py-6">
-								<form class="space-y-6">
+							<div class="relative flex-1 px-6 py-6" x-data="{
+								formData: {
+									name: '',
+									price: 0,
+									stock: 1
+								},
+								loading: false,
+								errorMsg: '',
+								async submitForm() {
+									this.loading = true;
+									this.errorMsg = '';
+									try {
+										const res = await fetch('/api/v1/admin/products', {
+											method: 'POST',
+											headers: { 'Content-Type': 'application/json' },
+											body: JSON.stringify({
+												name: this.formData.name,
+												price: parseInt(this.formData.price),
+												stock: parseInt(this.formData.stock)
+											})
+										});
+										
+										if (!res.ok) {
+											const data = await res.json();
+											throw new Error(data.message || 'Failed to create product');
+										}
+										
+										// Success, close drawer and reload page
+										this.open = false;
+										setTimeout(() => location.reload(), 300);
+									} catch(err) {
+										this.errorMsg = err.message;
+									} finally {
+										this.loading = false;
+									}
+								}
+							}">
+								<form @submit.prevent="submitForm" class="space-y-6">
+									<div x-show="errorMsg" style="display: none;" class="p-3 bg-red-50 text-red-700 text-sm rounded-lg" x-text="errorMsg"></div>
+
 									<div>
 										<label for="name" class="block text-sm font-medium leading-6 text-slate-900">Product / Accessory Name</label>
 										<div class="mt-2">
-											<input type="text" name="name" id="name" placeholder="e.g. iPhone Tempered Glass" class="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
+											<input type="text" x-model="formData.name" required name="name" id="name" placeholder="e.g. iPhone Tempered Glass" class="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
 										</div>
 									</div>
 
@@ -75,31 +113,31 @@ templ DrawerNewProduct() {
 											<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
 												<span class="text-slate-500 sm:text-sm">Rp</span>
 											</div>
-											<input type="number" name="price" id="price" placeholder="0" class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
+											<input type="number" x-model="formData.price" required min="0" name="price" id="price" placeholder="0" class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
 										</div>
 									</div>
 
 									<div>
 										<label for="stock" class="block text-sm font-medium leading-6 text-slate-900">Initial Stock</label>
 										<div class="mt-2">
-											<input type="number" name="stock" id="stock" value="1" class="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
+											<input type="number" x-model="formData.stock" required min="0" name="stock" id="stock" class="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"/>
 										</div>
 									</div>
-								</form>
-							</div>
 
-							<!-- Footer Action -->
-							<div class="border-t border-slate-200/60 bg-slate-50 px-6 py-4 flex justify-end gap-3">
-								<button 
-									@click="open = false; setTimeout(() => htmx.ajax('GET', '/pos/inventory', {target: 'body'}), 300)"
-									type="button" 
-									class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
-									Cancel
-								</button>
-								<button type="button" class="px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-800 shadow-sm transition-colors flex items-center gap-2">
-									@lucide.Save(templ.Attributes{"class": "w-4 h-4"})
-									Save Product
-								</button>
+									<!-- Footer Action (Moved inside form to use submit) -->
+									<div class="border-t border-slate-200/60 bg-slate-50 pt-4 mt-6 flex justify-end gap-3">
+										<button 
+											@click="open = false; setTimeout(() => htmx.ajax('GET', '/pos/inventory', {target: 'body'}), 300)"
+											type="button" 
+											class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
+											Cancel
+										</button>
+										<button type="submit" :disabled="loading" class="px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-800 shadow-sm transition-colors flex items-center gap-2">
+											@lucide.Save(templ.Attributes{"class": "w-4 h-4"})
+											<span x-text="loading ? 'Saving...' : 'Save Product'"></span>
+										</button>
+									</div>
+								</form>
 							</div>
 						</div>
 					</div>

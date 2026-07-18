@@ -126,6 +126,10 @@ func (h *Handler) Logout(c fiber.Ctx) error {
 		MaxAge:   -1,
 	})
 
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/login")
+	}
+
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse[MessageResponse]{
 		Data: MessageResponse{Message: "Logged out successfully"},
 	})

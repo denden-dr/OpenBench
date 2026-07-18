@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench templ tailwind-build tailwind-watch
+.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench templ tailwind-build tailwind-watch test-env-up test-env-down test-e2e test-e2e-ui
 
 up:
 	podman compose up -d
@@ -38,7 +38,7 @@ lint:
 	golangci-lint run ./...
 
 build: templ
-	go build -o bin/server cmd/server/main.go
+	go build -o bin/server ./cmd/server
 
 test:
 	go test -v ./...
@@ -54,3 +54,17 @@ migrate-down:
 
 bench:
 	go test -bench=. -benchmem ./...
+
+test-env-up:
+	podman build -t openbench-test-base:latest .
+	podman-compose -f docker-compose.test.yml up -d
+
+test-env-down:
+	@echo "Tearing down test environment..."
+	podman-compose -f docker-compose.test.yml down -v
+
+test-e2e:
+	cd e2e && PLAYWRIGHT_TEST_BASE_URL=http://localhost:3000 npx playwright test
+
+test-e2e-ui:
+	cd e2e && PLAYWRIGHT_TEST_BASE_URL=http://localhost:3000 npx playwright test --ui

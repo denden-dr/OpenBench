@@ -3,10 +3,11 @@ package admin_pages
 import (
 	"github.com/denden-dr/OpenBench/ui/views/layouts"
 	"github.com/denden-dr/OpenBench/ui/views/components/pos"
+	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
 	"github.com/dimmerz92/go-icons/lucide"
 )
 
-templ POSInventoryPage(drawerContent templ.Component) {
+templ POSInventoryPage(products []viewmodels.ProductVM, drawerContent templ.Component) {
 	@layouts.AdminLayout("POS & Inventory") {
 		<div>
 			@pos_components.POSTabs("inventory")
@@ -20,15 +21,25 @@ templ POSInventoryPage(drawerContent templ.Component) {
 							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
 								@lucide.Search(templ.Attributes{"class": "w-5 h-5"})
 							</div>
-							<input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search accessories..."/>
+							<input
+								type="text"
+								name="search"
+								hx-get="/pos/inventory"
+								hx-trigger="input changed delay:400ms, search"
+								hx-target="#inventory-table-body"
+								hx-swap="innerHTML"
+								hx-include="[name='search']"
+								class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all"
+								placeholder="Search accessories..."/>
 						</div>
 					</div>
 
 					<!-- New Product Button -->
-					<button 
-						hx-get="/pos/inventory/new" 
-						hx-target="#slideover-container" 
-						hx-push-url="true"
+					<button
+						type="button"
+						hx-get="/pos/inventory/new"
+						hx-target="#slideover-container"
+						hx-swap="innerHTML"
 						class="px-4 py-2 bg-slate-900 text-white rounded-xl font-medium shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
 						@lucide.Plus(templ.Attributes{"class": "w-5 h-5"})
 						Add Product
@@ -48,66 +59,14 @@ templ POSInventoryPage(drawerContent templ.Component) {
 									<th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
 								</tr>
 							</thead>
-							<tbody class="bg-white divide-y divide-slate-200/60">
-								<!-- Mock Data Row 1 -->
-								<tr class="hover:bg-slate-50/50 transition-colors">
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
-											@lucide.Package(templ.Attributes{"class": "w-5 h-5"})
-										</div>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="text-sm font-medium text-slate-900">Tempered Glass iPhone 15 Pro Max</div>
-										<div class="text-xs text-slate-500">PRD-1001</div>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-										Rp 75.000
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-											12 Available
-										</span>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-										<div class="flex items-center justify-end gap-3">
-											<button class="text-slate-400 hover:text-slate-600">@lucide.Pencil(templ.Attributes{"class": "w-4 h-4"})</button>
-											<button class="text-red-400 hover:text-red-600">@lucide.Trash2(templ.Attributes{"class": "w-4 h-4"})</button>
-										</div>
-									</td>
-								</tr>
-								
-								<!-- Mock Data Row 2 -->
-								<tr class="hover:bg-slate-50/50 transition-colors">
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
-											@lucide.Zap(templ.Attributes{"class": "w-5 h-5"})
-										</div>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="text-sm font-medium text-slate-900">Charger 20W Type-C Original</div>
-										<div class="text-xs text-slate-500">PRD-1002</div>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-										Rp 150.000
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-											5 Low Stock
-										</span>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-										<div class="flex items-center justify-end gap-3">
-											<button class="text-slate-400 hover:text-slate-600">@lucide.Pencil(templ.Attributes{"class": "w-4 h-4"})</button>
-											<button class="text-red-400 hover:text-red-600">@lucide.Trash2(templ.Attributes{"class": "w-4 h-4"})</button>
-										</div>
-									</td>
-								</tr>
+							<tbody id="inventory-table-body" class="bg-white divide-y divide-slate-200/60">
+								@POSInventoryRows(products)
 							</tbody>
 						</table>
 					</div>
 				</div>
 
-				<!-- Slideover Container -->
+				<!-- Slideover Container: HTMX loads drawer content here -->
 				<div id="slideover-container">
 					if drawerContent != nil {
 						@drawerContent

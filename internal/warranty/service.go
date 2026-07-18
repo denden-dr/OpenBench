@@ -26,11 +26,13 @@ var (
 type Service interface {
 	CreateWarranty(ctx context.Context, ticketID string, warrantyDays int) (*models.Warranty, error)
 	GetWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error)
+	GetWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error)
 	UpdateWarrantyStatus(ctx context.Context, id string, req UpdateWarrantyStatusRequest) (*models.Warranty, error)
 
 	CreateClaim(ctx context.Context, req CreateClaimRequest) (*models.Claim, error)
-	GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.Claim, string, error)
+	GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.ClaimSummary, string, error)
 	GetClaimByID(ctx context.Context, id string) (*models.Claim, error)
+	GetClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error)
 	UpdateClaimStatus(ctx context.Context, id string, status models.ServiceTicketStatus) (*models.Claim, error)
 	UpdateClaim(ctx context.Context, id string, req UpdateClaimRequest) (*models.Claim, error)
 	EvaluateClaim(ctx context.Context, claimID string, req EvaluateClaimRequest) (*models.Claim, error)
@@ -114,6 +116,14 @@ func (s *service) GetWarrantyByTicketID(ctx context.Context, ticketID string) (*
 	return w, nil
 }
 
+func (s *service) GetWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error) {
+	w, err := s.queryRepo.FindWarrantyByTicketNumber(ctx, ticketNumber)
+	if err != nil {
+		return nil, err
+	}
+	return w, nil
+}
+
 func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req UpdateWarrantyStatusRequest) (*models.Warranty, error) {
 	if req.Status == "" {
 		return nil, fmt.Errorf("%w: status is required", ErrInvalidInput)
@@ -160,11 +170,11 @@ func (s *service) UpdateWarrantyStatus(ctx context.Context, id string, req Updat
 }
 
 func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*models.Claim, error) {
-	if req.WarrantyID == "" || req.IssueDescription == "" {
-		return nil, fmt.Errorf("%w: warranty_id and issue_description are required", ErrInvalidInput)
+	if req.TicketNumber == "" || req.IssueDescription == "" {
+		return nil, fmt.Errorf("%w: ticket_number and issue_description are required", ErrInvalidInput)
 	}
 
-	w, err := s.queryRepo.FindWarrantyByID(ctx, req.WarrantyID)
+	w, err := s.queryRepo.FindWarrantyByTicketNumber(ctx, req.TicketNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -224,18 +234,29 @@ func (s *service) CreateClaim(ctx context.Context, req CreateClaimRequest) (*mod
 	return claim, nil
 }
 
-func (s *service) GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.Claim, string, error) {
+func (s *service) GetClaims(ctx context.Context, status, search string, limit int, cursor string) ([]models.ClaimSummary, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 	if limit > utils.MaxLimit {
 		limit = utils.MaxLimit
 	}
-	return s.queryRepo.FindAllClaims(ctx, status, search, limit, cursor)
+	return s.queryRepo.FindAllClaimSummaries(ctx, status, search, limit, cursor)
 }
 
 func (s *service) GetClaimByID(ctx context.Context, id string) (*models.Claim, error) {
 	c, err := s.queryRepo.FindClaimByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if c == nil {
+		return nil, ErrClaimNotFound
+	}
+	return c, nil
+}
+
+func (s *service) GetClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error) {
+	c, err := s.queryRepo.FindClaimSummaryByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}

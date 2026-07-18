@@ -64,7 +64,7 @@ templ DrawerNewTicket() {
 
 							<!-- Form Content -->
 							<div class="relative flex-1 px-6 py-6">
-								<form class="space-y-8">
+								<form id="new-ticket-form" hx-post="/tickets" hx-swap="none" class="space-y-8" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300) }">
 									<!-- Pelanggan Section -->
 									<div>
 										<h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
@@ -166,7 +166,7 @@ templ DrawerNewTicket() {
 									class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
 									Cancel
 								</button>
-								<button type="button" class="px-4 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 shadow-sm transition-colors flex items-center gap-2">
+								<button type="submit" form="new-ticket-form" class="px-4 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 shadow-sm transition-colors flex items-center gap-2">
 									@lucide.Save(templ.Attributes{"class": "w-4 h-4"})
 									Save Ticket
 								</button>

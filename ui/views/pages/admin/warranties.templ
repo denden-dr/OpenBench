@@ -2,10 +2,11 @@ package admin_pages
 
 import (
 	"github.com/denden-dr/OpenBench/ui/views/layouts"
+	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
 	"github.com/dimmerz92/go-icons/lucide"
 )
 
-templ WarrantiesPage(drawerContent templ.Component) {
+templ WarrantiesPage(claims []viewmodels.ClaimVM, drawerContent templ.Component) {
 	@layouts.AdminLayout("Warranty Claims") {
 		<div class="space-y-6">
 			
@@ -17,14 +18,21 @@ templ WarrantiesPage(drawerContent templ.Component) {
 						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
 							@lucide.Search(templ.Attributes{"class": "w-5 h-5"})
 						</div>
-						<input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search Warranty Code or Ticket ID..."/>
+						<input type="text" 
+							name="search"
+							hx-get="/warranties" 
+							hx-target="#warranties-table-body"
+							hx-swap="outerHTML"
+							hx-trigger="input changed delay:300ms, search"
+							class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+							placeholder="Search Claim Number, Ticket ID, or Customer..."/>
 					</div>
 					
 					<!-- Filters -->
 					<div class="flex gap-2">
-						<button class="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg">All</button>
-						<button class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Pending</button>
-						<button class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Approved</button>
+						<button hx-get="/warranties" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg">All</button>
+						<button hx-get="/warranties?status=PENDING" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Pending</button>
+						<button hx-get="/warranties?status=ACCEPTED" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg">Approved</button>
 					</div>
 				</div>
 
@@ -45,7 +53,7 @@ templ WarrantiesPage(drawerContent templ.Component) {
 					<table class="min-w-full divide-y divide-slate-200/60">
 						<thead class="bg-slate-50/50">
 							<tr>
-								<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Warranty Code</th>
+								<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Claim Number</th>
 								<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Related Ticket</th>
 								<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
 								<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
@@ -53,53 +61,7 @@ templ WarrantiesPage(drawerContent templ.Component) {
 								<th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
 							</tr>
 						</thead>
-						<tbody class="bg-white divide-y divide-slate-200/60">
-							<!-- Mock Data Row 1 -->
-							<tr class="hover:bg-slate-50/50 transition-colors">
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm font-medium text-slate-900 font-mono">WR-3A9B2C1D</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<a href="#" class="text-sm font-medium text-primary hover:underline">TKT-20260701-005</a>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900">Budi Santoso</div>
-									<div class="text-sm text-slate-500">Samsung Galaxy S23</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-										PENDING
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">16 Jul 2026</td>
-								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-									<button hx-get="/warranties/claims/clm-9901" hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">Verify</button>
-								</td>
-							</tr>
-							
-							<!-- Mock Data Row 2 -->
-							<tr class="hover:bg-slate-50/50 transition-colors">
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm font-medium text-slate-900 font-mono">WR-8F4E7A2C</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<a href="#" class="text-sm font-medium text-primary hover:underline">TKT-20260620-012</a>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-slate-900">Siti Rahma</div>
-									<div class="text-sm text-slate-500">iPhone 13 Pro</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-										APPROVED
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">14 Jul 2026</td>
-								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-									<button hx-get="/warranties/claims/clm-9902" hx-target="#slideover-container" hx-push-url="true" class="text-slate-500 hover:text-slate-700">Detail</button>
-								</td>
-							</tr>
-						</tbody>
+						@WarrantiesRows(claims)
 					</table>
 				</div>
 			</div>

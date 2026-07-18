@@ -14,6 +14,7 @@ import (
 
 type InventoryProductReader interface {
 	FindByID(ctx context.Context, id string) (*models.Product, error)
+	FindAll(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error)
 }
 
 type InventoryStockWriter interface {
