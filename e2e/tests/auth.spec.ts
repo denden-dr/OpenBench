@@ -29,14 +29,17 @@ test.describe('Authentication Flow', () => {
       page.click('button[type="submit"]'),
     ]);
     
-    // 2. Click the Logout button in the sidebar
-    // Wait for the redirect to /login
-    await Promise.all([
-      page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 10000 }),
-      page.click('button:has-text("Logout")'),
-    ]);
+    // 2. Click the Logout button in the sidebar to open confirmation dialog
+    await page.click('button:has-text("Logout")');
+    
+    // 3. Wait for the confirmation dialog and confirm logout
+    await expect(page.locator('text=Confirm Logout')).toBeVisible({ timeout: 5000 });
+    await page.locator('button[hx-post="/api/v1/auth/logout"]').click();
 
-    // 3. Verify we are on the login page by checking for the login button
+    // 4. Wait for redirect to login page
+    await page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 10000 });
+
+    // 5. Verify we are on the login page by checking for the login button
     await expect(page.locator('button[type="submit"]')).toContainText('Sign In');
   });
 });

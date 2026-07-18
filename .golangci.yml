@@ -48,7 +48,6 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
-    # Exclude errcheck and gosec from test files and test utilities
     - path: (_test\.go|db_container\.go)
       linters:
         - errcheck

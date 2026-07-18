@@ -5,45 +5,46 @@ import (
 	"github.com/dimmerz92/go-icons/lucide"
 	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
 )
+
 templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
-	<!-- Drawer Overlay & Container (Alpine.js for animation) -->
-	<div 
-		x-data="{ open: false }" 
+	<div
+		x-data={`{
+			open: false,
+			selectedStatus: '${ticket.Status}'.trim(),
+			confirmCancel: false
+		}`}
 		x-init="setTimeout(() => open = true, 10)"
 		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
-		class="relative z-50" 
-		aria-labelledby="slide-over-title" 
-		role="dialog" 
+		class="relative z-50"
+		aria-labelledby="slide-over-title"
+		role="dialog"
 		aria-modal="true">
-		
-		<!-- Background backdrop -->
-		<div 
-			x-show="open" 
-			x-transition:enter="ease-in-out duration-300" 
-			x-transition:enter-start="opacity-0" 
-			x-transition:enter-end="opacity-100" 
-			x-transition:leave="ease-in-out duration-300" 
-			x-transition:leave-start="opacity-100" 
+
+		<div
+			x-show="open"
+			x-transition:enter="ease-in-out duration-300"
+			x-transition:enter-start="opacity-0"
+			x-transition:enter-end="opacity-100"
+			x-transition:leave="ease-in-out duration-300"
+			x-transition:leave-start="opacity-100"
 			x-transition:leave-end="opacity-0"
 			class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity"></div>
 
 		<div class="fixed inset-0 overflow-hidden">
 			<div class="absolute inset-0 overflow-hidden">
 				<div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-					<!-- Slide-over panel -->
-					<div 
-						x-show="open" 
-						x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500" 
-						x-transition:enter-start="translate-x-full" 
-						x-transition:enter-end="translate-x-0" 
-						x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500" 
-						x-transition:leave-start="translate-x-0" 
+					<div
+						x-show="open"
+						x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500"
+						x-transition:enter-start="translate-x-full"
+						x-transition:enter-end="translate-x-0"
+						x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500"
+						x-transition:leave-start="translate-x-0"
 						x-transition:leave-end="translate-x-full"
 						class="pointer-events-auto w-screen max-w-2xl"
 						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)">
-						
+
 						<div class="flex h-full flex-col overflow-y-scroll bg-slate-50 shadow-2xl">
-							<!-- Header -->
 							<div class="px-6 py-6 border-b border-slate-200/60 bg-white sticky top-0 z-10">
 								<div class="flex items-start justify-between">
 									<div>
@@ -51,45 +52,30 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 											<h2 class="text-xl font-bold text-slate-900" id="slide-over-title">{ ticket.TicketNumber }</h2>
 											switch string(ticket.Status) {
 												case "RECEIVED":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-														RECEIVED
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">RECEIVED</span>
 												case "REPAIRING":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-														REPAIRING
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">REPAIRING</span>
 												case "PENDING_CONFIRMATION":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-														PENDING
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">PENDING</span>
 												case "FIXED":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-														FIXED
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">FIXED</span>
 												case "COMPLETED":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-														COMPLETED
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">COMPLETED</span>
 												case "CANCELLED":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-														CANCELLED
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">CANCELLED</span>
 												case "RETURNED":
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-														RETURNED
-													</span>
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">RETURNED</span>
 											}
 										</div>
 										<p class="mt-1 text-sm text-slate-500">Created on { ticket.CreatedAt.Format("02 Jan 2006, 15:04 MST") }</p>
 									</div>
 									<div class="ml-3 flex h-7 items-center gap-2">
-										<!-- Action buttons -->
 										<button class="p-2 text-slate-400 hover:text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
 											@lucide.Printer(templ.Attributes{"class": "h-5 w-5"})
 										</button>
-										<button 
+										<button
 											@click="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
-											type="button" 
+											type="button"
 											class="relative p-2 rounded-md bg-white text-slate-400 hover:text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
 											<span class="absolute -inset-2.5"></span>
 											<span class="sr-only">Close panel</span>
@@ -99,11 +85,8 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 								</div>
 							</div>
 
-							<!-- Content -->
 							<div class="relative flex-1 p-6 space-y-6">
-								<!-- Grid info -->
 								<div class="grid grid-cols-2 gap-4">
-									<!-- Pelanggan Card -->
 									<div class="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
 										<div class="flex items-center gap-2 text-slate-500 mb-3">
 											@lucide.User(templ.Attributes{"class": "w-4 h-4 text-primary"})
@@ -116,7 +99,6 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 										</p>
 									</div>
 
-									<!-- Perangkat Card -->
 									<div class="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
 										<div class="flex items-center gap-2 text-slate-500 mb-3">
 											@lucide.Smartphone(templ.Attributes{"class": "w-4 h-4 text-primary"})
@@ -129,7 +111,6 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 									</div>
 								</div>
 
-								<!-- Kerusakan Card -->
 								<div class="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
 									<div class="flex items-center gap-2 text-slate-500 mb-3">
 										@lucide.CircleAlert(templ.Attributes{"class": "w-4 h-4 text-orange-500"})
@@ -140,7 +121,6 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 									</p>
 								</div>
 
-								<!-- Update Status Section (For Technician/Admin) -->
 								<form id="update-ticket-form" hx-put={ "/tickets/" + ticket.TicketID } hx-swap="none" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300) }" class="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm space-y-5">
 									<input type="hidden" name="customer_name" value={ ticket.CustomerName }/>
 									<input type="hidden" name="customer_phone" value={ ticket.CustomerPhone }/>
@@ -148,16 +128,17 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 									<input type="hidden" name="device_model" value={ ticket.DeviceModel }/>
 									<input type="hidden" name="device_passcode" value={ ticket.DevicePasscode }/>
 									<input type="hidden" name="issue_description" value={ ticket.IssueDescription }/>
+									<input type="hidden" name="cost" value={ fmt.Sprint(ticket.Cost) }/>
 									<input type="hidden" name="warranty_days" value={ fmt.Sprint(ticket.WarrantyDays) }/>
 
 									<h3 class="font-semibold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
 										@lucide.Wrench(templ.Attributes{"class": "w-5 h-5 text-primary"})
 										Service Update
 									</h3>
-									
+
 									<div>
-										<label for="status" class="block text-sm font-medium leading-6 text-slate-900">Update Status</label>
-										<select id="status" name="status" class="mt-2 block w-full rounded-xl border-0 py-2.5 pl-3 pr-10 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6 bg-white">
+										<label for="status" class="block text-sm font-medium leading-6 text-slate-900">Update Status <span class="text-red-500">*</span></label>
+										<select id="status" name="status" x-model="selectedStatus" class="mt-2 block w-full rounded-xl border-0 py-2.5 pl-3 pr-10 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6 bg-white">
 											<option value="RECEIVED" selected?={ string(ticket.Status) == "RECEIVED" }>RECEIVED - Just Received</option>
 											<option value="REPAIRING" selected?={ string(ticket.Status) == "REPAIRING" }>REPAIRING - In Progress</option>
 											<option value="PENDING_CONFIRMATION" selected?={ string(ticket.Status) == "PENDING_CONFIRMATION" }>PENDING_CONFIRMATION - Waiting for Confirmation</option>
@@ -165,33 +146,55 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 											<option value="COMPLETED" selected?={ string(ticket.Status) == "COMPLETED" }>COMPLETED - Picked up by Customer</option>
 											<option value="CANCELLED" selected?={ string(ticket.Status) == "CANCELLED" }>CANCELLED - Cancelled</option>
 										</select>
+										<div id="status-error" class="text-red-500 text-xs mt-1 hidden"></div>
 									</div>
 
 									<div>
-										<label for="repair_action" class="block text-sm font-medium leading-6 text-slate-900">Repair Action</label>
+										<label for="repair_action" class="block text-sm font-medium leading-6 text-slate-900">Repair Action <span class="text-red-500">*</span></label>
 										<input type="text" name="repair_action" id="repair_action" value={ ticket.RepairAction } class="mt-2 block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"/>
+										<div id="repair_action-error" class="text-red-500 text-xs mt-1 hidden"></div>
 									</div>
 
 									<div>
-										<label for="cost" class="block text-sm font-medium leading-6 text-slate-900">Total Cost (Rp)</label>
-										<div class="mt-2 relative">
-											<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-												<span class="text-slate-500 sm:text-sm">Rp</span>
-											</div>
-											<input type="number" name="cost" id="cost" value={ fmt.Sprint(ticket.Cost) } class="block w-full rounded-xl border-0 py-2.5 pl-10 pr-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"/>
-										</div>
+										<label for="cost_display" class="block text-sm font-medium leading-6 text-slate-900">Total Cost (Rp)</label>
+										<div class="mt-2 text-sm text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">Rp { fmt.Sprint(ticket.Cost) }</div>
 									</div>
 
 									<div>
 										<label for="notes" class="block text-sm font-medium leading-6 text-slate-900">Internal Notes (Technician)</label>
 										<textarea id="notes" name="notes" rows="3" placeholder="Add technical notes if any..." class="mt-2 block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">{ ticket.Notes }</textarea>
+										<div id="notes-error" class="text-red-500 text-xs mt-1 hidden"></div>
 									</div>
-									
-									<div class="pt-2 flex justify-end">
-										<button type="submit" form="update-ticket-form" class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2">
-											@lucide.Save(templ.Attributes{"class": "w-4 h-4"})
-											Save Changes
-										</button>
+
+									<div class="pt-2 flex justify-end gap-3">
+										<!-- Cancel confirmation dialog (Alpine) -->
+										<div x-data="{ confirmCancel: false }" class="inline-block">
+											<button type="button" @click="confirmCancel = (selectedStatus === 'CANCELLED' ? true : false); if (selectedStatus !== 'CANCELLED') $el.closest('form').querySelector('[type=submit]').click()" class="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2">
+												@lucide.Save(templ.Attributes{"class": "w-4 h-4"})
+												Save Changes
+											</button>
+
+											<!-- Confirm cancel dialog -->
+											<div x-show="confirmCancel" class="fixed inset-0 z-[100] flex items-center justify-center" @keydown.escape.window="confirmCancel = false" style="display: none;">
+												<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="confirmCancel = false"></div>
+												<div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 z-10">
+													<div class="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-red-100">
+														@lucide.TriangleAlert(templ.Attributes{"class": "w-6 h-6 text-red-600"})
+													</div>
+													<div class="mt-4 text-center">
+														<h3 class="text-lg font-semibold text-slate-900">Confirm Cancellation</h3>
+														<p class="mt-2 text-sm text-slate-500">Are you sure you want to mark this ticket as CANCELLED? This action cannot be undone.</p>
+													</div>
+													<div class="mt-6 flex justify-end gap-3">
+														<button type="button" @click="confirmCancel = false" class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">Go Back</button>
+														<button type="button" @click="confirmCancel = false; $el.closest('form').querySelector('[type=submit]').click()" class="px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl shadow-sm hover:bg-red-700 transition-colors">Yes, Cancel Ticket</button>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<!-- Hidden submit -->
+										<button type="submit" id="update-submit" style="display: none;"></button>
 									</div>
 								</form>
 							</div>

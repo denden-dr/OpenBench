@@ -78,14 +78,11 @@ test.describe.serial('Service Tickets Flow', () => {
     // Select "REPAIRING" from the status dropdown
     await page.selectOption('select[name="status"]', 'REPAIRING');
     
-    // Update the cost
-    await page.fill('input[name="cost"]', '2000000');
-    
     // Update internal notes
     await page.fill('textarea[name="notes"]', 'Screen replaced, testing functionality.');
 
     // 5. Submit the form
-    await page.click('button[type="submit"]:has-text("Save Changes")');
+    await page.click('button:has-text("Save Changes")');
 
     // 6. Verify the drawer closes and the table updates
     await expect(updateForm).not.toBeVisible();

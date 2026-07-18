@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"github.com/denden-dr/OpenBench/internal/models"
 	"github.com/denden-dr/OpenBench/ui/views/viewmodels"
+	"github.com/dimmerz92/go-icons/lucide"
+	"github.com/denden-dr/OpenBench/ui/views/components/shared"
 )
 
 templ WarrantiesRows(claims []viewmodels.ClaimVM) {
 	<tbody id="warranties-table-body" class="bg-white divide-y divide-slate-200/60">
 		for _, c := range claims {
-			<tr class="hover:bg-slate-50/50 transition-colors">
+			<tr class="hover:bg-slate-50/80 transition-colors duration-150">
 				<td class="px-6 py-4 whitespace-nowrap">
 					<div class="text-sm font-medium text-slate-900 font-mono" title={ c.WarrantyID }>
 						{ c.ClaimNumber }
@@ -25,24 +27,22 @@ templ WarrantiesRows(claims []viewmodels.ClaimVM) {
 					<div class="text-sm text-slate-500">{ c.DeviceSummary }</div>
 				</td>
 				<td class="px-6 py-4 whitespace-nowrap">
-					<span class={ c.StatusBadgeClass }>
-						{ string(c.EvaluationStatus) }
-					</span>
+					<span class={ c.StatusBadgeClass }>{ string(c.EvaluationStatus) }</span>
 				</td>
 				<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{ c.CreatedAtFormatted }</td>
 				<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 					if c.EvaluationStatus == models.ClaimEvaluationPending {
-						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80">Verify</button>
+						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-primary hover:text-primary/80 transition-colors">Verify</button>
 					} else {
-						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-slate-500 hover:text-slate-700">Detail</button>
+						<button hx-get={ fmt.Sprintf("/warranties/claims/%s", c.ClaimID) } hx-target="#slideover-container" hx-push-url="true" class="text-slate-500 hover:text-slate-700 transition-colors">Detail</button>
 					}
 				</td>
 			</tr>
 		}
 		if len(claims) == 0 {
 			<tr>
-				<td colspan="6" class="px-6 py-10 text-center text-slate-500 text-sm">
-					No warranty claims found.
+				<td colspan="6" class="px-6 py-0">
+					@shared.EmptyState(lucide.ShieldAlert(templ.Attributes{"class": "w-8 h-8"}), "No warranty claims found", "Customers can submit warranty claims using the ticket number from their receipt.", "New Claim", "/warranties/claims/new", "#slideover-container")
 				</td>
 			</tr>
 		}
