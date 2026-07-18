@@ -67,7 +67,7 @@ test.describe.serial('Warranty Claims Flow', () => {
     
     // Change status to COMPLETED
     await page.selectOption('select[name="status"]', 'COMPLETED');
-    await page.click('button[type="submit"]:has-text("Save Changes")');
+    await page.click('button:has-text("Save Changes")');
 
     // Ensure drawer closes
     await expect(page.locator('form#update-ticket-form')).not.toBeVisible();
