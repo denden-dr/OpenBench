@@ -1,70 +1,55 @@
--include .env
+-include apps/webapi/.env
 export
 
-.PHONY: up down run build test mod-tidy migrate-up migrate-down seed lint test-integration bench templ tailwind-build tailwind-watch test-env-up test-env-down test-e2e test-e2e-ui
+.PHONY: up down install-api install-user install-admin dev-api dev-user dev-admin build-all build-api build-user build-admin test-api migrate-up migrate-down seed
 
+# --- Database / Infrastructure ---
 up:
-	podman compose up -d
+	cd apps/webapi && podman compose up -d
 
 down:
-	podman compose down
-
-templ:
-	templ generate
-
-tailwind-build:
-	npx -y tailwindcss@3 -i ./ui/static/css/input.css -o ./ui/static/css/style.css --minify
-
-tailwind-watch:
-	npx -y tailwindcss@3 -i ./ui/static/css/input.css -o ./ui/static/css/style.css --watch
-
-run: templ tailwind-build
-	go run ./cmd/server
-
-# Development with hot-reload (Go, Templ, Tailwind)
-dev:
-	air
-
-seed:
-	go run ./cmd/seed
-
-mod-tidy:
-	go mod tidy
-
-fmt:
-	go fmt ./...
-
-lint:
-	go vet ./...
-
-build: templ
-	go build -o bin/server ./cmd/server
-
-test:
-	go test -v ./...
-
-test-integration:
-	go test -v -tags=integration ./...
+	cd apps/webapi && podman compose down
 
 migrate-up:
-	migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
+	cd apps/webapi && migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
 
 migrate-down:
-	migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down
+	cd apps/webapi && migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" down
 
-bench:
-	go test -bench=. -benchmem ./...
+seed:
+	cd apps/webapi && go run ./cmd/seed
 
-test-env-up:
-	podman build -t openbench-test-base:latest .
-	podman-compose -f docker-compose.test.yml up -d
+# --- Installation ---
+install-api:
+	cd apps/webapi && go mod tidy
 
-test-env-down:
-	@echo "Tearing down test environment..."
-	podman-compose -f docker-compose.test.yml down -v
+install-user:
+	cd apps/web-user && pnpm install
 
-test-e2e:
-	cd e2e && PLAYWRIGHT_TEST_BASE_URL=http://localhost:3000 npx playwright test
+install-admin:
+	cd apps/web-admin && pnpm install
 
-test-e2e-ui:
-	cd e2e && PLAYWRIGHT_TEST_BASE_URL=http://localhost:3000 npx playwright test --ui
+# --- Development Servers ---
+dev-api:
+	cd apps/webapi && air
+
+dev-user:
+	cd apps/web-user && pnpm dev
+
+dev-admin:
+	cd apps/web-admin && pnpm dev
+
+# --- Testing & Building ---
+test-api:
+	cd apps/webapi && go test -v ./...
+
+build-api:
+	cd apps/webapi && go build -o bin/server ./cmd/server
+
+build-user:
+	cd apps/web-user && pnpm build
+
+build-admin:
+	cd apps/web-admin && pnpm build
+
+build-all: build-api build-user build-admin

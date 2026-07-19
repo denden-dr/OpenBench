@@ -14,55 +14,18 @@ Thumbs.db
 .classpath
 .settings/
 
-# Node / Frontend / Web UI
+# Node / Global JS
 node_modules/
-dist/
-/ui/static/node_modules/
-/ui/static/dist/
-playwright-report/
-test-results/
-
-# Go / Backend
-/bin/
-/vendor/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-coverage.out
-go.work
-go.work.sum
-
-# Environment files
-.env
-.env.*
-!.env.example
-!.env.test
-
-# Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Debugging / Temporary files
-.agents/scratch/
-.pnpm-store/
-.npm/
+# Temporary files / Caches
 tmp/
 temp/
 __pycache__/
 *.py[cod]
-
-# Generated Frontend Assets
-ui/static/css/style.css
-*_templ.go
-*_templ.txt
-
-# Tailwind Binary (if downloaded locally)
-tailwindcss
-tailwindcss-*
+.pnpm-store/
+.npm/
+.agents/scratch/
