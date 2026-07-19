@@ -8,7 +8,7 @@ Seiring perkembangannya, OpenBench kini telah dilengkapi berbagai utilitas pendu
 
 ## Fitur Utama
 
-- 🔐 **Autentikasi & Keamanan (Auth)**: Sistem login menggunakan JWT (Access & Refresh token) yang aman dan berbasis *cookie*.
+- 🔐 **Autentikasi & Keamanan (Auth)**: Sistem keamanan dengan verifikasi token Bearer JWT yang aman.
 - 📝 **Manajemen Tiket Servis (Ticket)**: Mencatat detail perangkat, keluhan pelanggan, dan melacak status perbaikan secara sistematis.
 - 📦 **Manajemen Inventaris (Inventory)**: Mengelola stok produk, ketersediaan suku cadang, dan penyesuaian (*adjustment*) stok barang.
 - 💰 **Point of Sale (POS)**: Sistem kasir terpadu yang terhubung dengan tiket dan inventaris (mendukung transaksi *atomic* yang konsisten).
@@ -16,14 +16,14 @@ Seiring perkembangannya, OpenBench kini telah dilengkapi berbagai utilitas pendu
 
 ## Arsitektur Teknis
 
-Meskipun ditujukan untuk kemudahan bisnis, OpenBench dibangun di atas fondasi teknologi modern yang menjamin kecepatan, keamanan, dan keandalan tingkat tinggi (Enterprise-Grade):
+OpenBench dibangun di atas fondasi teknologi *Micro Frontends* dan *Web API* modern yang menjamin kecepatan, skalabilitas, dan keandalan tingkat tinggi (Enterprise-Grade):
 
-- **Fullstack Architecture**: Menggunakan pendekatan **GOTTH Stack** (Go, Templ, Tailwind, HTMX) untuk pengembangan web interaktif tanpa penderitaan SPA kompleks.
-- **Backend**: [Golang](https://go.dev/) dengan framework [Fiber v3](https://gofiber.io/) (Kinerja sangat cepat dan efisien).
-- **Frontend Engine**: Komponen HTML reaktif menggunakan [Templ](https://templ.guide/), penataan gaya lewat Tailwind CSS (Binary CLI), serta interaktivitas dari [HTMX](https://htmx.org/) dan Alpine.js.
-- **Database**: [PostgreSQL 16](https://www.postgresql.org/) dengan akses melalui `sqlx` dan `pgx/v5` (eksekusi SQL efisien & mendukung *atomic transactions*).
-- **Infrastruktur**: Containerized menggunakan Docker/Podman (dilengkapi dengan *Testcontainers* untuk *integration test*).
-- **UI Design System**: Mengimplementasikan estetika *Glassmorphism*, *Self-hosted custom fonts*, dan standar Lucide Icons.
+- **Struktur Repositori**: *Monorepo* yang mengisolasi backend dan multi-frontend.
+- **Backend (Web API)**: [Golang](https://go.dev/) dengan framework [Fiber v3](https://gofiber.io/) yang berjalan sangat efisien dan menyajikan JSON API.
+- **Frontend (Micro Frontends)**: Dua aplikasi terpisah untuk publik (`web-user`) dan internal admin (`web-admin`), dibangun dengan [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), dan dikompilasi super cepat menggunakan [Vite](https://vitejs.dev/).
+- **UI Design System**: Menggunakan [Tailwind CSS v4](https://tailwindcss.com/) dengan palet estetika *Glassmorphism*, font kustom mandiri (*self-hosted*), dan standar ikon Lucide.
+- **Database**: [PostgreSQL 16](https://www.postgresql.org/) dengan akses melalui `sqlx` dan `pgx/v5` (mendukung *atomic transactions*).
+- **Infrastruktur**: Database dikelola menggunakan Podman/Docker Compose, dan *Integration Test* didukung oleh ekosistem *Testcontainers*.
 
 ---
 
@@ -31,43 +31,62 @@ Meskipun ditujukan untuk kemudahan bisnis, OpenBench dibangun di atas fondasi te
 
 ### Persyaratan Sistem
 - [Go](https://go.dev/doc/install) versi 1.26.1 atau lebih baru.
+- [Node.js](https://nodejs.org/) versi terbaru dan package manager `pnpm`.
 - [Docker](https://docs.docker.com/get-docker/) atau [Podman](https://podman.io/) (beserta docker-compose/podman-compose).
 - Make utility.
 
 ### Langkah-langkah Menjalankan Aplikasi Lokal
 
 1. **Persiapan Konfigurasi**
-   Salin template konfigurasi dan sesuaikan jika perlu:
+   Salin template konfigurasi untuk Web API dan sesuaikan jika perlu:
    ```bash
-   cp .env.example .env
+   cp apps/webapi/.env.example apps/webapi/.env
    ```
-   *(Pastikan tidak mengubah nama-nama variabel secara sembarangan, karena sistem menggunakan validasi ketat/strict mode).*
+   *(Catatan: pastikan nilai rahasia dalam `.env` valid, khususnya enkripsi key yang diwajibkan 32-karakter).*
 
-2. **Menjalankan Database**
-   Nyalakan container PostgreSQL di latar belakang:
+2. **Instalasi Dependensi**
+   Untuk mengunduh modul Go dan *package node_modules* untuk kedua aplikasi React:
+   ```bash
+   make install-api
+   make install-user
+   make install-admin
+   ```
+
+3. **Menjalankan Database (PostgreSQL)**
    ```bash
    make up
    ```
 
-3. **Menjalankan Aplikasi (Mode Development)**
-   Untuk pengembangan dengan pengalaman terbaik yang dilengkapi fitur *hot-reload* (otomatis me-rebuild Go, Templ, dan Tailwind CSS setiap ada perubahan file), jalankan:
+4. **Menjalankan Server (Development)**
+   Buka 3 tab terminal terpisah di root repositori untuk menjalankan layanan dengan fitur *hot-reload* bawaan:
+
+   - **Backend API Server**:
+     ```bash
+     make dev-api
+     ```
+     *(Membutuhkan Air terpasang global: `go install github.com/air-verse/air@latest`)*
+
+   - **User Portal Frontend**:
+     ```bash
+     make dev-user
+     ```
+
+   - **Admin Dashboard Frontend**:
+     ```bash
+     make dev-admin
+     ```
+
+5. **Menjalankan Build & Pengujian**
+   Untuk melakukan proses pengujian (unit testing) pada backend:
    ```bash
-   make dev
+   make test-api
    ```
-   *(Pastikan Anda telah menginstal utilitas Air melalui `go install github.com/air-verse/air@latest`)*.
-   
-   Jika Anda hanya ingin menjalankan aplikasi sekali jalan (tanpa *hot-reload*):
+   Untuk mem-*build* file binary Go dan proses kompilasi Vite untuk kedua frontend:
    ```bash
-   make run
+   make build-all
    ```
 
-4. **Menjalankan Pengujian (Testing)**
-   Proyek ini dilengkapi dengan modul pengujian dan integrasi otomatis yang mendalam. Jalankan perintah berikut untuk menguji seluruh logika:
-   ```bash
-   go test ./...
-   ```
-
-5. **Mematikan Sistem**
+6. **Mematikan Sistem**
    Untuk mematikan container database:
    ```bash
    make down
@@ -75,7 +94,7 @@ Meskipun ditujukan untuk kemudahan bisnis, OpenBench dibangun di atas fondasi te
 
 ## Verifikasi Kesehatan Sistem
 
-Setelah aplikasi berjalan, Anda dapat memverifikasi bahwa server API dan koneksi Database aktif melalui *endpoint health-check*:
+Setelah API backend berjalan (biasanya di port 3000), Anda dapat memverifikasi koneksi database melalui *endpoint health-check*:
 
 ```bash
 curl http://localhost:3000/health
@@ -86,7 +105,7 @@ curl http://localhost:3000/health
 {
   "database": "up",
   "status": "up",
-  "timestamp": "2026-07-07T19:00:00+07:00"
+  "timestamp": "2026-07-19T19:00:00+07:00"
 }
 ```
 

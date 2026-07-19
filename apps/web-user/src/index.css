@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #324376;
+  --color-secondary: #586ba4;
+  --color-accent: #f5dd90;
+  --color-tertiary: #f68e5f;
+  --color-danger: #f76c5e;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f8fafc;
+}

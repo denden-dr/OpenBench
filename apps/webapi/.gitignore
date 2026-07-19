@@ -1,0 +1,18 @@
+# Build output
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+
+# Go workspace / dependencies
+/vendor/
+coverage.out
+
+# Local Env
+.env
+.env.*
+!.env.example
