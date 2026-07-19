@@ -14,7 +14,7 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 			confirmCancel: false
 		}`}
 		x-init="setTimeout(() => open = true, 10)"
-		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
+		@keydown.window.escape="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 		class="relative z-50"
 		aria-labelledby="slide-over-title"
 		role="dialog"
@@ -42,7 +42,7 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 						x-transition:leave-start="translate-x-0"
 						x-transition:leave-end="translate-x-full"
 						class="pointer-events-auto w-screen max-w-2xl"
-						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)">
+						@click.away="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)">
 
 						<div class="flex h-full flex-col overflow-y-scroll bg-slate-50 shadow-2xl">
 							<div class="px-6 py-6 border-b border-slate-200/60 bg-white sticky top-0 z-10">
@@ -74,7 +74,7 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 											@lucide.Printer(templ.Attributes{"class": "h-5 w-5"})
 										</button>
 										<button
-											@click="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
+											@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 											type="button"
 											class="relative p-2 rounded-md bg-white text-slate-400 hover:text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
 											<span class="absolute -inset-2.5"></span>
@@ -121,7 +121,7 @@ templ DrawerTicketDetail(ticket viewmodels.TicketDetailVM) {
 									</p>
 								</div>
 
-								<form id="update-ticket-form" hx-put={ "/tickets/" + ticket.TicketID } hx-swap="none" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300) }" class="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm space-y-5">
+								<form id="update-ticket-form" hx-put={ "/tickets/" + ticket.TicketID } hx-swap="none" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); htmx.ajax('GET', '/tickets', {target: 'body'}); }, 300) }" class="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm space-y-5">
 									<input type="hidden" name="customer_name" value={ ticket.CustomerName }/>
 									<input type="hidden" name="customer_phone" value={ ticket.CustomerPhone }/>
 									<input type="hidden" name="device_brand" value={ ticket.DeviceBrand }/>

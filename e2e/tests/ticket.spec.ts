@@ -16,10 +16,10 @@ test.describe.serial('Service Tickets Flow', () => {
     // ---------------------------------------------------------
     // PART 1: Create a new service ticket
     // ---------------------------------------------------------
-    
+
     // 1. Navigate to tickets page
     await page.goto('/tickets');
-    
+
     // Check if the page loaded correctly
     await expect(page.locator('h1')).toContainText('Service Tickets');
 
@@ -29,21 +29,32 @@ test.describe.serial('Service Tickets Flow', () => {
     // Wait for the drawer title to be visible to ensure HTMX loaded the form
     const drawerTitle = page.locator('h2:has-text("Create New Service Ticket")');
     await expect(drawerTitle).toBeVisible();
+    await expect(page).toHaveURL(/\/tickets\/new$/);
+
+    // Test Cancel / URL revert
+    await page.locator('#slideover-container button:has-text("Cancel")').click();
+    await expect(drawerTitle).not.toBeVisible();
+    await expect(page).toHaveURL(/\/tickets$/);
+
+    // Re-open to proceed with creation
+    await page.click('button:has-text("New Ticket")');
+    await expect(drawerTitle).toBeVisible();
+    await expect(page).toHaveURL(/\/tickets\/new$/);
 
     // 3. Fill out the form
     // Customer Info
     await page.fill('input[name="customer_name"]', 'John Doe Test');
     await page.fill('input[name="customer_phone"]', '08123456789');
-    
+
     // Device Info
     await page.fill('input[name="device_brand"]', 'Samsung');
     await page.fill('input[name="device_model"]', 'Galaxy S23');
     await page.fill('input[name="device_passcode"]', '1234');
-    
+
     // Issue Info
     await page.fill('textarea[name="issue_description"]', 'Screen cracked from drop');
     await page.fill('input[name="repair_action"]', 'Replace LCD Display');
-    
+
     // Cost & Warranty
     await page.fill('input[name="cost"]', '1500000');
     await page.fill('input[name="warranty_days"]', '30');
@@ -57,7 +68,7 @@ test.describe.serial('Service Tickets Flow', () => {
     await expect(tableBody).toContainText('John Doe Test', { timeout: 10000 });
     await expect(tableBody).toContainText('Galaxy S23');
     await expect(tableBody).toContainText('Samsung');
-    
+
     // Verify the drawer is closed
     await expect(drawerTitle).not.toBeVisible();
 
@@ -73,11 +84,22 @@ test.describe.serial('Service Tickets Flow', () => {
     // 3. Wait for the update drawer to open
     const updateForm = page.locator('form#update-ticket-form');
     await expect(updateForm).toBeVisible();
+    await expect(page).toHaveURL(/\/tickets\/[a-f0-9-]+$/);
+
+    // Test closing view drawer reverts URL
+    await page.locator('#slideover-container button:has-text("Close panel")').click();
+    await expect(updateForm).not.toBeVisible();
+    await expect(page).toHaveURL(/\/tickets$/);
+
+    // Re-open to proceed with update
+    await viewButton.click();
+    await expect(updateForm).toBeVisible();
+    await expect(page).toHaveURL(/\/tickets\/[a-f0-9-]+$/);
 
     // 4. Modify the status and cost
     // Select "REPAIRING" from the status dropdown
     await page.selectOption('select[name="status"]', 'REPAIRING');
-    
+
     // Update internal notes
     await page.fill('textarea[name="notes"]', 'Screen replaced, testing functionality.');
 

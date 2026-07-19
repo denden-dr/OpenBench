@@ -32,7 +32,7 @@ templ DrawerClaimDetail(vm viewmodels.ClaimVM) {
 					if (!res.ok) throw new Error(data.message || 'Failed to evaluate claim');
 					
 					this.open = false;
-					setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300);
+					setTimeout(() => { window.history.pushState({}, '', '/warranties'); htmx.ajax('GET', '/warranties', {target: 'body'}); }, 300);
 				} catch (err) {
 					this.error = err.message;
 				} finally {
@@ -41,7 +41,7 @@ templ DrawerClaimDetail(vm viewmodels.ClaimVM) {
 			}
 		}`, vm.ClaimID) }
 		x-init="setTimeout(() => open = true, 10)"
-		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+		@keydown.window.escape="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 		class="relative z-50" 
 		aria-labelledby="slide-over-title" 
 		role="dialog" 
@@ -71,7 +71,7 @@ templ DrawerClaimDetail(vm viewmodels.ClaimVM) {
 						x-transition:leave-start="translate-x-0" 
 						x-transition:leave-end="translate-x-full"
 						class="pointer-events-auto w-screen max-w-2xl"
-						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)">
+						@click.away="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)">
 						
 						<div class="flex h-full flex-col overflow-y-scroll bg-slate-50 shadow-2xl">
 							<!-- Header -->
@@ -88,7 +88,7 @@ templ DrawerClaimDetail(vm viewmodels.ClaimVM) {
 									</div>
 									<div class="ml-3 flex h-7 items-center gap-2">
 										<button 
-											@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+											@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 											type="button" 
 											class="relative p-2 rounded-md bg-white text-slate-400 hover:text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
 											<span class="absolute -inset-2.5"></span>

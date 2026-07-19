@@ -188,7 +188,7 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 		From("claims")
 
 	if status != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"status": status})
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"evaluation_status": status})
 	}
 
 	if search != "" {
@@ -286,7 +286,7 @@ func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status s
 		Join("service_tickets st ON w.ticket_id = st.id")
 
 	if status != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"c.status": status})
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"c.evaluation_status": status})
 	}
 
 	if search != "" {

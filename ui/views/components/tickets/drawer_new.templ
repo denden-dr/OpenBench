@@ -6,7 +6,7 @@ templ DrawerNewTicket() {
 	<div
 		x-data="{ open: false }"
 		x-init="setTimeout(() => open = true, 10)"
-		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
+		@keydown.window.escape="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 		class="relative z-50"
 		aria-labelledby="slide-over-title"
 		role="dialog"
@@ -34,7 +34,7 @@ templ DrawerNewTicket() {
 						x-transition:leave-start="translate-x-0"
 						x-transition:leave-end="translate-x-full"
 						class="pointer-events-auto w-screen max-w-2xl"
-						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)">
+						@click.away="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)">
 
 						<div class="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl">
 							<div class="px-6 py-6 border-b border-slate-200/60 bg-slate-50/50">
@@ -45,7 +45,7 @@ templ DrawerNewTicket() {
 									</div>
 									<div class="ml-3 flex h-7 items-center">
 										<button
-											@click="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
+											@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 											type="button"
 											class="relative rounded-md bg-white text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
 											<span class="absolute -inset-2.5"></span>
@@ -57,7 +57,7 @@ templ DrawerNewTicket() {
 							</div>
 
 							<div class="relative flex-1 px-6 py-6">
-								<form id="new-ticket-form" hx-post="/tickets" hx-swap="none" class="space-y-8" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300) } else { document.querySelector('[id$=-error]:not(.hidden)')?.focus(); }">
+								<form id="new-ticket-form" hx-post="/tickets" hx-swap="none" class="space-y-8" @htmx:after-request="if($event.detail.successful) { open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); htmx.ajax('GET', '/tickets', {target: 'body'}); }, 300) } else { document.querySelector('[id$=-error]:not(.hidden)')?.focus(); }">
 
 									<div>
 										<h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
@@ -161,7 +161,7 @@ templ DrawerNewTicket() {
 
 							<div class="border-t border-slate-200/60 bg-slate-50 px-6 py-4 flex justify-end gap-3">
 								<button
-									@click="open = false; setTimeout(() => htmx.ajax('GET', '/tickets', {target: 'body'}), 300)"
+									@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/tickets'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 									type="button"
 									class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
 									Cancel

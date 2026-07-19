@@ -26,10 +26,31 @@ templ WarrantiesPage(activePage string, claims []viewmodels.ClaimVM, drawerConte
 							placeholder="Search Claim Number, Ticket ID, or Customer..."/>
 					</div>
 
-					<div class="flex gap-2">
-						<button hx-get="/warranties" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors">All</button>
-						<button hx-get="/warranties?status=PENDING" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg transition-colors">Pending</button>
-						<button hx-get="/warranties?status=ACCEPTED" hx-target="#warranties-table-body" hx-swap="outerHTML" class="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-lg transition-colors">Approved</button>
+					<div x-data="{ currentStatus: new URLSearchParams(window.location.search).get('status') || 'ALL' }" class="flex gap-2">
+						<button 
+							@click="currentStatus = 'ALL'"
+							hx-get="/warranties" 
+							hx-target="#warranties-table-body" 
+							hx-swap="outerHTML" 
+							hx-push-url="true"
+							:class="currentStatus === 'ALL' ? 'bg-primary text-white shadow-sm hover:bg-primary/90' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'"
+							class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">All</button>
+						<button 
+							@click="currentStatus = 'PENDING'"
+							hx-get="/warranties?status=PENDING" 
+							hx-target="#warranties-table-body" 
+							hx-swap="outerHTML" 
+							hx-push-url="true"
+							:class="currentStatus === 'PENDING' ? 'bg-primary text-white shadow-sm hover:bg-primary/90 border-primary' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'"
+							class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">Pending</button>
+						<button 
+							@click="currentStatus = 'ACCEPTED'"
+							hx-get="/warranties?status=ACCEPTED" 
+							hx-target="#warranties-table-body" 
+							hx-swap="outerHTML" 
+							hx-push-url="true"
+							:class="currentStatus === 'ACCEPTED' ? 'bg-primary text-white shadow-sm hover:bg-primary/90 border-primary' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'"
+							class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">Approved</button>
 					</div>
 				</div>
 

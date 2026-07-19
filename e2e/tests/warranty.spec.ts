@@ -78,8 +78,19 @@ test.describe.serial('Warranty Claims Flow', () => {
     await page.goto('/warranties');
     await expect(page.locator('h1')).toContainText('Warranty Claims');
 
+    // Test New Claim URL change and revert on Cancel
     await page.click('button:has-text("New Claim")');
     await expect(page.locator('h2:has-text("Submit New Claim")')).toBeVisible();
+    await expect(page).toHaveURL(/\/warranties\/claims\/new$/);
+
+    await page.locator('#slideover-container button:has-text("Cancel")').click();
+    await expect(page.locator('h2:has-text("Submit New Claim")')).not.toBeVisible();
+    await expect(page).toHaveURL(/\/warranties$/);
+
+    // Open again to proceed with submission
+    await page.click('button:has-text("New Claim")');
+    await expect(page.locator('h2:has-text("Submit New Claim")')).toBeVisible();
+    await expect(page).toHaveURL(/\/warranties\/claims\/new$/);
 
     await page.fill('#ticket_number', ticketNumber, { timeout: 5000 });
     await page.click('button:has-text("Verify Warranty")');
@@ -110,7 +121,13 @@ test.describe.serial('Warranty Claims Flow', () => {
     await claimRow.locator('button:has-text("Verify")').click();
     
     const evalDrawerTitle = page.locator('h2:has-text("Claim:")');
-    await expect(evalDrawerTitle).toBeVisible();
+    try {
+      await expect(evalDrawerTitle).toBeVisible({ timeout: 5000 });
+    } catch (e) {
+      const html = await page.content();
+      require('fs').writeFileSync('out_eval.html', html);
+      throw e;
+    }
 
     // Fill inspection notes
     await page.fill('textarea[name="notes"]', 'Verified flickering issue. Approve for rework.');
@@ -124,5 +141,40 @@ test.describe.serial('Warranty Claims Flow', () => {
     // Verify status updated to ACCEPTED in the table
     const updatedClaimRow = page.locator('tbody#warranties-table-body tr', { hasText: ticketNumber }).first();
     await expect(updatedClaimRow).toContainText('ACCEPTED', { timeout: 10000 });
+
+    // ---------------------------------------------------------
+    // PART 4: Test UI Filters (Pending / Approved)
+    // ---------------------------------------------------------
+    // Verify "All" is active initially (bg-primary class)
+    const allBtn = page.locator('button:has-text("All")');
+    await expect(allBtn).toHaveClass(/bg-primary/);
+
+    // Test Pending filter
+    const pendingBtn = page.locator('button:has-text("Pending")');
+    await pendingBtn.click();
+    await expect(page).toHaveURL(/\?status=PENDING$/);
+    await expect(pendingBtn).toHaveClass(/bg-primary/);
+    await expect(allBtn).not.toHaveClass(/bg-primary/);
+
+    // The ticket should disappear since it's ACCEPTED
+    await expect(page.locator('tbody#warranties-table-body')).not.toContainText(ticketNumber, { timeout: 10000 });
+    // Verify no nested page bug (h1 would be injected if whole page was returned)
+    await expect(page.locator('tbody#warranties-table-body h1')).not.toBeVisible();
+
+    // Test Approved filter
+    const approvedBtn = page.locator('button:has-text("Approved")');
+    await approvedBtn.click();
+    await expect(page).toHaveURL(/\?status=ACCEPTED$/);
+    await expect(approvedBtn).toHaveClass(/bg-primary/);
+    await expect(pendingBtn).not.toHaveClass(/bg-primary/);
+
+    // The ticket should reappear
+    await expect(page.locator('tbody#warranties-table-body')).toContainText(ticketNumber, { timeout: 10000 });
+    await expect(page.locator('tbody#warranties-table-body h1')).not.toBeVisible();
+
+    // Test All filter again to revert URL
+    await allBtn.click();
+    await expect(page).toHaveURL(/\/warranties$/);
+    await expect(allBtn).toHaveClass(/bg-primary/);
   });
 });

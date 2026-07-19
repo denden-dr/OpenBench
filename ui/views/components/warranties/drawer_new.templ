@@ -9,8 +9,8 @@ templ DrawerNewClaim() {
 	<div 
 		x-data="{ open: false }" 
 		x-init="setTimeout(() => open = true, 10)"
-		@keydown.window.escape="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
-		@claim-created.window="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+		@keydown.window.escape="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
+		@claim-created.window="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); htmx.ajax('GET', '/warranties', {target: 'body'}); }, 300)"
 		class="relative z-50" 
 		aria-labelledby="slide-over-title" 
 		role="dialog" 
@@ -40,7 +40,7 @@ templ DrawerNewClaim() {
 						x-transition:leave-start="translate-x-0" 
 						x-transition:leave-end="translate-x-full"
 						class="pointer-events-auto w-screen max-w-md"
-						@click.away="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)">
+						@click.away="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)">
 						
 						<div class="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl">
 							<!-- Header -->
@@ -49,7 +49,7 @@ templ DrawerNewClaim() {
 									<h2 class="text-xl font-bold text-slate-900" id="slide-over-title">Submit New Claim</h2>
 									<div class="ml-3 flex h-7 items-center">
 										<button 
-											@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+											@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 											type="button" 
 											class="relative rounded-md bg-white text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary">
 											<span class="absolute -inset-2.5"></span>
@@ -96,7 +96,7 @@ templ ClaimVerificationForm(ticketNumber string, errorMsg string) {
 		<!-- Footer Action -->
 		<div class="border-t border-slate-200/60 bg-slate-50 px-6 py-4 flex justify-end gap-3">
 			<button 
-				@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+				@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 				type="button" 
 				class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
 				Cancel
@@ -146,7 +146,7 @@ templ ClaimSubmissionForm(ticketNumber string, errorMsg string) {
 		<!-- Footer Action -->
 		<div class="border-t border-slate-200/60 bg-slate-50 px-6 py-4 flex justify-end gap-3">
 			<button 
-				@click="open = false; setTimeout(() => htmx.ajax('GET', '/warranties', {target: 'body'}), 300)"
+				@click="open = false; setTimeout(() => { window.history.pushState({}, '', '/warranties'); document.getElementById('slideover-container').innerHTML = ''; }, 300)"
 				type="button" 
 				class="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
 				Cancel

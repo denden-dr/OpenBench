@@ -31,7 +31,7 @@ func (h *WebHandler) WarrantiesPage(c fiber.Ctx) error {
 
 	vms := viewmodels.NewClaimVMs(claims)
 
-	if c.Get("HX-Request") == "true" && search != "" {
+	if c.Get("HX-Request") == "true" && c.Get("HX-Target") == "warranties-table-body" {
 		return utils.Render(c, admin_pages.WarrantiesRows(vms))
 	}
 
