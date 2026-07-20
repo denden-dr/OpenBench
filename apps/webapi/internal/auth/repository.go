@@ -15,6 +15,7 @@ import (
 
 type QueryRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserByID(ctx context.Context, id string) (*models.User, error)
 	IsTokenBlacklisted(ctx context.Context, jti string) (bool, error)
 }
 
@@ -56,6 +57,27 @@ func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (
 	query, args, err := r.psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
 		From("users").
 		Where(squirrel.Eq{"email": email, "deleted_at": nil}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var user models.User
+	err = r.db.GetContext(ctx, &user, query, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *sqlQueryRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	query, args, err := r.psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
+		From("users").
+		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
 		Limit(1).
 		ToSql()
 	if err != nil {

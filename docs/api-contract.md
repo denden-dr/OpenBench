@@ -606,3 +606,24 @@ Menghapus seluruh *cookies* sesi autentikasi pada browser dengan merubah nilai M
 Set-Cookie: access_token=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0
 Set-Cookie: refresh_token=; Path=/api/v1/auth/refresh; HttpOnly; Secure; SameSite=Strict; Max-Age=0
 ```
+
+---
+
+### D. Get Current User Details (Me)
+Mendapatkan profil pengguna yang sedang login berdasarkan cookie authentication (`access_token`).
+
+* **URL**: `/api/v1/auth/me`
+* **Method**: `GET`
+* **Request Headers**: *Browser otomatis mengirim cookie `access_token`*
+
+* **Response (200 OK)**:
+```json
+{
+  "data": {
+    "id": "u-1234-5678",
+    "email": "admin@openbench.local",
+    "role": "ADMIN"
+  }
+}
+```
+

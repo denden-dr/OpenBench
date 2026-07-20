@@ -30,6 +30,9 @@ type mockQueryRepo struct{}
 func (m *mockQueryRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	return nil, nil
 }
+func (m *mockQueryRepo) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	return nil, nil
+}
 func (m *mockQueryRepo) IsTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
 	return false, nil
 }

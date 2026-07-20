@@ -1,119 +1,92 @@
-# AGENTS.md — OpenBench
+# OpenBench — Agent Guide
 
-## Project Identity
-Phone/electronics repair shop management app.
-Architecture: **Go Web API + React Micro Frontends**
-- Backend: Go + Fiber v3 (JSON API only)
-- Frontend: React 19 + TypeScript + Vite + Tailwind CSS v4
-- Database: PostgreSQL 16 via pgx/v5
+Monorepo with 3 apps under `apps/`:
 
-## Repository Structure
-Monorepo using Go Workspaces (`go.work`) and `pnpm`.
+| app | stack | entrypoint |
+|-----|-------|------------|
+| `webapi` | Go 1.26, Fiber v3, sqlx+pgx, golang-migrate | `cmd/server/main.go` |
+| `web-user` | React 19, Vite, Tailwind v4, oxlint | `src/main.tsx` |
+| `web-admin` | React 19, Vite, Tailwind v4, shadcn/ui (base-nova), zustand, react-router, oxlint | `src/main.tsx` |
 
-```text
-apps/
-  webapi/       → Go Backend API (Fiber)
-  web-user/     → Public User Portal (React + Vite)
-  web-admin/    → Internal Admin Dashboard (React + Vite)
-```
+## Commands
 
-## Essential Commands (Run from root)
+All via `make` from repo root:
 
-```bash
-make install-api    # go mod tidy in webapi
-make install-user   # pnpm install in web-user
-make install-admin  # pnpm install in web-admin
+| command | what it does |
+|---------|-------------|
+| `make dev-api` | Air hot-reload on `apps/webapi` (requires `go install github.com/air-verse/air@latest`) |
+| `make dev-user` | `pnpm dev` on `web-user` (Vite, port 5173) |
+| `make dev-admin` | `pnpm dev` on `web-admin` (Vite, port 5173, proxies `/api` → `localhost:3000`) |
+| `make test-api` | `go test -v ./...` (unit only) |
+| `make test-integration` | `go test -v -tags=integration ./...` (needs Docker/Podman, uses testcontainers) |
+| `make test-admin` | `pnpm test` (vitest, `apps/web-admin`) |
+| `make build-all` | Go binary + both Vite builds |
+| `make lint-api` | `golangci-lint run` |
+| `make lint-user` / `make lint-admin` | `oxlint` |
+| `make migrate-up` / `make migrate-down` | golang-migrate via `DB_*` env vars |
+| `make seed` | `go run ./cmd/seed` |
+| `make up` / `make down` | `podman compose` to manage PostgreSQL |
 
-make dev-api        # hot-reload (Air) for Go backend
-make dev-user       # Vite dev server for public portal
-make dev-admin      # Vite dev server for admin dashboard
+Frontend build requires `tsc -b` typecheck before `vite build` (`pnpm build` does both).
 
-make test-api       # all unit tests for backend
-make build-all      # build Go binary and both React apps
-make up / make down # Podman compose start/stop PostgreSQL
-make seed           # seed the database (runs in webapi)
-make migrate-up     # run migrations
-```
+Use `pnpm` (not npm/yarn) for both frontends. Lint with oxlint, not eslint.
 
-## Build prerequisites
-- `air` (hot-reload): `go install github.com/air-verse/air@latest`
-- No external linter required (use `go vet` natively)
-- `migrate` CLI (golang-migrate) if running migrations manually
-- `pnpm` (Node.js package manager) for frontends
+## Config
 
-## Architecture (apps/webapi)
+Two sources merged via viper:
+1. `apps/webapi/settings.json` — static defaults (env, port, origins, pool sizes, auth expiry)
+2. `apps/webapi/.env` — secrets (copy from `.env.example`)
 
-```text
-cmd/server/main.go          → wires everything, creates Fiber app, starts API server
-cmd/seed/main.go            → standalone seeder binary
-config/                     → settings.json (static) + .env (secrets), loaded via viper + validator
-internal/
-  auth/                     → auth domain (JWT Bearer API auth)
-  ticket/                   → service tickets domain
-  inventory/                → product inventory domain
-  pos/                      → point-of-sale domain
-  warranty/                 → warranty claims domain
-  models/                   → shared domain models + validation
-  database/                 → postgres connection pool, re-entrant TxManager, seeder
-  events/                   → async in-process event bus
-  apierrors/                → RFC 7807 error handler + stack-wrapped errors
-  health/                   → health check handler
-  logger/                   → slog logger + middleware
-  testutils/                → testcontainers DB setup (integration tests)
-```
+`APP_ENCRYPTION_KEY` must be exactly 32 characters.
 
-Every domain module (`internal/<domain>`) follows the same pattern:
-- `module.go` → `Module` struct exporting `Handler` and (optional) `QueryRepo`
-- `service.go` / `service_test.go` → business logic
-- `repository.go` / `repository_integration_test.go` → DB access via `sqlx`
-- `handler.go` / `handler_integration_test.go` → JSON API handlers (Fiber)
+Skip `.env` loading in tests: set `TEST_NO_ENV_FILE=true`.
 
-## Key Conventions
+## Backend Architecture
 
-### Config
-- `settings.json` holds non-secret defaults (conn pool, timeouts, app name)
-- `.env` holds secrets (DB credentials, JWT keys, encryption key)
-- All config keys validated with struct tags; `APP_ENCRYPTION_KEY` must be **exactly 32 chars**
-- `config.Load()` auto-finds project root by walking up to `go.mod`
-- Environment vars override settings.json values
+Server setup: `cmd/server/server.go` → Fiber app with recover, request logger, CORS middleware.
 
-### Database
-- PostgreSQL 16 via `pgx/v5` + `sqlx`; connection pool with exponential backoff retry
-- **Re-entrant TxManager**: `RunInTx(fn)` propagates tx via context; if a tx is already in context, it reuses it. Use `database.GetQuerier(ctx, db)` in repos to auto-detect tx vs pool.
-- SQL builder: `squirrel` (github.com/Masterminds/squirrel)
-- Query logging via `sqldblogger` wrapping the pgx driver
-- Migrations in `apps/webapi/migrations/` (up/down pairs, `golang-migrate` format)
+DI wiring: `cmd/server/main.go` — each domain is a `Module` (auth, ticket, warranty, inventory, pos) with handler/repository/service sub-components.
 
-### HTTP API
-- **Fiber v3** (not v2): `fiber.Ctx` is a value type, **not a pointer**
-- All routes are JSON API under `/api/v1/`
-- API auth: `auth.RequireAuth(cfg, queryRepo)` middleware (JWT Bearer)
-- All API errors go through `apierrors.GlobalErrorHandler` → RFC 7807 Problem Details JSON
-- Validation errors respect `Accept-Language` header (en/id) for translated messages
+Cross-cutting:
+- `internal/database/tx.go` — `TxManager` for atomic multi-repo operations
+- `internal/events/bus.go` — `AsyncEventBus` for domain events (used by ticket → warranty flow)
+- `internal/apierrors` — RFC 7807 Problem Details error format
+- `internal/auth` — JWT (access + refresh) via cookie `access_token` + `Authorization: Bearer` header; rate limiter on login (5/min per IP)
 
-### UI Design (React Frontends)
-- Both `web-user` and `web-admin` use Tailwind CSS v4 via `@tailwindcss/vite` plugin.
-- Custom colors and theme variables are defined in `src/index.css` using `@theme`.
-- **Icons**: MUST use Lucide React (`lucide-react`) for frontends.
-- **Fonts**: Plus Jakarta Sans (body), Outfit (headings), JetBrains Mono (mono)
-- **Colors**: palette defined in `DESIGN.md` — `slate` base, custom `primary`/`secondary`/`accent`/`tertiary`/`danger`
-- **Aesthetic**: glassmorphism cards (`bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl`), rounded corners (`rounded-xl`/`rounded-2xl`), smooth transitions
+### API routes (`cmd/server/routes_api.go`)
 
-### Error Handling
-- Return domain-specific sentinel errors (e.g., `ticket.ErrTicketNotFound`, `pos.ErrInsufficientStock`) — the global error handler maps them to HTTP statuses
-- Use `apierrors.Wrap(err, "context")` or `apierrors.New("message")` for stack-traced errors (logged on 500s)
-- Never return bare `errors.New(...)` in handler/service code; use sentinel errors from the domain package
+| prefix | auth | notes |
+|--------|------|-------|
+| `GET /health` | none | public |
+| `POST /api/v1/auth/login` | none | rate-limited |
+| `POST /api/v1/auth/refresh` | none | rate-limited |
+| `POST /api/v1/auth/logout` | none | |
+| `GET /api/v1/auth/me` | JWT | |
+| `/api/v1/admin/*` | JWT + ADMIN role | all admin routes |
 
-### Testing
-- **Integration tests** use build tag `//go:build integration` — run with `make test-integration` (or `make test` inside `apps/webapi`)
-- Integration tests spin up PostgreSQL via `testutils.SetupTestDatabase(ctx)` (testcontainers), auto-migrate, return `db` + `teardown`
-- Between subtests, use `testutils.CleanTable(db, "table_name")` to reset
-- Tests use `testify/assert` + `testify/require`
+Routes under `admin`: `/services`, `/warranties`, `/claims`, `/products`, `/pos`.
 
-### Other
-- Protobuf validation via `go-playground/validator/v10`
-- Password hashing: `golang.org/x/crypto/bcrypt`
-- JWT: `github.com/golang-jwt/jwt/v5` (access + refresh token pair)
-- Token blacklist uses in-memory cache (`samber/hot`) with periodic DB-backed cleanup worker
-- Event bus: in-process async, buffer size 100, used for side effects (e.g., ticket → warranty generation)
-- This project uses **Podman**, not Docker. All `docker-compose.yml` files use `podman compose`
+## Go Testing
+
+- Unit tests: no tag needed
+- Integration tests: `//go:build integration` build tag + testcontainers-postgres module
+- VSCode `gopls` already configured with `-tags=integration` in `.vscode/settings.json`
+- Integration test files: `*_integration_test.go` (in `auth/`, `ticket/`)
+
+## Frontend
+
+- `@/` path alias → `src/` in web-admin (both vite and vitest config)
+- `web-admin` vitest: jsdom environment, `@testing-library/jest-dom` setup
+- `web-user` has no tests or router; `web-admin` has full routing + `services/` API layer
+- CSS framework: Tailwind v4 (no `tailwind.config.js` — CSS-based config in `index.css`)
+- Icon library: lucide-react
+- Auth stores: zustand (`src/stores/`)
+
+## Repo conventions
+
+- Commits are in Indonesian (bahasa)
+- Go module path: `github.com/denden-dr/OpenBench`
+- Fiber v3 error handler returns `application/problem+json` (RFC 7807)
+- `.env.example` has the canonical list of required env vars
+- No root `package.json` or workspace — each frontend is standalone
+- Integration tests need Docker/Podman running

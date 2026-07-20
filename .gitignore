@@ -24,6 +24,7 @@ pnpm-debug.log*
 # Temporary files / Caches
 tmp/
 temp/
+postgres-data/
 __pycache__/
 *.py[cod]
 .pnpm-store/
