@@ -26,6 +26,14 @@ func (m *mockRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return nil, args.Error(1)
 }
 
+func (m *mockRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.User), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *mockRepository) CreateUser(ctx context.Context, user *models.User) error {
 	args := m.Called(ctx, user)
 	return args.Error(0)
@@ -245,6 +253,45 @@ func TestAuthService_Refresh(t *testing.T) {
 			repo.AssertExpectations(t)
 		})
 	}
+}
+
+func TestAuthService_Me(t *testing.T) {
+	cfg := &config.Config{
+		App: config.AppConfig{Env: "development"},
+	}
+
+	user := &models.User{
+		ID:       "u123",
+		Email:    "admin@openbench.com",
+		FullName: "Admin",
+		Role:     "ADMIN",
+	}
+
+	t.Run("successful get user by id", func(t *testing.T) {
+		repo := &mockRepository{}
+		repo.On("GetUserByID", mock.Anything, "u123").Return(user, nil)
+
+		svc := NewService(repo, repo, cfg)
+		profile, err := svc.Me(context.Background(), "u123")
+
+		require.NoError(t, err)
+		assert.Equal(t, "u123", profile.ID)
+		assert.Equal(t, "admin@openbench.com", profile.Email)
+		assert.Equal(t, "ADMIN", profile.Role)
+		repo.AssertExpectations(t)
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		repo := &mockRepository{}
+		repo.On("GetUserByID", mock.Anything, "nonexistent").Return(nil, nil)
+
+		svc := NewService(repo, repo, cfg)
+		_, err := svc.Me(context.Background(), "nonexistent")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrUserNotFound)
+		repo.AssertExpectations(t)
+	})
 }
 
 func BenchmarkPasswordHashing(b *testing.B) {

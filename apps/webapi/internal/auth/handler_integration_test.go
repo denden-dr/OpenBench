@@ -60,6 +60,7 @@ func TestAuthHandler_Integration(t *testing.T) {
 	authGroup.Post("/login", authHandler.Login)
 	authGroup.Post("/refresh", authHandler.Refresh)
 	authGroup.Post("/logout", authHandler.Logout)
+	authGroup.Get("/me", auth.RequireAuth(cfg, queryRepo), authHandler.Me)
 
 	// Seed User
 	password := "supersecret"
@@ -197,5 +198,61 @@ func TestAuthHandler_Integration(t *testing.T) {
 		}
 		assert.True(t, accessCookie == nil || accessCookie.Value == "" || accessCookie.Expires.Before(time.Now()))
 		assert.True(t, refreshCookie == nil || refreshCookie.Value == "" || refreshCookie.Expires.Before(time.Now()))
+	})
+
+	t.Run("Me Flow - Success", func(t *testing.T) {
+		// Log in first to get access token cookie
+		body := map[string]string{
+			"email":    user.Email,
+			"password": password,
+		}
+		bodyBytes, _ := json.Marshal(body)
+
+		req, err := http.NewRequest("POST", "/api/v1/auth/login", bytes.NewBuffer(bodyBytes))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var accessCookie *http.Cookie
+		for _, cookie := range resp.Cookies() {
+			if cookie.Name == "access_token" {
+				accessCookie = cookie
+			}
+		}
+		require.NotNil(t, accessCookie)
+
+		// Get /me profile
+		meReq, err := http.NewRequest("GET", "/api/v1/auth/me", nil)
+		require.NoError(t, err)
+		meReq.AddCookie(accessCookie)
+
+		meResp, err := app.Test(meReq)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, meResp.StatusCode)
+
+		var userProfile struct {
+			Data struct {
+				ID    string `json:"id"`
+				Email string `json:"email"`
+				Role  string `json:"role"`
+			} `json:"data"`
+		}
+		err = json.NewDecoder(meResp.Body).Decode(&userProfile)
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, userProfile.Data.ID)
+		assert.Equal(t, user.Email, userProfile.Data.Email)
+		assert.Equal(t, user.Role, userProfile.Data.Role)
+	})
+
+	t.Run("Me Flow - Unauthorized", func(t *testing.T) {
+		meReq, err := http.NewRequest("GET", "/api/v1/auth/me", nil)
+		require.NoError(t, err)
+
+		meResp, err := app.Test(meReq)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusUnauthorized, meResp.StatusCode)
 	})
 }

@@ -134,3 +134,19 @@ func (h *Handler) Logout(c fiber.Ctx) error {
 		Data: MessageResponse{Message: "Logged out successfully"},
 	})
 }
+
+func (h *Handler) Me(c fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "Unauthorized")
+	}
+
+	result, err := h.service.Me(c.Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(SuccessResponse[UserProfileResponse]{
+		Data: result,
+	})
+}

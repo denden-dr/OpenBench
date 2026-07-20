@@ -36,11 +36,12 @@ func registerAPIRoutes(
 		},
 	})
 
-	// Auth Public Routes
+	// Auth Public & Protected Routes
 	authGroup := app.Group("/api/v1/auth")
 	authGroup.Post("/login", authLimiter, authMod.Handler.Login)
 	authGroup.Post("/refresh", authLimiter, authMod.Handler.Refresh)
 	authGroup.Post("/logout", authMod.Handler.Logout)
+	authGroup.Get("/me", auth.RequireAuth(cfg, authMod.QueryRepo), authMod.Handler.Me)
 
 	// Protected Admin Routes
 	adminGroup := app.Group("/api/v1/admin", auth.RequireAuth(cfg, authMod.QueryRepo), auth.RequireRole("ADMIN"))

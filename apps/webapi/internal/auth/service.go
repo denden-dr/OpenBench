@@ -23,6 +23,7 @@ type Service interface {
 	Login(ctx context.Context, email, password string) (LoginResponse, error)
 	Refresh(ctx context.Context, refreshToken string) (RefreshResponse, error)
 	Logout(ctx context.Context, accessToken, refreshToken string) error
+	Me(ctx context.Context, userID string) (UserProfileResponse, error)
 }
 
 type service struct {
@@ -190,6 +191,22 @@ func (s *service) Logout(ctx context.Context, accessToken, refreshToken string) 
 	slog.InfoContext(ctx, "User logged out successfully")
 
 	return nil
+}
+
+func (s *service) Me(ctx context.Context, userID string) (UserProfileResponse, error) {
+	user, err := s.queryRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return UserProfileResponse{}, err
+	}
+	if user == nil {
+		return UserProfileResponse{}, ErrUserNotFound
+	}
+
+	return UserProfileResponse{
+		ID:    user.ID,
+		Email: user.Email,
+		Role:  user.Role,
+	}, nil
 }
 
 func (s *service) generateAccessToken(user *models.User) (string, error) {
