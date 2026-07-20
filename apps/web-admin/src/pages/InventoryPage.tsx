@@ -126,10 +126,10 @@ function InventoryPage() {
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Product Inventory
           </h1>
-          <p className="text-slate-500 text-sm">Manage products, tracking stock levels, and adjusting counts for shop accessories.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Manage products, tracking stock levels, and adjusting counts for shop accessories.</p>
         </div>
 
         {/* Add Product Dialog */}
@@ -143,15 +143,15 @@ function InventoryPage() {
           <DialogContent className="max-w-md">
             <form onSubmit={handleAddSubmit}>
               <DialogHeader>
-                <DialogTitle className="text-xl font-extrabold text-slate-900">Add New Product</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Add New Product</DialogTitle>
+                <DialogDescription className="text-slate-500 dark:text-slate-400">
                   Enter details to register a new accessory or product in the inventory.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Product Name</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Product Name</label>
                   <Input 
                     required 
                     placeholder="e.g. Tempered Glass iPhone 15"
@@ -162,7 +162,7 @@ function InventoryPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Price (Rp)</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Price (Rp)</label>
                     <Input 
                       required 
                       type="number"
@@ -172,7 +172,7 @@ function InventoryPage() {
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Initial Stock</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Initial Stock</label>
                     <Input 
                       required 
                       type="number"
@@ -195,43 +195,43 @@ function InventoryPage() {
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Search products by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white border-slate-200 focus-visible:ring-primary/20"
+            className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus-visible:ring-primary/20"
           />
         </div>
       </div>
 
       {/* Inventory Table */}
-      <Card className="border-slate-200/80 bg-white shadow-sm overflow-hidden">
+      <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
+            <TableHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-24 pl-6 font-bold uppercase tracking-wider text-xxs">ID</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Product Name</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Price</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Stock Status</TableHead>
-                <TableHead className="text-center pr-6 font-bold uppercase tracking-wider text-xxs">Actions</TableHead>
+                <TableHead className="w-24 pl-6 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">ID</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Product Name</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Price</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Stock Status</TableHead>
+                <TableHead className="text-center pr-6 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="text-sm font-medium text-slate-700 divide-y divide-slate-100/50">
+            <TableBody className="text-sm font-medium text-slate-700 dark:text-slate-300 divide-y divide-slate-100/50 dark:divide-slate-800">
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((p) => (
-                  <TableRow key={p.id} className="border-slate-100/50 hover:bg-slate-50/30 transition-colors">
-                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-500">{p.id}</TableCell>
-                    <TableCell className="font-semibold text-slate-900">{p.name}</TableCell>
-                    <TableCell className="font-mono font-bold text-slate-900">{formatPrice(p.price)}</TableCell>
+                  <TableRow key={p.id} className="border-slate-100/50 dark:border-slate-800 hover:bg-slate-50/30 dark:hover:bg-slate-800/50 transition-colors">
+                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-500 dark:text-slate-400">{p.id}</TableCell>
+                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">{p.name}</TableCell>
+                    <TableCell className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatPrice(p.price)}</TableCell>
                     <TableCell>{getStockBadge(p.stock)}</TableCell>
                     <TableCell className="text-center pr-6">
                       <div className="flex items-center justify-center gap-1.5">
                         <Button 
                           variant="ghost" 
                           size="icon-sm" 
-                          className="h-7 w-7 text-slate-500 hover:text-primary hover:bg-slate-100 rounded-md cursor-pointer"
+                          className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
                           title="Edit Product"
                           onClick={() => {
                             setSelectedEditProduct(p)
@@ -244,7 +244,7 @@ function InventoryPage() {
                         <Button 
                           variant="ghost" 
                           size="icon-sm" 
-                          className="h-7 w-7 text-slate-500 hover:text-primary hover:bg-slate-100 rounded-md cursor-pointer"
+                          className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
                           title="Adjust Stock"
                           onClick={() => {
                             setSelectedProduct(p)
@@ -256,7 +256,7 @@ function InventoryPage() {
                         <Button 
                           variant="ghost" 
                           size="icon-sm" 
-                          className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
+                          className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md cursor-pointer"
                           title="Delete Product"
                           onClick={() => handleDelete(p.id)}
                         >
@@ -268,7 +268,7 @@ function InventoryPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-slate-400">
+                  <TableCell colSpan={5} className="h-32 text-center text-slate-400 dark:text-slate-500">
                     No products found matching your search.
                   </TableCell>
                 </TableRow>
@@ -277,16 +277,16 @@ function InventoryPage() {
           </Table>
 
           {/* Pagination Footer */}
-          <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-slate-50/50">
-            <span className="text-xs font-semibold text-slate-500">
+          <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Showing {filteredProducts.length} products
             </span>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold border-slate-200 text-slate-500 hover:text-slate-900 cursor-not-allowed" disabled>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 cursor-not-allowed" disabled>
                 <ChevronLeft className="w-3.5 h-3.5 mr-1" />
                 Previous
               </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold border-slate-200 text-slate-500 hover:text-slate-900 cursor-not-allowed" disabled>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 cursor-not-allowed" disabled>
                 Next
                 <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
@@ -303,20 +303,20 @@ function InventoryPage() {
         <DialogContent className="max-w-sm">
           <form onSubmit={handleAdjustSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-slate-900">Adjust Stock Count</DialogTitle>
-              <DialogDescription>
-                Modify stock count for <span className="font-bold text-slate-900">{selectedProduct?.name}</span>.
+              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Adjust Stock Count</DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
+                Modify stock count for <span className="font-bold text-slate-900 dark:text-slate-100">{selectedProduct?.name}</span>.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between text-slate-600 text-sm font-semibold">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-sm font-semibold">
                 <span>Current Stock:</span>
-                <span className="font-bold text-slate-900">{selectedProduct?.stock}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">{selectedProduct?.stock}</span>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Quantity Change</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Quantity Change</label>
                 <Input 
                   required 
                   type="number"
@@ -324,7 +324,7 @@ function InventoryPage() {
                   value={adjustQty}
                   onChange={e => setAdjustQty(parseInt(e.target.value) || 0)}
                 />
-                <p className="text-xxs text-slate-400">
+                <p className="text-xxs text-slate-400 dark:text-slate-500">
                   Use positive numbers to add to stock, negative numbers to decrease stock.
                 </p>
               </div>
@@ -346,15 +346,15 @@ function InventoryPage() {
         <DialogContent className="max-w-md">
           <form onSubmit={handleEditSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-slate-900">Edit Product Details</DialogTitle>
-              <DialogDescription>
-                Update basic details for product <span className="font-mono font-bold text-slate-900">{selectedEditProduct?.id}</span>.
+              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Edit Product Details</DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
+                Update basic details for product <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{selectedEditProduct?.id}</span>.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Product Name</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Product Name</label>
                 <Input 
                   required 
                   value={editProduct.name} 
@@ -363,7 +363,7 @@ function InventoryPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Price (Rp)</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Price (Rp)</label>
                 <Input 
                   required 
                   type="number"

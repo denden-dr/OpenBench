@@ -133,10 +133,10 @@ function TicketsPage() {
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Repair Tickets
           </h1>
-          <p className="text-slate-500 text-sm">Manage, track, and update service tickets for incoming repair devices.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Manage, track, and update service tickets for incoming repair devices.</p>
         </div>
 
         {/* Dialog Form for New Ticket */}
@@ -147,23 +147,23 @@ function TicketsPage() {
               New Ticket
             </Button>
           } />
-          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
             <form onSubmit={handleCreateSubmit}>
               <DialogHeader>
-                <DialogTitle className="text-xl font-extrabold text-slate-900">Create Service Ticket</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Create Service Ticket</DialogTitle>
+                <DialogDescription className="text-slate-500 dark:text-slate-400">
                   Enter customer information, device details, and diagnostic notes to create a new ticket.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 {/* Customer Details */}
-                <div className="sm:col-span-2 border-b border-slate-100 pb-2">
-                  <h4 className="text-sm font-bold text-slate-800">Customer Information</h4>
+                <div className="sm:col-span-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Customer Information</h4>
                 </div>
                 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Customer Name</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Customer Name</label>
                   <Input 
                     required 
                     placeholder="e.g. John Doe"
@@ -173,7 +173,7 @@ function TicketsPage() {
                 </div>
                 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Customer Phone</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Customer Phone</label>
                   <Input 
                     required 
                     placeholder="e.g. 08123456789"
@@ -183,12 +183,12 @@ function TicketsPage() {
                 </div>
 
                 {/* Device Details */}
-                <div className="sm:col-span-2 border-b border-slate-100 pt-2 pb-2">
-                  <h4 className="text-sm font-bold text-slate-800">Device details</h4>
+                <div className="sm:col-span-2 border-b border-slate-100 dark:border-slate-800 pt-2 pb-2">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Device details</h4>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Brand</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Brand</label>
                   <Input 
                     required 
                     placeholder="e.g. Apple"
@@ -198,7 +198,7 @@ function TicketsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Model</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Model</label>
                   <Input 
                     required 
                     placeholder="e.g. iPhone 13 Pro"
@@ -208,7 +208,7 @@ function TicketsPage() {
                 </div>
 
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Screen Passcode (Optional)</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Screen Passcode (Optional)</label>
                   <Input 
                     placeholder="e.g. pattern Letter-L, PIN 1234"
                     value={newTicket.device_passcode} 
@@ -217,12 +217,12 @@ function TicketsPage() {
                 </div>
 
                 {/* Diagnosis Details */}
-                <div className="sm:col-span-2 border-b border-slate-100 pt-2 pb-2">
-                  <h4 className="text-sm font-bold text-slate-800">Initial Diagnostic & Pricing</h4>
+                <div className="sm:col-span-2 border-b border-slate-100 dark:border-slate-800 pt-2 pb-2">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Initial Diagnostic & Pricing</h4>
                 </div>
 
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Issue Description</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Issue Description</label>
                   <Input 
                     required 
                     placeholder="e.g. Cracked LCD, Touch unresponsive"
@@ -232,7 +232,7 @@ function TicketsPage() {
                 </div>
 
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Proposed Repair Action</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Proposed Repair Action</label>
                   <Input 
                     required 
                     placeholder="e.g. Replacement LCD OLED Screen"
@@ -242,7 +242,7 @@ function TicketsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Estimated Cost (Rp)</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Estimated Cost (Rp)</label>
                   <Input 
                     required 
                     type="number"
@@ -252,7 +252,7 @@ function TicketsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Warranty Period (Days)</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Warranty Period (Days)</label>
                   <Input 
                     required 
                     type="number"
@@ -263,7 +263,7 @@ function TicketsPage() {
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0 pt-2">
-                <Button type="button" variant="outline" className="cursor-pointer" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" className="cursor-pointer border-slate-200 dark:border-slate-700" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
                 <Button type="submit" className="bg-primary hover:bg-secondary cursor-pointer">Create Ticket</Button>
               </DialogFooter>
             </form>
@@ -280,52 +280,52 @@ function TicketsPage() {
             placeholder="Search number, name, device..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white border-slate-200 focus-visible:ring-primary/20"
+            className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-primary/20"
           />
         </div>
 
         {/* Quick Filters (Tabs) */}
         <Tabs value={activeFilterTab} onValueChange={setActiveFilterTab} className="w-full md:w-auto">
-          <TabsList className="bg-slate-100 border border-slate-200/50 p-1">
-            <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold text-xs px-4">All Tickets</TabsTrigger>
-            <TabsTrigger value="active" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold text-xs px-4">Active Repairs</TabsTrigger>
-            <TabsTrigger value="closed" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold text-xs px-4">Closed</TabsTrigger>
+          <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-1">
+            <TabsTrigger value="all" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 text-slate-600 dark:text-slate-400 font-semibold text-xs px-4">All Tickets</TabsTrigger>
+            <TabsTrigger value="active" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 text-slate-600 dark:text-slate-400 font-semibold text-xs px-4">Active Repairs</TabsTrigger>
+            <TabsTrigger value="closed" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 text-slate-600 dark:text-slate-400 font-semibold text-xs px-4">Closed</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Main Table */}
-      <Card className="border-slate-200/80 bg-white shadow-sm overflow-hidden">
+      <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
+            <TableHeader className="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-32 pl-6 font-bold uppercase tracking-wider text-xxs">Ticket Number</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Date Registered</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Customer Name</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Device details</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-xxs">Status</TableHead>
-                <TableHead className="text-center pr-6 font-bold uppercase tracking-wider text-xxs">Actions</TableHead>
+                <TableHead className="w-32 pl-6 font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Ticket Number</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Date Registered</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Customer Name</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Device details</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Status</TableHead>
+                <TableHead className="text-center pr-6 font-bold uppercase tracking-wider text-xxs text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="text-sm font-medium text-slate-700 divide-y divide-slate-100/50">
+            <TableBody className="text-sm font-medium text-slate-700 dark:text-slate-300 divide-y divide-slate-100/50 dark:divide-slate-800">
               {filteredTickets.length > 0 ? (
                 filteredTickets.map((t) => (
-                  <TableRow key={t.ticket_id} className="border-slate-100/50 hover:bg-slate-50/30 transition-colors">
-                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-600">{t.ticket_number}</TableCell>
-                    <TableCell className="text-slate-500 font-semibold">{formatDate(t.created_at)}</TableCell>
-                    <TableCell className="font-semibold text-slate-900">{t.customer_name}</TableCell>
+                  <TableRow key={t.ticket_id} className="border-slate-100/50 dark:border-slate-800/50 hover:bg-slate-50/30 dark:hover:bg-slate-800/30 transition-colors">
+                    <TableCell className="pl-6 font-mono text-xs font-bold text-slate-600 dark:text-slate-400">{t.ticket_number}</TableCell>
+                    <TableCell className="text-slate-500 dark:text-slate-400 font-semibold">{formatDate(t.created_at)}</TableCell>
+                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">{t.customer_name}</TableCell>
                     <TableCell>
-                      <span className="font-bold text-slate-900">{t.device_brand}</span>{' '}
-                      <span className="text-slate-500">{t.device_model}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{t.device_brand}</span>{' '}
+                      <span className="text-slate-500 dark:text-slate-400">{t.device_model}</span>
                     </TableCell>
                     <TableCell>{getStatusBadge(t.status)}</TableCell>
                     <TableCell className="text-center pr-6">
                       <div className="flex items-center justify-center gap-1.5">
-                        <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-slate-500 hover:text-primary hover:bg-slate-100 rounded-md cursor-pointer" title="View details">
+                        <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer" title="View details">
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-slate-500 hover:text-tertiary hover:bg-slate-100 rounded-md cursor-pointer" title="Update status">
+                        <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-tertiary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer" title="Update status">
                           <Edit className="w-4 h-4" />
                         </Button>
                       </div>
@@ -336,7 +336,7 @@ function TicketsPage() {
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <ShieldAlert className="w-6 h-6 text-slate-300" />
+                      <ShieldAlert className="w-6 h-6 text-slate-300 dark:text-slate-600" />
                       <span>No tickets found matching your query</span>
                     </div>
                   </TableCell>
