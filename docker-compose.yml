@@ -11,7 +11,4 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: openbench
     volumes:
-      - openbench_postgres_data:/var/lib/postgresql/data
-
-volumes:
-  openbench_postgres_data:
+      - ./postgres-data:/var/lib/postgresql/data:Z

@@ -1,14 +1,14 @@
 -include apps/webapi/.env
 export
 
-.PHONY: up down install-api install-user install-admin dev-api dev-user dev-admin build-all build-api build-user build-admin test-api migrate-up migrate-down seed
+.PHONY: up down install-api install-user install-admin dev-api dev-user dev-admin build-all build-api build-user build-admin test-api test-integration migrate-up migrate-down seed
 
 # --- Database / Infrastructure ---
 up:
-	cd apps/webapi && podman compose up -d
+	podman compose up -d
 
 down:
-	cd apps/webapi && podman compose down
+	podman compose down
 
 migrate-up:
 	cd apps/webapi && migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
@@ -42,6 +42,9 @@ dev-admin:
 # --- Testing & Building ---
 test-api:
 	cd apps/webapi && go test -v ./...
+
+test-integration:
+	cd apps/webapi && go test -v -tags=integration ./...
 
 build-api:
 	cd apps/webapi && go build -o bin/server ./cmd/server

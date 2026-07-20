@@ -2,20 +2,20 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  # This command compiles templ, builds tailwind CSS, and builds the go binary
-  cmd = "make templ && make tailwind-build && go build -o ./tmp/main ./cmd/server"
+  # Builds the go binary
+  cmd = "go build -o ./tmp/main ./cmd/server"
   
   # The binary to execute
   bin = "./tmp/main"
   
   # Watch these extensions for changes
-  include_ext = ["go", "templ", "css", "html", "js"]
+  include_ext = ["go", "json"]
   
-  # Ignore the tmp directory where the binary is built, vendor, and static css output
+  # Ignore the tmp directory where the binary is built, and vendor
   exclude_dir = ["tmp", "vendor"]
   
-  # Specifically exclude generated files to prevent infinite build loops
-  exclude_regex = ["_templ\\.go$", "ui/static/css/style\\.css$"]
+  # Exclude test files from triggering hot reload
+  exclude_regex = ["_test\\.go$"]
   
   # Delay before building (ms) to allow multiple saves to register as one event
   delay = 1000
