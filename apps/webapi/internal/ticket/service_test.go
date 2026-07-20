@@ -522,7 +522,7 @@ func TestService_EmergencyUpdateTicket(t *testing.T) {
 	}
 }
 
-func TestService_GetTicketsAndByID(t *testing.T) {
+func TestService_GetTicketSummariesAndByID(t *testing.T) {
 	ticket1 := &models.ServiceTicket{
 		ID:            "ticket-1",
 		TicketNumber:  "TKT-20260708-ABCD",
@@ -585,7 +585,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo.On("FindAll", mock.Anything, "REPAIRING", "", 10, "").Return([]models.ServiceTicket{*ticket2}, "next-cursor-123", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, nextCursor, err := svc.GetTickets(context.Background(), "REPAIRING", "", 10, "")
+		res, nextCursor, err := svc.GetTicketSummaries(context.Background(), "REPAIRING", "", 10, "")
 		must.NoError(err)
 		is.Equal("next-cursor-123", nextCursor)
 		must.Len(res, 1)
@@ -604,7 +604,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 		repo.On("FindAll", mock.Anything, "", "Joko", 10, "").Return([]models.ServiceTicket{*ticket2}, "", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, nextCursor, err := svc.GetTickets(context.Background(), "", "Joko", 10, "")
+		res, nextCursor, err := svc.GetTicketSummaries(context.Background(), "", "Joko", 10, "")
 		must.NoError(err)
 		is.Empty(nextCursor)
 		must.Len(res, 1)
@@ -614,7 +614,7 @@ func TestService_GetTicketsAndByID(t *testing.T) {
 	})
 }
 
-func TestService_SearchTickets(t *testing.T) {
+func TestService_SearchTicketSummaries(t *testing.T) {
 	ticket1 := &models.ServiceTicket{
 		ID:            "ticket-1",
 		TicketNumber:  "TKT-20260708-ABCD",
@@ -640,7 +640,7 @@ func TestService_SearchTickets(t *testing.T) {
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, "next-cursor-456", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, nextCursor, err := svc.SearchTickets(context.Background(), req)
+		res, nextCursor, err := svc.SearchTicketSummaries(context.Background(), req)
 		must.NoError(err)
 		is.Equal("next-cursor-456", nextCursor)
 		must.Len(res, 1)
@@ -664,7 +664,7 @@ func TestService_SearchTickets(t *testing.T) {
 		repo.On("Search", mock.Anything, req).Return([]models.ServiceTicket{*ticket1}, "", nil)
 		svc := NewService(repo, repo, &mockTxManager{}, wgen, bus, "this_is_a_secret_key_32_chars_ok")
 
-		res, nextCursor, err := svc.SearchTickets(context.Background(), req)
+		res, nextCursor, err := svc.SearchTicketSummaries(context.Background(), req)
 		must.NoError(err)
 		is.Empty(nextCursor)
 		must.Len(res, 1)

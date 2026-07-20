@@ -74,7 +74,7 @@ type TicketResponse struct {
 	UpdatedAt        time.Time                  `json:"updated_at,omitempty"`
 }
 
-type TicketListResponse struct {
+type TicketSummaryResponse struct {
 	TicketID     string                     `json:"ticket_id"`
 	TicketNumber string                     `json:"ticket_number"`
 	Status       models.ServiceTicketStatus `json:"status"`
@@ -110,8 +110,8 @@ func MapToTicketResponse(t *models.ServiceTicket) TicketResponse {
 	}
 }
 
-func MapToTicketListResponse(t models.ServiceTicket) TicketListResponse {
-	return TicketListResponse{
+func MapToTicketSummaryResponse(t models.ServiceTicket) TicketSummaryResponse {
+	return TicketSummaryResponse{
 		TicketID:     t.ID,
 		TicketNumber: t.TicketNumber,
 		Status:       t.Status,

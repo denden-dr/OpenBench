@@ -57,8 +57,8 @@ func TestTicketHandler_Integration(t *testing.T) {
 	// Setup Fiber App
 	app := fiber.New()
 	app.Post("/tickets", handler.CreateTicket)
-	app.Get("/tickets", handler.GetTickets)
-	app.Add([]string{"QUERY"}, "/tickets/search", handler.SearchTickets)
+	app.Get("/tickets", handler.GetTicketSummaries)
+	app.Add([]string{"QUERY"}, "/tickets/search", handler.SearchTicketSummaries)
 	app.Get("/tickets/:ticket_id", handler.GetTicketByID)
 	app.Patch("/tickets/:ticket_id/status", handler.UpdateTicketStatus)
 	app.Put("/tickets/:ticket_id", handler.UpdateTicketDetails)
@@ -225,7 +225,7 @@ func TestTicketHandler_Integration(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var respData utils.CursorPaginatedResponse[ticket.TicketListResponse]
+		var respData utils.CursorPaginatedResponse[ticket.TicketSummaryResponse]
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
 		assert.Equal(t, 10, respData.Meta.Limit)
@@ -242,7 +242,7 @@ func TestTicketHandler_Integration(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var respData utils.CursorPaginatedResponse[ticket.TicketListResponse]
+		var respData utils.CursorPaginatedResponse[ticket.TicketSummaryResponse]
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
 		assert.Equal(t, 10, respData.Meta.Limit)

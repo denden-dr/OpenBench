@@ -25,8 +25,8 @@ type WarrantyGenerator interface {
 
 type Service interface {
 	CreateTicket(ctx context.Context, req CreateTicketRequest) (TicketResponse, error)
-	GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error)
-	SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, string, error)
+	GetTicketSummaries(ctx context.Context, status, search string, limit int, cursor string) ([]TicketSummaryResponse, string, error)
+	SearchTicketSummaries(ctx context.Context, req TicketSearchRequest) ([]TicketSummaryResponse, string, error)
 	GetTicketByID(ctx context.Context, id string) (TicketResponse, error)
 	UpdateTicketStatus(ctx context.Context, id string, req ChangeStatusRequest) (TicketStatusResponse, error)
 	UpdateTicketDetails(ctx context.Context, id string, req UpdateTicketRequest) (TicketResponse, error)
@@ -119,7 +119,7 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (Ti
 	return res, nil
 }
 
-func (s *service) GetTickets(ctx context.Context, status, search string, limit int, cursor string) ([]TicketListResponse, string, error) {
+func (s *service) GetTicketSummaries(ctx context.Context, status, search string, limit int, cursor string) ([]TicketSummaryResponse, string, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -132,15 +132,15 @@ func (s *service) GetTickets(ctx context.Context, status, search string, limit i
 		return nil, "", err
 	}
 
-	var res []TicketListResponse
+	var res []TicketSummaryResponse
 	for _, t := range tickets {
-		res = append(res, MapToTicketListResponse(t))
+		res = append(res, MapToTicketSummaryResponse(t))
 	}
 
 	return res, nextCursor, nil
 }
 
-func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([]TicketListResponse, string, error) {
+func (s *service) SearchTicketSummaries(ctx context.Context, req TicketSearchRequest) ([]TicketSummaryResponse, string, error) {
 	if req.Limit <= 0 {
 		req.Limit = 10
 	}
@@ -153,9 +153,9 @@ func (s *service) SearchTickets(ctx context.Context, req TicketSearchRequest) ([
 		return nil, "", err
 	}
 
-	var res []TicketListResponse
+	var res []TicketSummaryResponse
 	for _, t := range tickets {
-		res = append(res, MapToTicketListResponse(t))
+		res = append(res, MapToTicketSummaryResponse(t))
 	}
 
 	return res, nextCursor, nil
