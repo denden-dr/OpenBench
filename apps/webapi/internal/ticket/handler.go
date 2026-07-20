@@ -33,13 +33,13 @@ func (h *Handler) CreateTicket(c fiber.Ctx) error {
 	})
 }
 
-func (h *Handler) GetTickets(c fiber.Ctx) error {
+func (h *Handler) GetTicketSummaries(c fiber.Ctx) error {
 	status := c.Query("status")
 	search := c.Query("search")
 
 	limit, cursor := utils.ParseCursorPagination(c)
 
-	tickets, nextCursor, err := h.service.GetTickets(c.Context(), status, search, limit, cursor)
+	tickets, nextCursor, err := h.service.GetTicketSummaries(c.Context(), status, search, limit, cursor)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (h *Handler) GetTickets(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(utils.NewCursorPaginatedResponse(tickets, limit, nextCursor))
 }
 
-func (h *Handler) SearchTickets(c fiber.Ctx) error {
+func (h *Handler) SearchTicketSummaries(c fiber.Ctx) error {
 	var req TicketSearchRequest
 	if err := c.Bind().JSON(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
@@ -60,7 +60,7 @@ func (h *Handler) SearchTickets(c fiber.Ctx) error {
 		req.Limit = utils.MaxLimit
 	}
 
-	tickets, nextCursor, err := h.service.SearchTickets(c.Context(), req)
+	tickets, nextCursor, err := h.service.SearchTicketSummaries(c.Context(), req)
 	if err != nil {
 		return err
 	}
