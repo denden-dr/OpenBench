@@ -131,8 +131,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    background-color: #f8fafc;
+    @apply bg-background text-foreground font-sans min-h-screen transition-colors duration-200;
   }
   html {
     @apply font-sans;
