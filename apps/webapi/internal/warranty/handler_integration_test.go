@@ -60,7 +60,10 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup service & handler
-	svc := warranty.NewService(queryRepo, cmdRepo, txManager)
+	ticketQueryRepo := ticket.NewQueryRepository(db)
+	ticketCreator := ticket.NewCreator(ticketQueryRepo, ticketCmdRepo)
+	warrantyGen := warranty.NewGenerator(cmdRepo)
+	svc := warranty.NewService(queryRepo, cmdRepo, txManager, ticketCreator)
 	h := warranty.NewHandler(svc)
 
 	// Fiber router
@@ -70,12 +73,11 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 	app.Post("/claims", h.CreateClaim)
 	app.Get("/claims", h.GetClaims)
 	app.Get("/claims/:claim_id", h.GetClaimByID)
-	app.Patch("/claims/:claim_id/status", h.UpdateClaimStatus)
 	app.Put("/claims/:claim_id", h.UpdateClaim)
 	app.Post("/claims/:claim_id/evaluate", h.EvaluateClaim)
 
-	// 1. Trigger warranty creation by creating warranty manually via service (since we do not test ticket completion flow in this file, or we can just call svc.CreateWarranty)
-	w, err := svc.CreateWarranty(ctx, ticketID, 90)
+	// 1. Trigger warranty creation by creating warranty manually via generator
+	w, err := warrantyGen.CreateWarranty(ctx, ticketID, 90)
 	require.NoError(t, err)
 	assert.NotEmpty(t, w.ID)
 
@@ -159,7 +161,6 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 		assert.NotEmpty(t, respData.Data.ClaimID)
 		assert.NotEmpty(t, respData.Data.ClaimNumber)
 		assert.Equal(t, w.ID, respData.Data.WarrantyID)
-		assert.Equal(t, models.StatusReceived, respData.Data.Status)
 		assert.Equal(t, models.ClaimEvaluationPending, respData.Data.EvaluationStatus)
 
 		createdClaimID = respData.Data.ClaimID
@@ -185,7 +186,6 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 	t.Run("Update Claim Details", func(t *testing.T) {
 		body := warranty.UpdateClaimRequest{
 			IssueDescription: "Speaker is completely dead, headphone jack works",
-			RepairAction:     "Replaced Speaker Module",
 			Notes:            "Tested with multitone test",
 		}
 		bodyBytes, _ := json.Marshal(body)
@@ -204,30 +204,6 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
 		assert.Equal(t, "Speaker is completely dead, headphone jack works", respData.Data.IssueDescription)
-		require.NotNil(t, respData.Data.RepairAction)
-		assert.Equal(t, "Replaced Speaker Module", *respData.Data.RepairAction)
-	})
-
-	t.Run("Update Claim Status", func(t *testing.T) {
-		body := warranty.ChangeClaimStatusRequest{
-			Status: models.StatusRepairing,
-		}
-		bodyBytes, _ := json.Marshal(body)
-
-		req, err := http.NewRequest("PATCH", fmt.Sprintf("/claims/%s/status", createdClaimID), bytes.NewBuffer(bodyBytes))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := app.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		var respData struct {
-			Data warranty.ClaimStatusResponse `json:"data"`
-		}
-		err = json.NewDecoder(resp.Body).Decode(&respData)
-		require.NoError(t, err)
-		assert.Equal(t, models.StatusRepairing, respData.Data.Status)
 	})
 
 	t.Run("Evaluate Claim", func(t *testing.T) {
@@ -251,13 +227,14 @@ func TestWarrantyHandler_Integration(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&respData)
 		require.NoError(t, err)
 		assert.Equal(t, models.ClaimEvaluationAccepted, respData.Data.EvaluationStatus)
-		assert.Equal(t, models.StatusRepairing, respData.Data.Status)
+		require.NotNil(t, respData.Data.WarrantyTicketRefID)
+		assert.NotEmpty(t, *respData.Data.WarrantyTicketRefID)
 		require.NotNil(t, respData.Data.EvaluationNotes)
 		assert.Equal(t, "Approved for zero cost repair", *respData.Data.EvaluationNotes)
 	})
 
 	t.Run("Get Claims List", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/claims?status=REPAIRING&search=Michael&limit=10&cursor=", nil)
+		req, err := http.NewRequest("GET", "/claims?status=ACCEPTED&search=Michael&limit=10&cursor=", nil)
 		require.NoError(t, err)
 
 		resp, err := app.Test(req)

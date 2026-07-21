@@ -1,65 +1,70 @@
-# Graph Report - .  (2026-07-21)
+# Graph Report - OpenBench  (2026-07-21)
 
 ## Corpus Check
-- 167 files · ~51,760 words
+- 155 files · ~51,327 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1122 nodes · 1632 edges · 102 communities (59 shown, 43 thin omitted)
-- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 248 edges (avg confidence: 0.82)
+- 1242 nodes · 1758 edges · 125 communities (78 shown, 47 thin omitted)
+- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 257 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `717fddd8`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Web-Admin UI Components|Web-Admin UI Components]]
-- [[_COMMUNITY_Error Handling & Middleware|Error Handling & Middleware]]
-- [[_COMMUNITY_Inventory & POS Repository|Inventory & POS Repository]]
-- [[_COMMUNITY_Auth UI & Theme System|Auth UI & Theme System]]
-- [[_COMMUNITY_Service Ticket Model|Service Ticket Model]]
-- [[_COMMUNITY_Package Configurations|Package Configurations]]
-- [[_COMMUNITY_Project Docs & Architecture|Project Docs & Architecture]]
-- [[_COMMUNITY_Server Entrypoint & Config|Server Entrypoint & Config]]
-- [[_COMMUNITY_Database Tx & Command Repo|Database Tx & Command Repo]]
-- [[_COMMUNITY_Route Registration & Auth Middleware|Route Registration & Auth Middleware]]
-- [[_COMMUNITY_Ticket Service & Warranty Gen|Ticket Service & Warranty Gen]]
-- [[_COMMUNITY_Integration Tests|Integration Tests]]
-- [[_COMMUNITY_Web-User Frontend Shell|Web-User Frontend Shell]]
-- [[_COMMUNITY_Ticket Handler & DTOs|Ticket Handler & DTOs]]
-- [[_COMMUNITY_Logger & Health Check|Logger & Health Check]]
-- [[_COMMUNITY_Migration SQL Scripts|Migration SQL Scripts]]
-- [[_COMMUNITY_Auth Service & JWT Tokens|Auth Service & JWT Tokens]]
-- [[_COMMUNITY_POS Checkout & Transaction|POS Checkout & Transaction]]
-- [[_COMMUNITY_Auth Repository & Queries|Auth Repository & Queries]]
-- [[_COMMUNITY_Warranty Module & Claims|Warranty Module & Claims]]
-- [[_COMMUNITY_Ticket Repository & Queries|Ticket Repository & Queries]]
-- [[_COMMUNITY_Utils Pagination & Crypto|Utils: Pagination & Crypto]]
-- [[_COMMUNITY_Utils Response & Problem|Utils: Response & Problem]]
-- [[_COMMUNITY_LoginPage & Auth Tests|LoginPage & Auth Tests]]
-- [[_COMMUNITY_ProtectedRoute & Unauth|ProtectedRoute & Unauth]]
-- [[_COMMUNITY_API Contract Docs|API Contract Docs]]
-- [[_COMMUNITY_PRD Document|PRD Document]]
-- [[_COMMUNITY_Settings & Air Config|Settings & Air Config]]
-- [[_COMMUNITY_Auth DTOs|Auth DTOs]]
-- [[_COMMUNITY_Inventory DTO & Module|Inventory DTO & Module]]
-- [[_COMMUNITY_Web-User Assets|Web-User Assets]]
-- [[_COMMUNITY_POS DTO & Module|POS DTO & Module]]
-- [[_COMMUNITY_Auth Worker & Cleanup|Auth Worker & Cleanup]]
-- [[_COMMUNITY_Dashboard Page|Dashboard Page]]
-- [[_COMMUNITY_Tickets Page|Tickets Page]]
-- [[_COMMUNITY_Warranty Page|Warranty Page]]
-- [[_COMMUNITY_POS Page|POS Page]]
-- [[_COMMUNITY_Inventory Page|Inventory Page]]
-- [[_COMMUNITY_Placeholder Page|Placeholder Page]]
-- [[_COMMUNITY_Sidebar Navigation|Sidebar Navigation]]
-- [[_COMMUNITY_Admin Layout|Admin Layout]]
-- [[_COMMUNITY_Web-User App Shell|Web-User App Shell]]
-- [[_COMMUNITY_API Errors|API Errors]]
-- [[_COMMUNITY_Auth Handler Test|Auth Handler Test]]
-- [[_COMMUNITY_Ticket Integration Tests|Ticket Integration Tests]]
-- [[_COMMUNITY_Event Bus|Event Bus]]
-- [[_COMMUNITY_Seeds & Migrations|Seeds & Migrations]]
-- [[_COMMUNITY_Env Config|Env Config]]
-- [[_COMMUNITY_Cryptography Utils|Cryptography Utils]]
-- [[_COMMUNITY_Pagination Utils|Pagination Utils]]
+- [[_COMMUNITY_Community 0|Community 0]]
+- [[_COMMUNITY_Community 1|Community 1]]
+- [[_COMMUNITY_Community 2|Community 2]]
+- [[_COMMUNITY_Community 3|Community 3]]
+- [[_COMMUNITY_Community 4|Community 4]]
+- [[_COMMUNITY_Community 5|Community 5]]
+- [[_COMMUNITY_Community 6|Community 6]]
+- [[_COMMUNITY_Community 7|Community 7]]
+- [[_COMMUNITY_Community 8|Community 8]]
+- [[_COMMUNITY_Community 9|Community 9]]
+- [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
+- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 18|Community 18]]
+- [[_COMMUNITY_Community 19|Community 19]]
+- [[_COMMUNITY_Community 20|Community 20]]
+- [[_COMMUNITY_Community 21|Community 21]]
+- [[_COMMUNITY_Community 22|Community 22]]
+- [[_COMMUNITY_Community 23|Community 23]]
+- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
+- [[_COMMUNITY_Community 26|Community 26]]
+- [[_COMMUNITY_Community 27|Community 27]]
+- [[_COMMUNITY_Community 28|Community 28]]
+- [[_COMMUNITY_Community 29|Community 29]]
+- [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 54|Community 54]]
@@ -103,11 +108,34 @@
 - [[_COMMUNITY_Community 99|Community 99]]
 - [[_COMMUNITY_Community 100|Community 100]]
 - [[_COMMUNITY_Community 101|Community 101]]
+- [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
+- [[_COMMUNITY_Community 105|Community 105]]
+- [[_COMMUNITY_Community 106|Community 106]]
+- [[_COMMUNITY_Community 107|Community 107]]
+- [[_COMMUNITY_Community 108|Community 108]]
+- [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
+- [[_COMMUNITY_Community 111|Community 111]]
+- [[_COMMUNITY_Community 112|Community 112]]
+- [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
+- [[_COMMUNITY_Community 116|Community 116]]
+- [[_COMMUNITY_Community 117|Community 117]]
+- [[_COMMUNITY_Community 118|Community 118]]
+- [[_COMMUNITY_Community 119|Community 119]]
+- [[_COMMUNITY_Community 120|Community 120]]
+- [[_COMMUNITY_Community 121|Community 121]]
+- [[_COMMUNITY_Community 122|Community 122]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `New()` - 54 edges
+1. `New()` - 55 edges
 2. `cn()` - 53 edges
-3. `Service` - 27 edges
+3. `Service` - 28 edges
 4. `GetQuerier()` - 19 edges
 5. `compilerOptions` - 19 edges
 6. `ValidateStruct()` - 18 edges
@@ -180,199 +208,203 @@
 - **Frontend Authentication Tests** — webadmin_loginpage_test, webadmin_protectedroute_test, concept_frontend_auth [EXTRACTED 1.00]
 - **PRD to API Contract Design Flow** — docs_prd, docs_api_contract, concept_service_ticket_domain, concept_warranty_domain, concept_pos_domain, concept_auth_domain [INFERRED 0.85]
 
-## Communities (102 total, 43 thin omitted)
+## Communities (125 total, 47 thin omitted)
 
-### Community 0 - "Web-Admin UI Components"
-Cohesion: 0.05
-Nodes (70): cn(), initialProducts, PlaceholderPageProps, initialProducts, initialTransactions, mockTickets, initialClaims, initialWarranties (+62 more)
-
-### Community 1 - "Error Handling & Middleware"
+### Community 0 - "Community 0"
 Cohesion: 0.06
-Nodes (25): TestGlobalErrorHandler_DomainErrors(), TxManager, Module Pattern (NewModule→Repo→Service→Handler), AdjustStockRequest, Handler, ProductResponse, Migration: warranties+claims tables, Migration: evaluation columns (+17 more)
+Nodes (69): cn(), initialProducts, initialProducts, initialTransactions, mockTickets, initialClaims, initialWarranties, CartItem (+61 more)
 
-### Community 2 - "Inventory & POS Repository"
+### Community 1 - "Community 1"
+Cohesion: 0.16
+Nodes (10): TxManager, Module Pattern (NewModule→Repo→Service→Handler), Migration: warranties+claims tables, Migration: evaluation columns, Warranty Claim Lifecycle Workflow, Module, Warranty CommandRepository, Claim Summary Join Pattern (+2 more)
+
+### Community 2 - "Community 2"
 Cohesion: 0.05
 Nodes (23): CommandRepository, CreateProductRequest, QueryRepository, Service, service impl (inventory), sqlQueryRepository, UpdateProductRequest, CheckoutItemRequest (+15 more)
 
-### Community 3 - "Auth UI & Theme System"
-Cohesion: 0.09
-Nodes (28): App(), ProtectedRoute(), ProtectedRouteProps, ThemeProvider(), ThemeProviderProps, ThemeToggle(), ThemeToggleProps, AdminLayout() (+20 more)
+### Community 3 - "Community 3"
+Cohesion: 0.08
+Nodes (29): App(), ProtectedRoute(), ProtectedRouteProps, ThemeProvider(), ThemeProviderProps, ThemeToggle(), ThemeToggleProps, AdminLayout() (+21 more)
 
-### Community 4 - "Service Ticket Model"
-Cohesion: 0.06
-Nodes (25): CreateTicketParams, NewServiceTicket, NewServiceTicket(), TestNewServiceTicket_Invariants(), ServiceTicket, ServiceTicketStatus, CleanTable, SetupTestDatabase (+17 more)
+### Community 4 - "Community 4"
+Cohesion: 0.17
+Nodes (11): ChangeClaimStatusRequest, ClaimListResponse, ClaimResponse, ClaimStatusResponse, CreateClaimRequest, EvaluateClaimRequest, EvaluateClaimResponse, UpdateClaimRequest (+3 more)
 
-### Community 5 - "Package Configurations"
+### Community 5 - "Community 5"
 Cohesion: 0.05
 Nodes (41): dependencies, axios, @base-ui/react, class-variance-authority, clsx, @fontsource-variable/geist, lucide-react, react (+33 more)
 
-### Community 6 - "Project Docs & Architecture"
-Cohesion: 0.09
-Nodes (37): Docker Compose PostgreSQL, OpenBench, Glassmorphism Design Aesthetic, Indonesian Language Commits, Make Build System, Micro Frontends Architecture, Monorepo Structure, Phone & Electronics Repair Business Admin (+29 more)
+### Community 6 - "Community 6"
+Cohesion: 0.06
+Nodes (46): Docker Compose PostgreSQL, OpenBench, API routes (`cmd/server/routes_api.go`), Backend Architecture, Commands, Config, Frontend, Go Testing (+38 more)
 
-### Community 7 - "Server Entrypoint & Config"
-Cohesion: 0.07
-Nodes (26): AppConfig, findProjectRoot(), Load(), TestLoad(), TestLoad_Validation(), Config, NewPostgresDB(), slogAdapter (+18 more)
+### Community 7 - "Community 7"
+Cohesion: 0.20
+Nodes (7): main(), listenAndServe(), newFiberApp(), NewCreator(), Generator, NewGenerator(), TestWarrantyHandler_Integration()
 
-### Community 8 - "Database Tx & Command Repo"
+### Community 8 - "Community 8"
 Cohesion: 0.10
 Nodes (14): sqlCommandRepository, sqlQueryRepository, sqlCommandRepository, DBQuerier, sqlTxManager, ExtractTx(), GetQuerier(), InjectTx() (+6 more)
 
-### Community 9 - "Route Registration & Auth Middleware"
+### Community 9 - "Community 9"
 Cohesion: 0.08
 Nodes (17): GlobalErrorHandler(), RequireRole, RequireAuth(), RequireRole(), middleware_test, generateTestToken(), TestRequireAuth(), TestRequireRole() (+9 more)
 
-### Community 10 - "Ticket Service & Warranty Gen"
-Cohesion: 0.12
-Nodes (14): ErrTicketNotFound ErrInvalidInput, MapToTicketResponse(), MapToTicketSummaryResponse(), Service, Ticket→Warranty Cross-Domain Flow, WarrantyGenerator, Decrypt(), Encrypt() (+6 more)
+### Community 10 - "Community 10"
+Cohesion: 0.10
+Nodes (16): NewServiceTicket(), TestNewServiceTicket_Invariants(), ErrTicketNotFound ErrInvalidInput, MapToTicketResponse(), MapToTicketSummaryResponse(), Service, Ticket→Warranty Cross-Domain Flow, WarrantyGenerator (+8 more)
 
-### Community 11 - "Integration Tests"
-Cohesion: 0.11
-Nodes (14): TestAuthHandler_Integration(), TestAuthRepository_Integration(), NewTxManager(), TestInventoryHandler_Integration(), TestInventoryRepository_Integration(), TestPosHandler_Integration(), TestPosRepository_Integration(), CleanTable() (+6 more)
+### Community 11 - "Community 11"
+Cohesion: 0.17
+Nodes (9): TestAuthHandler_Integration(), TestAuthRepository_Integration(), TestInventoryHandler_Integration(), TestInventoryRepository_Integration(), TestPosRepository_Integration(), CleanTable(), SetupTestDatabase(), TestTicketRepository_Integration() (+1 more)
 
-### Community 12 - "Web-User Frontend Shell"
-Cohesion: 0.09
-Nodes (18): CursorMeta, CursorPaginatedResponse, NewCursorPaginatedResponse(), NewCursorPaginatedResponse, ParseCursorPagination(), CursorMeta+CursorPaginatedResponse, ChangeClaimStatusRequest, ClaimListResponse (+10 more)
+### Community 12 - "Community 12"
+Cohesion: 0.21
+Nodes (7): CursorMeta, CursorPaginatedResponse, NewCursorPaginatedResponse(), NewCursorPaginatedResponse, ParseCursorPagination(), CursorMeta+CursorPaginatedResponse, MapToClaimListResponse()
 
-### Community 13 - "Ticket Handler & DTOs"
+### Community 13 - "Community 13"
 Cohesion: 0.08
 Nodes (24): dependencies, react, react-dom, devDependencies, autoprefixer, oxlint, postcss, tailwindcss (+16 more)
 
-### Community 14 - "Logger & Health Check"
+### Community 14 - "Community 14"
 Cohesion: 0.17
 Nodes (24): AdminLayout, OpenBench admin theme system, api (axios instance), setupInterceptors (JWT refresh), JWT auth flow with refresh interceptor, authStore.test, authService, DashboardPage (+16 more)
 
-### Community 15 - "Migration SQL Scripts"
+### Community 15 - "Community 15"
 Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
-### Community 16 - "Auth Service & JWT Tokens"
+### Community 16 - "Community 16"
 Cohesion: 0.12
 Nodes (14): AsyncEventBus, NewAsyncEventBus(), TestAsyncEventBus_HandlerError(), TestAsyncEventBus_PanicRecovery(), TestAsyncEventBus_PublishAndSubscribe(), Event, EventBus, EventHandler (+6 more)
 
-### Community 17 - "POS Checkout & Transaction"
+### Community 17 - "Community 17"
 Cohesion: 0.09
 Nodes (21): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+13 more)
 
-### Community 18 - "Auth Repository & Queries"
+### Community 18 - "Community 18"
 Cohesion: 0.13
 Nodes (10): Authentication Domain, Database Pool Configuration, Frontend Authentication, JWT Authentication, Point of Sale Domain, POS Database Tables, Service Ticket Domain, Token Blacklist (+2 more)
 
-### Community 19 - "Warranty Module & Claims"
-Cohesion: 0.11
-Nodes (7): mockRepository, mockTxManager, TestService_CreateClaim(), TestService_CreateWarranty(), TestService_EvaluateClaim(), TestService_GetWarrantyByTicketID(), TestService_UpdateWarrantyStatus()
+### Community 19 - "Community 19"
+Cohesion: 0.10
+Nodes (8): mockRepository, mockTicketCreator, mockTxManager, TestService_CreateClaim(), TestService_CreateWarranty(), TestService_EvaluateClaim(), TestService_GetWarrantyByTicketID(), TestService_UpdateWarrantyStatus()
 
-### Community 20 - "Ticket Repository & Queries"
+### Community 20 - "Community 20"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+11 more)
 
-### Community 21 - "Utils: Pagination & Crypto"
-Cohesion: 0.16
-Nodes (7): DecodeCursor(), EncodeCursor(), BenchmarkDecodeCursor(), BenchmarkEncodeCursor(), TestCursorEncodingDecoding(), TestCursorInvalidDecoding(), sqlQueryRepository
+### Community 21 - "Community 21"
+Cohesion: 0.15
+Nodes (8): sqlQueryRepository, DecodeCursor(), EncodeCursor(), BenchmarkDecodeCursor(), BenchmarkEncodeCursor(), TestCursorEncodingDecoding(), TestCursorInvalidDecoding(), sqlQueryRepository
 
-### Community 22 - "Utils: Response & Problem"
-Cohesion: 0.11
-Nodes (7): mockInventoryCommandRepo, mockInventoryQueryRepo, mockPosRepo, mockTxManager, TestService_Checkout_InsufficientStock(), TestService_Checkout_ProductNotFound(), TestService_Checkout_Success()
+### Community 22 - "Community 22"
+Cohesion: 0.14
+Nodes (6): mockInventoryQueryRepo, mockPosRepo, mockTxManager, TestService_Checkout_InsufficientStock(), TestService_Checkout_ProductNotFound(), TestService_Checkout_Success()
 
-### Community 23 - "LoginPage & Auth Tests"
+### Community 23 - "Community 23"
 Cohesion: 0.12
 Nodes (19): Domain Error to HTTP Status Mapping, Domain Error Handler Tests, RFC 7807 Global Error Handler, WithStack Error Wrapper, Stack Trace Formatter, Wrap/New Error Functions with Stack Capture, Database Seed CLI, Seed Default Admin Function (+11 more)
 
-### Community 24 - "ProtectedRoute & Unauth"
-Cohesion: 0.18
-Nodes (13): New(), TestGlobalErrorHandler(), TestRecoverMiddleware(), mockTxManager, mockWarrantyGenerator, TestService_CreateTicket(), TestService_CreateTicket_Encryption(), TestService_EmergencyUpdateTicket() (+5 more)
+### Community 24 - "Community 24"
+Cohesion: 0.15
+Nodes (14): TestGlobalErrorHandler_DomainErrors(), New(), TestGlobalErrorHandler(), TestRecoverMiddleware(), mockTxManager, mockWarrantyGenerator, TestService_CreateTicket(), TestService_CreateTicket_Encryption() (+6 more)
 
-### Community 25 - "API Contract Docs"
+### Community 25 - "Community 25"
 Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
-### Community 26 - "PRD Document"
+### Community 26 - "Community 26"
 Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
-### Community 27 - "Settings & Air Config"
+### Community 27 - "Community 27"
 Cohesion: 0.12
 Nodes (16): app, allowed_origins, env, name, port, auth, access_expiry, refresh_expiry (+8 more)
 
-### Community 28 - "Auth DTOs"
+### Community 28 - "Community 28"
 Cohesion: 0.13
 Nodes (7): API Layer with Axios Interceptors, ProtectedRoute Component, App Root Component, Auth Zustand Store, Theme Zustand Store, ThemeProvider Component, ThemeToggle Component
 
-### Community 29 - "Inventory DTO & Module"
+### Community 29 - "Community 29"
 Cohesion: 0.15
 Nodes (3): mockRepository, TestAuthService_Login(), TestAuthService_Refresh()
 
-### Community 30 - "Web-User Assets"
+### Community 30 - "Community 30"
 Cohesion: 0.17
 Nodes (5): mockCommandRepo, mockQueryRepo, TestService_AdjustStock(), TestService_AdjustStock_NegativeResult(), TestService_CreateProduct()
 
-### Community 31 - "POS DTO & Module"
+### Community 31 - "Community 31"
 Cohesion: 0.22
 Nodes (8): CommandRepository, TestAuthHandler_Integration, Module, NewModule(), QueryRepository, NewCommandRepository(), NewQueryRepository(), NewService()
 
-### Community 32 - "Auth Worker & Cleanup"
-Cohesion: 0.20
-Nodes (9): Handler (auth), Module (auth), ErrInvalidCredentials, Service (auth), service_test, Handler (inventory), Module, Module (inventory) (+1 more)
+### Community 32 - "Community 32"
+Cohesion: 0.40
+Nodes (4): Handler (inventory), Module, Module (inventory), NewModule()
 
-### Community 33 - "Dashboard Page"
+### Community 33 - "Community 33"
 Cohesion: 0.36
 Nodes (5): LoginRequest, LoginResponse, RefreshResponse, SuccessResponse[T], Service
 
-### Community 34 - "Tickets Page"
-Cohesion: 0.25
-Nodes (7): MessageResponse, CommandRepository, TestAuthRepository_Integration, QueryRepository, ErrInvalidToken, ErrUserNotFound, service (auth impl)
+### Community 34 - "Community 34"
+Cohesion: 0.22
+Nodes (11): Handler (auth), Module (auth), CommandRepository, TestAuthRepository_Integration, QueryRepository, ErrInvalidCredentials, ErrInvalidToken, ErrUserNotFound (+3 more)
 
-### Community 35 - "Warranty Page"
+### Community 35 - "Community 35"
 Cohesion: 0.22
 Nodes (9): @/ path alias resolving to src/ directory, Vite dev server proxy forwarding /api to http://localhost:3000, Vitest test environment configured with jsdom for DOM testing, Vitest setup entry importing jest-dom matchers, TypeScript config for app (src/) with path alias @/ → ./src/, Root TypeScript config referencing app and node configs, TypeScript config for Node (vite.config.ts), Vite build config with React, Tailwind, @/ alias, /api proxy to localhost:3000 (+1 more)
 
-### Community 36 - "POS Page"
+### Community 36 - "Community 36"
 Cohesion: 0.29
 Nodes (6): LoginRequest, LoginResponse, MessageResponse, RefreshResponse, SuccessResponse, UserProfileResponse
 
-### Community 37 - "Inventory Page"
+### Community 37 - "Community 37"
 Cohesion: 0.38
 Nodes (3): CleanupWorker, CleanupWorker, NewCleanupWorker()
 
-### Community 38 - "Placeholder Page"
-Cohesion: 0.33
-Nodes (3): UserProfileResponse, Handler, NewHandler()
+### Community 38 - "Community 38"
+Cohesion: 0.29
+Nodes (3): MessageResponse, Handler, NewHandler()
 
-### Community 39 - "Sidebar Navigation"
+### Community 39 - "Community 39"
 Cohesion: 0.33
 Nodes (3): callers(), Wrap(), withStack
 
-### Community 40 - "Admin Layout"
+### Community 40 - "Community 40"
 Cohesion: 0.29
 Nodes (6): Claim, ClaimEvaluationStatus, ClaimSummary, Warranty, WarrantyStatus, fakeWarrantyGenerator
 
-### Community 41 - "Web-User App Shell"
+### Community 41 - "Community 41"
 Cohesion: 0.33
 Nodes (5): compilerOptions, paths, files, @/*, references
 
-### Community 43 - "Auth Handler Test"
+### Community 43 - "Community 43"
 Cohesion: 0.33
 Nodes (5): plugins, rules, react/only-export-components, react/rules-of-hooks, $schema
 
-### Community 44 - "Ticket Integration Tests"
+### Community 44 - "Community 44"
 Cohesion: 0.33
 Nodes (5): plugins, rules, react/only-export-components, react/rules-of-hooks, $schema
 
-### Community 45 - "Event Bus"
+### Community 45 - "Community 45"
 Cohesion: 0.40
 Nodes (5): zustand persist middleware for persisting store state to localStorage, useAuthStore (zustand store for authentication state), Unit tests for useThemeStore, useThemeStore (zustand store with persist middleware), Auth domain types: User, LoginCredentials, LoginResponse, UserResponse, ApiProblemDetails
 
-### Community 46 - "Seeds & Migrations"
+### Community 46 - "Community 46"
 Cohesion: 0.40
 Nodes (5): web-user app entry point: index.html → main.tsx → App.tsx, SVG favicon with purple gradient icon, Hero image asset for web-user landing page, HTML entry point for web-user app, App.tsx main React component with ticket search UI and hero section
 
-### Community 47 - "Env Config"
+### Community 47 - "Community 47"
 Cohesion: 0.40
 Nodes (5): AppConfig Struct, AuthConfig Struct, Config Struct (App+DB+Auth), DBConfig Struct, DSN URL Generator
 
-### Community 49 - "Pagination Utils"
+### Community 49 - "Community 49"
 Cohesion: 0.50
 Nodes (4): TypeScript App Config, TypeScript Node Config, TypeScript Root Config, Vite Build Configuration
+
+### Community 54 - "Community 54"
+Cohesion: 0.12
+Nodes (13): CreateTicketParams, NewServiceTicket, ServiceTicket, ServiceTicketStatus, CleanTable, SetupTestDatabase, CommandRepository, CreateTicketRequest (+5 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.67
@@ -382,25 +414,97 @@ Nodes (3): AsyncEventBus, EventBus, bus_test
 Cohesion: 0.67
 Nodes (3): Event, TicketCompletedEvent, TicketCompletedType
 
+### Community 102 - "Community 102"
+Cohesion: 0.11
+Nodes (18): Arsitektur Teknis, code:bash (cp apps/webapi/.env.example apps/webapi/.env), code:bash (curl http://localhost:3000/health), code:json ({), code:bash (make install-api), code:bash (make up), code:bash (make dev-api), code:bash (make dev-user) (+10 more)
+
+### Community 103 - "Community 103"
+Cohesion: 0.13
+Nodes (8): ErrWarrantyNotFound ErrClaimNotFound ErrWarrantyNotActive ErrInvalidInput, Warranty DTOs, DTO Mapping Functions, MapToClaimResponse(), MapToWarrantyResponse(), Handler, Service, TicketCreator
+
+### Community 104 - "Community 104"
+Cohesion: 0.14
+Nodes (14): 1. Service Tickets (Pencatatan Servis), B2. Pencarian Lanjutan Tiket Servis (Advanced Search), B. Mendapatkan Daftar Tiket Servis, C. Mendapatkan Detail Tiket Servis, code:json ({), code:json ({), code:json ({), code:json ({) (+6 more)
+
+### Community 105 - "Community 105"
+Cohesion: 0.14
+Nodes (14): 3. Garansi & Klaim (Warranty & Claims), A. Cek Status Garansi (Berdasarkan Ticket ID), B. Pembaruan Status Garansi Langsung, C. Membuat Klaim Garansi Baru, code:json ({), code:json ({), code:json ({), code:json ({) (+6 more)
+
+### Community 106 - "Community 106"
+Cohesion: 0.11
+Nodes (13): ChangeStatusRequest, EmergencyUpdateTicketRequest, Handler, MapToTicketResponse, TicketResponse, TicketSearchRequest, TicketStatusResponse, TicketSummaryResponse (+5 more)
+
+### Community 107 - "Community 107"
+Cohesion: 0.15
+Nodes (12): 1. Ringkasan Eksekutif (Executive Summary), 2. Tujuan & Sasaran (Objectives & Goals), 3. Target Pengguna (Target Audience), 4.1. Manajemen Tiket Servis (Service Ticketing), 4.2. Manajemen Profil & Perangkat, 4.3. Manajemen Garansi & Klaim (Warranty), 4.4. Manajemen Point of Sale (POS) & Inventori Aksesoris, 4. Ruang Lingkup MVP (In-Scope for v1) (+4 more)
+
+### Community 108 - "Community 108"
+Cohesion: 0.28
+Nodes (6): NewPostgresDB(), slogAdapter, HealthCheckDetail, main(), run(), SeedDefaultAdmin()
+
+### Community 109 - "Community 109"
+Cohesion: 0.28
+Nodes (6): AppConfig, findProjectRoot(), Load(), TestLoad(), TestLoad_Validation(), Config
+
+### Community 110 - "Community 110"
+Cohesion: 0.22
+Nodes (3): AdjustStockRequest, Handler, ProductResponse
+
+### Community 111 - "Community 111"
+Cohesion: 0.22
+Nodes (7): ContextHandler, contextKey, InitLogger, InitLogger(), middleware_test, NewMiddleware, RequestIDKey
+
+### Community 112 - "Community 112"
+Cohesion: 0.29
+Nodes (4): NewTxManager(), TestPosHandler_Integration(), fakeWarrantyGenerator, TestTicketHandler_Integration()
+
+### Community 113 - "Community 113"
+Cohesion: 0.22
+Nodes (9): 5. Authentication (Auth), B. Refresh Token, C. Sign Out (Logout), code:json ({), code:http (Set-Cookie: access_token=eyJhb...; Path=/; HttpOnly; Secure;), code:json ({), code:http (Set-Cookie: access_token=; Path=/; HttpOnly; Secure; SameSit), code:json ({) (+1 more)
+
+### Community 114 - "Community 114"
+Cohesion: 0.47
+Nodes (4): NewMiddleware(), BenchmarkNewMiddleware(), TestNewMiddleware(), TestNewMiddleware_ExistingRequestID()
+
+### Community 115 - "Community 115"
+Cohesion: 0.25
+Nodes (8): 4. Point of Sale (POS) & Inventori Aksesoris, A. Inventori Aksesoris (Products), B. Transaksi POS (Checkout), C. Riwayat Transaksi POS, code:json ({), code:json ({), code:json ({), code:json ({)
+
+### Community 116 - "Community 116"
+Cohesion: 0.25
+Nodes (7): API Contract - OpenBench v1, Base URL, code:text (http://localhost:3000), code:json ({), code:json ({), Format Respon Umum (Standard Response), Keamanan & Otorisasi (Security)
+
+### Community 118 - "Community 118"
+Cohesion: 0.50
+Nodes (4): A. Sign In (Admin Login), code:json ({), code:json ({), code:http (Set-Cookie: access_token=eyJhb...; Path=/; HttpOnly; Secure;)
+
+### Community 119 - "Community 119"
+Cohesion: 0.67
+Nodes (3): A. Membuat Tiket Servis Baru, code:json ({), code:json ({)
+
+### Community 120 - "Community 120"
+Cohesion: 0.67
+Nodes (3): code:json ({), code:json ({), D. Mengubah Status Servis
+
 ## Knowledge Gaps
-- **344 isolated node(s):** `env`, `name`, `port`, `allowed_origins`, `max_conns` (+339 more)
+- **415 isolated node(s):** `env`, `name`, `port`, `allowed_origins`, `max_conns` (+410 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `New()` connect `ProtectedRoute & Unauth` to `Error Handling & Middleware`, `Dashboard Page`, `Inventory & POS Repository`, `Service Ticket Model`, `Server Entrypoint & Config`, `Sidebar Navigation`, `Route Registration & Auth Middleware`, `Ticket Service & Warranty Gen`, `Integration Tests`, `Auth Service & JWT Tokens`, `Warranty Module & Claims`, `Utils: Pagination & Crypto`, `Utils: Response & Problem`, `Inventory DTO & Module`, `Web-User Assets`?**
-  _High betweenness centrality (0.163) - this node is a cross-community bridge._
-- **Why does `Service` connect `Error Handling & Middleware` to `Ticket Service & Warranty Gen`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
-- **Why does `ValidateStruct()` connect `Error Handling & Middleware` to `Route Registration & Auth Middleware`, `Inventory & POS Repository`, `Service Ticket Model`, `Dashboard Page`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Are the 52 inferred relationships involving `New()` (e.g. with `SeedDefaultAdmin()` and `TestGlobalErrorHandler()`) actually correct?**
-  _`New()` has 52 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `New()` connect `Community 24` to `Community 1`, `Community 2`, `Community 7`, `Community 9`, `Community 10`, `Community 11`, `Community 16`, `Community 19`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 33`, `Community 39`, `Community 108`, `Community 109`, `Community 111`, `Community 112`, `Community 114`?**
+  _High betweenness centrality (0.136) - this node is a cross-community bridge._
+- **Why does `Service` connect `Community 103` to `Community 1`, `Community 10`, `Community 106`?**
+  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+- **Why does `ValidateStruct()` connect `Community 106` to `Community 33`, `Community 2`, `Community 103`, `Community 9`, `Community 110`, `Community 24`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Are the 53 inferred relationships involving `New()` (e.g. with `SeedDefaultAdmin()` and `TestGlobalErrorHandler()`) actually correct?**
+  _`New()` has 53 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 15 inferred relationships involving `GetQuerier()` (e.g. with `.CreateUser()` and `.BlacklistToken()`) actually correct?**
   _`GetQuerier()` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `env`, `name`, `port` to the rest of the system?**
-  _347 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Web-Admin UI Components` be split into smaller, more focused modules?**
-  _Cohesion score 0.053516819571865444 - nodes in this community are weakly interconnected._
+  _418 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Community 0` be split into smaller, more focused modules?**
+  _Cohesion score 0.05713218820014936 - nodes in this community are weakly interconnected._

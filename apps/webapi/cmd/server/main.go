@@ -56,10 +56,35 @@ func main() {
 	authMod, stopAuth := auth.NewModule(db, cfg)
 	defer stopAuth()
 
-	warrantyMod := warranty.NewModule(db, txManager)
-	ticketMod := ticket.NewModule(db, txManager, warrantyMod.Service, eventBus, cfg.App.EncryptionKey)
-	inventoryMod := inventory.NewModule(db)
-	posMod := pos.NewModule(db, txManager, inventoryMod.QueryRepo, inventoryMod.CommandRepo)
+	// Wire Domains
+	// 1. Repositories
+	ticketQR := ticket.NewQueryRepository(db)
+	ticketCR := ticket.NewCommandRepository(db)
+
+	warrantyQR := warranty.NewQueryRepository(db)
+	warrantyCR := warranty.NewCommandRepository(db)
+
+	invQR := inventory.NewQueryRepository(db)
+	invCR := inventory.NewCommandRepository(db)
+
+	posQR := pos.NewQueryRepository(db)
+	posCR := pos.NewCommandRepository(db)
+
+	// 2. Cross-domain helpers (Creators / Generators)
+	ticketCreator := ticket.NewCreator(ticketQR, ticketCR)
+	warrantyGen := warranty.NewGenerator(warrantyCR)
+
+	// 3. Services
+	warrantySvc := warranty.NewService(warrantyQR, warrantyCR, txManager, ticketCreator)
+	ticketSvc := ticket.NewService(ticketQR, ticketCR, txManager, warrantyGen, eventBus, cfg.App.EncryptionKey)
+	invSvc := inventory.NewService(invQR, invCR)
+	posSvc := pos.NewService(posQR, posCR, invQR, invCR, txManager)
+
+	// 4. Modules
+	warrantyMod := warranty.NewModule(warrantySvc)
+	ticketMod := ticket.NewModule(ticketSvc)
+	inventoryMod := inventory.NewModule(invSvc, invQR, invCR)
+	posMod := pos.NewModule(posSvc)
 
 	app := newFiberApp(cfg)
 

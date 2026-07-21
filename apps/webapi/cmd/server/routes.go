@@ -81,7 +81,6 @@ func registerRoutes(
 	claimGroup.Post("/", warrantyMod.Handler.CreateClaim)
 	claimGroup.Get("/", warrantyMod.Handler.GetClaims)
 	claimGroup.Get("/:claim_id", warrantyMod.Handler.GetClaimByID)
-	claimGroup.Patch("/:claim_id/status", warrantyMod.Handler.UpdateClaimStatus)
 	claimGroup.Put("/:claim_id", warrantyMod.Handler.UpdateClaim)
 	claimGroup.Post("/:claim_id/evaluate", warrantyMod.Handler.EvaluateClaim)
 

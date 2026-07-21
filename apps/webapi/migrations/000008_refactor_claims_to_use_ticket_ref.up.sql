@@ -1,0 +1,3 @@
+ALTER TABLE claims DROP COLUMN IF EXISTS status;
+ALTER TABLE claims DROP COLUMN IF EXISTS repair_action;
+ALTER TABLE claims ADD COLUMN IF NOT EXISTS warranty_ticket_ref_id UUID REFERENCES service_tickets(id) ON DELETE SET NULL;
