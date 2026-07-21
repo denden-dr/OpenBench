@@ -91,9 +91,18 @@ func (m *mockRepository) UpdateClaim(ctx context.Context, c *models.Claim) error
 	return args.Error(0)
 }
 
-func (m *mockRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
-	args := m.Called(ctx, claimID, status, evalStatus, evalNotes)
+func (m *mockRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, ticketRefID *string) error {
+	args := m.Called(ctx, claimID, evalStatus, evalNotes, ticketRefID)
 	return args.Error(0)
+}
+
+type mockTicketCreator struct {
+	mock.Mock
+}
+
+func (m *mockTicketCreator) CreateWarrantyTicket(ctx context.Context, originalTicketID string, warrantyID string, issueDescription string) (string, error) {
+	args := m.Called(ctx, originalTicketID, warrantyID, issueDescription)
+	return args.String(0), args.Error(1)
 }
 
 type mockTxManager struct{}
@@ -142,9 +151,9 @@ func TestService_CreateWarranty(t *testing.T) {
 			if tt.expectedErr == nil {
 				repo.On("CreateWarranty", mock.Anything, mock.AnythingOfType("*models.Warranty")).Return(nil)
 			}
-			svc := NewService(repo, repo, &mockTxManager{})
+			gen := NewGenerator(repo)
 
-			res, err := svc.CreateWarranty(context.Background(), tt.ticketID, tt.warrantyDays)
+			res, err := gen.CreateWarranty(context.Background(), tt.ticketID, tt.warrantyDays)
 			if tt.expectedErr != nil {
 				must.Error(err)
 				is.ErrorIs(err, tt.expectedErr)
@@ -219,7 +228,7 @@ func TestService_GetWarrantyByTicketID(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo, repo, &mockTxManager{})
+			svc := NewService(repo, repo, &mockTxManager{}, &mockTicketCreator{})
 
 			res, err := svc.GetWarrantyByTicketID(context.Background(), tt.ticketID)
 			if tt.expectedErr != nil {
@@ -299,7 +308,7 @@ func TestService_CreateClaim(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo, repo, &mockTxManager{})
+			svc := NewService(repo, repo, &mockTxManager{}, &mockTicketCreator{})
 
 			res, err := svc.CreateClaim(context.Background(), tt.req)
 			if tt.expectedErr != nil {
@@ -308,7 +317,6 @@ func TestService_CreateClaim(t *testing.T) {
 			} else {
 				must.NoError(err)
 				must.NotNil(res)
-				is.Equal(models.StatusReceived, res.Status)
 				is.Equal(models.ClaimEvaluationPending, res.EvaluationStatus)
 				is.Equal(tt.req.IssueDescription, res.IssueDescription)
 			}
@@ -319,17 +327,21 @@ func TestService_CreateClaim(t *testing.T) {
 
 func TestService_EvaluateClaim(t *testing.T) {
 	claim := &models.Claim{
-		ID:          "c-1",
-		ClaimNumber: "CLM-001",
-		WarrantyID:  "w-1",
-		Status:      models.StatusReceived,
+		ID:               "c-1",
+		ClaimNumber:      "CLM-001",
+		WarrantyID:       "w-1",
+		IssueDescription: "broken screen",
+	}
+	warranty := &models.Warranty{
+		ID:       "w-1",
+		TicketID: "tkt-orig",
 	}
 
 	tests := []struct {
 		name        string
 		claimID     string
 		req         EvaluateClaimRequest
-		setupMock   func(repo *mockRepository)
+		setupMock   func(repo *mockRepository, tc *mockTicketCreator)
 		expectedErr error
 	}{
 		{
@@ -339,9 +351,11 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationAccepted,
 				Notes:  "Claim is valid",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, tc *mockTicketCreator) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusRepairing, models.ClaimEvaluationAccepted, mock.Anything).Return(nil)
+				repo.On("FindWarrantyByID", mock.Anything, "w-1").Return(warranty, nil)
+				tc.On("CreateWarrantyTicket", mock.Anything, "tkt-orig", "w-1", "broken screen").Return("tkt-new", nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.ClaimEvaluationAccepted, mock.Anything, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -352,9 +366,9 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationRejected,
 				Notes:  "Device shows drop impact",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, tc *mockTicketCreator) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusCancelled, models.ClaimEvaluationRejected, mock.Anything).Return(nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.ClaimEvaluationRejected, mock.Anything, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -365,9 +379,9 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationVoid,
 				Notes:  "Unauthorized modification",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, tc *mockTicketCreator) {
 				repo.On("FindClaimByID", mock.Anything, "c-1").Return(claim, nil).Twice()
-				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.StatusCancelled, models.ClaimEvaluationVoid, mock.Anything).Return(nil)
+				repo.On("UpdateClaimEvaluation", mock.Anything, "c-1", models.ClaimEvaluationVoid, mock.Anything, mock.Anything).Return(nil)
 				repo.On("UpdateWarrantyStatus", mock.Anything, "w-1", models.WarrantyStatusVoid, mock.Anything).Return(nil)
 			},
 			expectedErr: nil,
@@ -379,7 +393,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationRejected,
 				Notes:  "   ",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, tc *mockTicketCreator) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -389,7 +403,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationVoid,
 				Notes:  "",
 			},
-			setupMock:   func(repo *mockRepository) {},
+			setupMock:   func(repo *mockRepository, tc *mockTicketCreator) {},
 			expectedErr: ErrInvalidInput,
 		},
 		{
@@ -399,7 +413,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 				Status: models.ClaimEvaluationAccepted,
 				Notes:  "Valid",
 			},
-			setupMock: func(repo *mockRepository) {
+			setupMock: func(repo *mockRepository, tc *mockTicketCreator) {
 				repo.On("FindClaimByID", mock.Anything, "c-non-existent").Return(nil, nil)
 			},
 			expectedErr: ErrClaimNotFound,
@@ -412,8 +426,9 @@ func TestService_EvaluateClaim(t *testing.T) {
 			must := require.New(t)
 
 			repo := &mockRepository{}
-			tt.setupMock(repo)
-			svc := NewService(repo, repo, &mockTxManager{})
+			tc := &mockTicketCreator{}
+			tt.setupMock(repo, tc)
+			svc := NewService(repo, repo, &mockTxManager{}, tc)
 
 			res, err := svc.EvaluateClaim(context.Background(), tt.claimID, tt.req)
 			if tt.expectedErr != nil {
@@ -424,6 +439,7 @@ func TestService_EvaluateClaim(t *testing.T) {
 				must.NotNil(res)
 			}
 			repo.AssertExpectations(t)
+			tc.AssertExpectations(t)
 		})
 	}
 }
@@ -486,7 +502,7 @@ func TestService_UpdateWarrantyStatus(t *testing.T) {
 
 			repo := &mockRepository{}
 			tt.setupMock(repo)
-			svc := NewService(repo, repo, &mockTxManager{})
+			svc := NewService(repo, repo, &mockTxManager{}, &mockTicketCreator{})
 
 			res, err := svc.UpdateWarrantyStatus(context.Background(), tt.warrantyID, tt.req)
 			if tt.expectedErr != nil {

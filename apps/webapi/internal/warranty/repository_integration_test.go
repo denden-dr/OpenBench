@@ -111,7 +111,6 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 			ID:               claimID,
 			ClaimNumber:      "CLM-20260713-0001",
 			WarrantyID:       warrID,
-			Status:           models.StatusReceived,
 			EvaluationStatus: models.ClaimEvaluationPending,
 			IssueDescription: "Speaker issue persists",
 			Notes:            &notes,
@@ -129,16 +128,13 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 		require.NotNil(t, found)
 		assert.Equal(t, claimID, found.ID)
 		assert.Equal(t, "CLM-20260713-0001", found.ClaimNumber)
-		assert.Equal(t, models.StatusReceived, found.Status)
 		assert.Equal(t, models.ClaimEvaluationPending, found.EvaluationStatus)
 		assert.Equal(t, "Speaker issue persists", found.IssueDescription)
 		require.NotNil(t, found.Notes)
 		assert.Equal(t, "Customer reported speaker is still muffled", *found.Notes)
 
 		// 3. UpdateClaim
-		repairAction := "Cleaned internal grill & replaced speaker unit"
-		c.Status = models.StatusRepairing
-		c.RepairAction = &repairAction
+		c.IssueDescription = "Cleaned internal grill & replaced speaker unit"
 
 		err = cmdRepo.UpdateClaim(ctx, c)
 		require.NoError(t, err)
@@ -146,20 +142,20 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 		found, err = queryRepo.FindClaimByID(ctx, claimID)
 		require.NoError(t, err)
 		require.NotNil(t, found)
-		assert.Equal(t, models.StatusRepairing, found.Status)
-		require.NotNil(t, found.RepairAction)
-		assert.Equal(t, "Cleaned internal grill & replaced speaker unit", *found.RepairAction)
+		assert.Equal(t, "Cleaned internal grill & replaced speaker unit", found.IssueDescription)
 
 		// 4. UpdateClaimEvaluation
 		evalNotes := "Authorized repair under warranty terms"
-		err = cmdRepo.UpdateClaimEvaluation(ctx, claimID, models.StatusCompleted, models.ClaimEvaluationAccepted, &evalNotes)
+		ticketRefID := ticketID
+		err = cmdRepo.UpdateClaimEvaluation(ctx, claimID, models.ClaimEvaluationAccepted, &evalNotes, &ticketRefID)
 		require.NoError(t, err)
 
 		found, err = queryRepo.FindClaimByID(ctx, claimID)
 		require.NoError(t, err)
 		require.NotNil(t, found)
-		assert.Equal(t, models.StatusCompleted, found.Status)
 		assert.Equal(t, models.ClaimEvaluationAccepted, found.EvaluationStatus)
+		require.NotNil(t, found.WarrantyTicketRefID)
+		assert.Equal(t, ticketRefID, *found.WarrantyTicketRefID)
 		require.NotNil(t, found.EvaluationNotes)
 		assert.Equal(t, "Authorized repair under warranty terms", *found.EvaluationNotes)
 	})
@@ -174,7 +170,6 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 				ID:               uuid.New().String(),
 				ClaimNumber:      "CLM-001",
 				WarrantyID:       warrID,
-				Status:           models.StatusReceived,
 				EvaluationStatus: models.ClaimEvaluationPending,
 				IssueDescription: "Broken screen",
 			},
@@ -182,7 +177,6 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 				ID:               uuid.New().String(),
 				ClaimNumber:      "CLM-002",
 				WarrantyID:       warrID,
-				Status:           models.StatusRepairing,
 				EvaluationStatus: models.ClaimEvaluationAccepted,
 				IssueDescription: "Speaker crackle",
 			},
@@ -193,8 +187,8 @@ func TestWarrantyRepository_Integration(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// 1. Filter by Status
-		list, nextCursor, err := queryRepo.FindAllClaims(ctx, string(models.StatusReceived), "", 10, "")
+		// 1. Filter by EvaluationStatus
+		list, nextCursor, err := queryRepo.FindAllClaims(ctx, string(models.ClaimEvaluationPending), "", 10, "")
 		require.NoError(t, err)
 		assert.Empty(t, nextCursor)
 		require.Len(t, list, 1)

@@ -21,42 +21,30 @@ type CreateClaimRequest struct {
 }
 
 type ClaimResponse struct {
-	ClaimID          string                       `json:"claim_id"`
-	ClaimNumber      string                       `json:"claim_number"`
-	WarrantyID       string                       `json:"warranty_id"`
-	Status           models.ServiceTicketStatus   `json:"status"`
-	EvaluationStatus models.ClaimEvaluationStatus `json:"evaluation_status"`
-	IssueDescription string                       `json:"issue_description"`
-	RepairAction     *string                      `json:"repair_action"`
-	Notes            *string                      `json:"notes,omitempty"`
-	EvaluationNotes  *string                      `json:"evaluation_notes,omitempty"`
-	CreatedAt        time.Time                    `json:"created_at"`
-	UpdatedAt        time.Time                    `json:"updated_at"`
+	ClaimID             string                       `json:"claim_id"`
+	ClaimNumber         string                       `json:"claim_number"`
+	WarrantyID          string                       `json:"warranty_id"`
+	WarrantyTicketRefID *string                      `json:"warranty_ticket_ref_id,omitempty"`
+	EvaluationStatus    models.ClaimEvaluationStatus `json:"evaluation_status"`
+	IssueDescription    string                       `json:"issue_description"`
+	Notes               *string                      `json:"notes,omitempty"`
+	EvaluationNotes     *string                      `json:"evaluation_notes,omitempty"`
+	CreatedAt           time.Time                    `json:"created_at"`
+	UpdatedAt           time.Time                    `json:"updated_at"`
 }
 
 type ClaimListResponse struct {
-	ClaimID          string                       `json:"claim_id"`
-	ClaimNumber      string                       `json:"claim_number"`
-	WarrantyID       string                       `json:"warranty_id"`
-	Status           models.ServiceTicketStatus   `json:"status"`
-	EvaluationStatus models.ClaimEvaluationStatus `json:"evaluation_status"`
-	IssueDescription string                       `json:"issue_description"`
-	CreatedAt        time.Time                    `json:"created_at"`
-}
-
-type ChangeClaimStatusRequest struct {
-	Status models.ServiceTicketStatus `json:"status" validate:"required,oneof=RECEIVED REPAIRING PENDING_CONFIRMATION FIXED COMPLETED CANCELLED RETURNED"`
-}
-
-type ClaimStatusResponse struct {
-	ClaimID   string                     `json:"claim_id"`
-	Status    models.ServiceTicketStatus `json:"status"`
-	UpdatedAt time.Time                  `json:"updated_at"`
+	ClaimID             string                       `json:"claim_id"`
+	ClaimNumber         string                       `json:"claim_number"`
+	WarrantyID          string                       `json:"warranty_id"`
+	WarrantyTicketRefID *string                      `json:"warranty_ticket_ref_id,omitempty"`
+	EvaluationStatus    models.ClaimEvaluationStatus `json:"evaluation_status"`
+	IssueDescription    string                       `json:"issue_description"`
+	CreatedAt           time.Time                    `json:"created_at"`
 }
 
 type UpdateClaimRequest struct {
 	IssueDescription string `json:"issue_description" validate:"required"`
-	RepairAction     string `json:"repair_action"`
 	Notes            string `json:"notes"`
 }
 
@@ -95,28 +83,27 @@ func MapToWarrantyResponse(w *models.Warranty) WarrantyResponse {
 
 func MapToClaimResponse(c *models.Claim) ClaimResponse {
 	return ClaimResponse{
-		ClaimID:          c.ID,
-		ClaimNumber:      c.ClaimNumber,
-		WarrantyID:       c.WarrantyID,
-		Status:           c.Status,
-		EvaluationStatus: c.EvaluationStatus,
-		IssueDescription: c.IssueDescription,
-		RepairAction:     c.RepairAction,
-		Notes:            c.Notes,
-		EvaluationNotes:  c.EvaluationNotes,
-		CreatedAt:        c.CreatedAt,
-		UpdatedAt:        c.UpdatedAt,
+		ClaimID:             c.ID,
+		ClaimNumber:         c.ClaimNumber,
+		WarrantyID:          c.WarrantyID,
+		WarrantyTicketRefID: c.WarrantyTicketRefID,
+		EvaluationStatus:    c.EvaluationStatus,
+		IssueDescription:    c.IssueDescription,
+		Notes:               c.Notes,
+		EvaluationNotes:     c.EvaluationNotes,
+		CreatedAt:           c.CreatedAt,
+		UpdatedAt:           c.UpdatedAt,
 	}
 }
 
 func MapToClaimListResponse(c models.ClaimSummary) ClaimListResponse {
 	return ClaimListResponse{
-		ClaimID:          c.ClaimID,
-		ClaimNumber:      c.ClaimNumber,
-		WarrantyID:       c.WarrantyID,
-		Status:           c.Status,
-		EvaluationStatus: c.EvaluationStatus,
-		IssueDescription: c.IssueDescription,
-		CreatedAt:        c.CreatedAt,
+		ClaimID:             c.ClaimID,
+		ClaimNumber:         c.ClaimNumber,
+		WarrantyID:          c.WarrantyID,
+		WarrantyTicketRefID: c.WarrantyTicketRefID,
+		EvaluationStatus:    c.EvaluationStatus,
+		IssueDescription:    c.IssueDescription,
+		CreatedAt:           c.CreatedAt,
 	}
 }

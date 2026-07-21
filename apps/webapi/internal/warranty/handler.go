@@ -84,35 +84,6 @@ func (h *Handler) GetClaimByID(c fiber.Ctx) error {
 	})
 }
 
-func (h *Handler) UpdateClaimStatus(c fiber.Ctx) error {
-	claimID := c.Params("claim_id")
-	if claimID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
-	}
-
-	var req ChangeClaimStatusRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid JSON format: "+err.Error())
-	}
-
-	if err := utils.ValidateStruct(req); err != nil {
-		return err
-	}
-
-	claim, err := h.service.UpdateClaimStatus(c.Context(), claimID, req.Status)
-	if err != nil {
-		return err
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data": ClaimStatusResponse{
-			ClaimID:   claim.ID,
-			Status:    claim.Status,
-			UpdatedAt: claim.UpdatedAt,
-		},
-	})
-}
-
 func (h *Handler) UpdateClaim(c fiber.Ctx) error {
 	claimID := c.Params("claim_id")
 	if claimID == "" {

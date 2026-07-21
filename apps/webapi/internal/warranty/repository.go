@@ -27,7 +27,7 @@ type CommandRepository interface {
 	UpdateWarrantyStatus(ctx context.Context, id string, status models.WarrantyStatus, notes *string) error
 	CreateClaim(ctx context.Context, c *models.Claim) error
 	UpdateClaim(ctx context.Context, c *models.Claim) error
-	UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error
+	UpdateClaimEvaluation(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, ticketRefID *string) error
 }
 
 type sqlQueryRepository struct {
@@ -150,8 +150,8 @@ func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id stri
 
 func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
 	query, args, err := r.psql.Insert("claims").
-		Columns("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
-		Values(c.ID, c.ClaimNumber, c.WarrantyID, c.Status, c.EvaluationStatus, c.IssueDescription, c.RepairAction, c.Notes, c.EvaluationNotes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
+		Columns("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
+		Values(c.ID, c.ClaimNumber, c.WarrantyID, c.WarrantyTicketRefID, c.EvaluationStatus, c.IssueDescription, c.Notes, c.EvaluationNotes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
 		ToSql()
 	if err != nil {
@@ -163,7 +163,7 @@ func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim)
 }
 
 func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
-	query, args, err := r.psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
 		From("claims").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -184,11 +184,11 @@ func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*mod
 }
 
 func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
-	queryBuilder := r.psql.Select("id", "claim_number", "warranty_id", "status", "evaluation_status", "issue_description", "repair_action", "notes", "evaluation_notes", "created_at", "updated_at").
+	queryBuilder := r.psql.Select("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
 		From("claims")
 
 	if status != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"status": status})
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"evaluation_status": status})
 	}
 
 	if search != "" {
@@ -232,6 +232,7 @@ func (r *sqlQueryRepository) FindClaimSummaryByID(ctx context.Context, id string
 	query, args, err := r.psql.Select(
 		"c.id as claim_id",
 		"c.claim_number",
+		"c.warranty_ticket_ref_id",
 		"w.id as warranty_id",
 		"w.status as warranty_status",
 		"st.id as ticket_id",
@@ -239,7 +240,6 @@ func (r *sqlQueryRepository) FindClaimSummaryByID(ctx context.Context, id string
 		"st.customer_name",
 		"st.device_brand",
 		"st.device_model",
-		"c.status",
 		"c.evaluation_status",
 		"c.issue_description",
 		"c.created_at",
@@ -269,6 +269,7 @@ func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status s
 	queryBuilder := r.psql.Select(
 		"c.id as claim_id",
 		"c.claim_number",
+		"c.warranty_ticket_ref_id",
 		"w.id as warranty_id",
 		"w.status as warranty_status",
 		"st.id as ticket_id",
@@ -276,7 +277,6 @@ func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status s
 		"st.customer_name",
 		"st.device_brand",
 		"st.device_model",
-		"c.status",
 		"c.evaluation_status",
 		"c.issue_description",
 		"c.created_at",
@@ -286,7 +286,7 @@ func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status s
 		Join("service_tickets st ON w.ticket_id = st.id")
 
 	if status != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"c.status": status})
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"c.evaluation_status": status})
 	}
 
 	if search != "" {
@@ -329,9 +329,7 @@ func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status s
 
 func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim) error {
 	query, args, err := r.psql.Update("claims").
-		Set("status", c.Status).
 		Set("issue_description", c.IssueDescription).
-		Set("repair_action", c.RepairAction).
 		Set("notes", c.Notes).
 		Set("updated_at", squirrel.Expr("NOW()")).
 		Where(squirrel.Eq{"id": c.ID}).
@@ -345,14 +343,15 @@ func (r *sqlCommandRepository) UpdateClaim(ctx context.Context, c *models.Claim)
 	return querier.QueryRowxContext(ctx, query, args...).Scan(&c.UpdatedAt)
 }
 
-func (r *sqlCommandRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, status models.ServiceTicketStatus, evalStatus models.ClaimEvaluationStatus, evalNotes *string) error {
-	query, args, err := r.psql.Update("claims").
-		Set("status", status).
+func (r *sqlCommandRepository) UpdateClaimEvaluation(ctx context.Context, claimID string, evalStatus models.ClaimEvaluationStatus, evalNotes *string, ticketRefID *string) error {
+	builder := r.psql.Update("claims").
 		Set("evaluation_status", evalStatus).
 		Set("evaluation_notes", evalNotes).
+		Set("warranty_ticket_ref_id", ticketRefID).
 		Set("updated_at", squirrel.Expr("NOW()")).
-		Where(squirrel.Eq{"id": claimID}).
-		ToSql()
+		Where(squirrel.Eq{"id": claimID})
+
+	query, args, err := builder.ToSql()
 	if err != nil {
 		return err
 	}
