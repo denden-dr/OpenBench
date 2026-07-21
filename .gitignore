@@ -30,3 +30,9 @@ __pycache__/
 .pnpm-store/
 .npm/
 .agents/scratch/
+.opencode/
+.agents/
+
+# Graphify
+.graphify/
+graphify-out/cache
