@@ -377,10 +377,8 @@ Digunakan untuk mendaftarkan HP kustomer ke antrean perbaikan (klaim garansi). H
     "claim_id": "c-9876-5432",
     "claim_number": "CLM-20260714-0001",
     "warranty_id": "w-5432-1098",
-    "status": "RECEIVED",
     "evaluation_status": "PENDING",
     "issue_description": "Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu",
-    "repair_action": null,
     "notes": null,
     "evaluation_notes": null,
     "created_at": "2026-07-14T09:00:00Z",
@@ -412,10 +410,8 @@ Digunakan teknisi untuk mengevaluasi apakah sebuah klaim disetujui (`ACCEPTED`),
     "claim_id": "c-9876-5432",
     "claim_number": "CLM-20260714-0001",
     "warranty_id": "w-5432-1098",
-    "status": "REPAIRING",
     "evaluation_status": "ACCEPTED",
     "issue_description": "Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu",
-    "repair_action": null,
     "notes": null,
     "evaluation_notes": "Kerusakan LCD memang cacat pabrik, ganti LCD baru gratis",
     "created_at": "2026-07-14T09:00:00Z",
@@ -431,14 +427,12 @@ Klaim garansi memiliki *lifecycle* (status) yang sama dengan tiket servis regule
 
 * **List Claims**: `GET /api/v1/admin/claims`
 * **Detail Claim**: `GET /api/v1/admin/claims/:claim_id`
-* **Ubah Status Perbaikan**: `PATCH /api/v1/admin/claims/:claim_id/status` (Payload: `{"status": "FIXED"}`)
 * **Update Teknisi (Info Perbaikan)**: `PUT /api/v1/admin/claims/:claim_id`
   *Payload:*
   ```json
   {
     "issue_description": "Layar sentuh tidak responsif...",
-    "repair_action": "Bongkar ulang dan pasang kembali konektor flexibel LCD yang kendor",
-    "notes": "Tidak ada penambahan biaya, konektor hanya kendor akibat tekanan"
+    "notes": "Keluhan tambahan: kadang baterai cepat habis saat sinyal lemah"
   }
   ```
 
