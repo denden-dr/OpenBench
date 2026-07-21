@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { TicketStatus } from '@/types/ticket'
 import type { Warranty, WarrantyClaim, WarrantyStatus, ClaimEvaluationStatus } from '@/types/warranty'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -21,7 +20,6 @@ import {
   ShieldAlert, 
   ShieldX, 
   Ban, 
-  SlidersHorizontal, 
   Settings, 
   ChevronLeft, 
   ChevronRight,
@@ -63,10 +61,9 @@ const initialClaims: WarrantyClaim[] = [
     claim_id: 'c-1',
     claim_number: 'CLM-20260714-0001',
     warranty_id: 'w-1',
-    status: 'RECEIVED',
+    warranty_ticket_ref_id: null,
     evaluation_status: 'PENDING',
     issue_description: 'Layar sentuh tidak responsif di bagian pojok kiri atas setelah diganti minggu lalu',
-    repair_action: null,
     notes: null,
     evaluation_notes: null,
     created_at: '2026-07-14T09:00:00Z',
@@ -76,10 +73,9 @@ const initialClaims: WarrantyClaim[] = [
     claim_id: 'c-2',
     claim_number: 'CLM-20260715-0002',
     warranty_id: 'w-1',
-    status: 'REPAIRING',
+    warranty_ticket_ref_id: 'tkt-repair-001',
     evaluation_status: 'ACCEPTED',
     issue_description: 'Speaker pecah suaranya setelah perbaikan modul audio',
-    repair_action: 'Ganti modul speaker internal baru',
     notes: 'Penggantian modul audio ditanggung garansi pengerjaan modul audio sebelumnya',
     evaluation_notes: 'Diterima, part digaransi penuh',
     created_at: '2026-07-15T11:00:00Z',
@@ -101,7 +97,6 @@ function WarrantyPage() {
   const [isVoidOpen, setIsVoidOpen] = useState(false)
   const [isClaimOpen, setIsClaimOpen] = useState(false)
   const [isEvaluateOpen, setIsEvaluateOpen] = useState(false)
-  const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isEditClaimOpen, setIsEditClaimOpen] = useState(false)
   
   // Selected items
@@ -114,11 +109,8 @@ function WarrantyPage() {
   const [evalStatus, setEvalStatus] = useState<ClaimEvaluationStatus>('ACCEPTED')
   const [evalNotes, setEvalNotes] = useState('')
   
-  const [claimStatus, setClaimStatus] = useState<TicketStatus>('RECEIVED')
-  
   const [editClaimData, setEditClaimData] = useState({
     issue_description: '',
-    repair_action: '',
     notes: ''
   })
 
@@ -173,21 +165,14 @@ function WarrantyPage() {
       claim_id: `c-${Math.random().toString(36).substr(2, 9)}`,
       claim_number: `CLM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
       warranty_id: foundWarranty.id,
-      status: 'RECEIVED',
+      warranty_ticket_ref_id: null,
       evaluation_status: 'PENDING',
       issue_description: claimIssue,
-      repair_action: null,
       notes: null,
       evaluation_notes: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
-
-    // Log the payload as per API contract
-    console.log('Sending Create Claim Payload:', {
-      ticket_number: searchedTicketNum,
-      issue_description: claimIssue
-    })
 
     setClaims([newClaim, ...claims])
     setIsClaimOpen(false)
@@ -214,7 +199,7 @@ function WarrantyPage() {
           ...c,
           evaluation_status: evalStatus,
           evaluation_notes: evalNotes,
-          status: evalStatus === 'ACCEPTED' ? ('REPAIRING' as TicketStatus) : c.status,
+          warranty_ticket_ref_id: evalStatus === 'ACCEPTED' ? `tkt-${Math.random().toString(36).substr(2, 6)}` : null,
           updated_at: new Date().toISOString()
         }
       }
@@ -251,26 +236,6 @@ function WarrantyPage() {
     setEvalNotes('')
   }
 
-  // Update Progres Perbaikan Status Logic
-  const handleStatusSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedClaim) return
-
-    setClaims(claims.map(c => {
-      if (c.claim_id === selectedClaim.claim_id) {
-        return {
-          ...c,
-          status: claimStatus,
-          updated_at: new Date().toISOString()
-        }
-      }
-      return c
-    }))
-
-    setIsStatusOpen(false)
-    setSelectedClaim(null)
-  }
-
   // Update claim info logic
   const handleEditClaimSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -281,7 +246,6 @@ function WarrantyPage() {
         return {
           ...c,
           issue_description: editClaimData.issue_description,
-          repair_action: editClaimData.repair_action,
           notes: editClaimData.notes,
           updated_at: new Date().toISOString()
         }
@@ -324,25 +288,6 @@ function WarrantyPage() {
         return <Badge className="bg-red-500/10 text-red-600 border-none font-semibold">REJECTED</Badge>
       case 'VOID':
         return <Badge className="bg-rose-950/20 text-rose-800 border-none font-semibold">VOID</Badge>
-    }
-  }
-
-  const getStatusBadge = (status: TicketStatus) => {
-    switch (status) {
-      case 'RECEIVED':
-        return <Badge className="bg-blue-500/10 text-blue-600 border-none font-semibold">DITERIMA</Badge>
-      case 'REPAIRING':
-        return <Badge className="bg-amber-500/10 text-amber-600 border-none font-semibold">DIPERBAIKI</Badge>
-      case 'PENDING_CONFIRMATION':
-        return <Badge className="bg-purple-500/10 text-purple-600 border-none font-semibold">BUTUH KONFIRMASI</Badge>
-      case 'FIXED':
-        return <Badge className="bg-indigo-500/10 text-indigo-600 border-none font-semibold">SELESAI DIKERJAKAN</Badge>
-      case 'COMPLETED':
-        return <Badge className="bg-green-500/10 text-green-600 border-none font-semibold">DIAMBIL (TUNTAS)</Badge>
-      case 'CANCELLED':
-        return <Badge className="bg-red-500/10 text-red-600 border-none font-semibold">DIBATALKAN</Badge>
-      case 'RETURNED':
-        return <Badge className="bg-slate-500/10 text-slate-600 border-none font-semibold">DIKEMBALIKAN (BATAL)</Badge>
     }
   }
 
@@ -505,7 +450,7 @@ function WarrantyPage() {
                     <TableHead className="w-24 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Warranty ID</TableHead>
                     <TableHead className="font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Issue Description</TableHead>
                     <TableHead className="w-32 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Evaluation Status</TableHead>
-                    <TableHead className="w-32 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Repair Status</TableHead>
+                    <TableHead className="w-40 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Warranty Ticket Ref</TableHead>
                     <TableHead className="text-center pr-6 w-36 font-bold uppercase tracking-wider text-xxs dark:text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -519,7 +464,15 @@ function WarrantyPage() {
                           {claim.issue_description}
                         </TableCell>
                         <TableCell>{getEvalBadge(claim.evaluation_status)}</TableCell>
-                        <TableCell>{getStatusBadge(claim.status)}</TableCell>
+                        <TableCell>
+                          {claim.warranty_ticket_ref_id ? (
+                            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                              {claim.warranty_ticket_ref_id}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-center pr-6">
                           <div className="flex items-center justify-center gap-1">
                             {/* Evaluation Action */}
@@ -536,38 +489,22 @@ function WarrantyPage() {
                                 Evaluate
                               </Button>
                             ) : (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
-                                  title="Update Progress Status"
-                                  onClick={() => {
-                                    setSelectedClaim(claim)
-                                    setClaimStatus(claim.status)
-                                    setIsStatusOpen(true)
-                                  }}
-                                >
-                                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
-                                  title="Update Technician Info"
-                                  onClick={() => {
-                                    setSelectedClaim(claim)
-                                    setEditClaimData({
-                                      issue_description: claim.issue_description,
-                                      repair_action: claim.repair_action || '',
-                                      notes: claim.notes || ''
-                                    })
-                                    setIsEditClaimOpen(true)
-                                  }}
-                                >
-                                  <Settings className="w-3.5 h-3.5" />
-                                </Button>
-                              </>
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                className="h-7 w-7 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
+                                title="Edit Claim Notes"
+                                onClick={() => {
+                                  setSelectedClaim(claim)
+                                  setEditClaimData({
+                                    issue_description: claim.issue_description,
+                                    notes: claim.notes || ''
+                                  })
+                                  setIsEditClaimOpen(true)
+                                }}
+                              >
+                                <Settings className="w-3.5 h-3.5" />
+                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -740,47 +677,6 @@ function WarrantyPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Update Status */}
-      <Dialog open={isStatusOpen} onOpenChange={(open) => {
-        setIsStatusOpen(open)
-        if(!open) setSelectedClaim(null)
-      }}>
-        <DialogContent className="max-w-sm">
-          <form onSubmit={handleStatusSubmit}>
-            <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Update Repair Status</DialogTitle>
-              <DialogDescription className="text-slate-500 dark:text-slate-400">
-                Modify lifecycle status for claim <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{selectedClaim?.claim_number}</span>.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Status</label>
-                <select 
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  value={claimStatus}
-                  onChange={(e) => setClaimStatus(e.target.value as TicketStatus)}
-                >
-                  <option value="RECEIVED">DITERIMA (RECEIVED)</option>
-                  <option value="REPAIRING">DIPERBAIKI (REPAIRING)</option>
-                  <option value="PENDING_CONFIRMATION">BUTUH KONFIRMASI (PENDING CONFIRMATION)</option>
-                  <option value="FIXED">SELESAI DIKERJAKAN (FIXED)</option>
-                  <option value="COMPLETED">DIAMBIL (COMPLETED)</option>
-                  <option value="CANCELLED">DIBATALKAN (CANCELLED)</option>
-                  <option value="RETURNED">DIKEMBALIKAN (RETURNED)</option>
-                </select>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
-              <Button type="button" variant="outline" className="cursor-pointer" onClick={() => setIsStatusOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-primary hover:bg-secondary cursor-pointer">Update Status</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Dialog: Update Claim Details */}
       <Dialog open={isEditClaimOpen} onOpenChange={(open) => {
         setIsEditClaimOpen(open)
@@ -789,9 +685,9 @@ function WarrantyPage() {
         <DialogContent className="max-w-md">
           <form onSubmit={handleEditClaimSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Update Repair Info</DialogTitle>
+              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-slate-100">Update Claim Info</DialogTitle>
               <DialogDescription className="text-slate-500 dark:text-slate-400">
-                Edit repair data for claim <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{selectedClaim?.claim_number}</span>.
+                Edit claim issue and notes for <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{selectedClaim?.claim_number}</span>.
               </DialogDescription>
             </DialogHeader>
 
@@ -801,25 +697,15 @@ function WarrantyPage() {
                 <Input 
                   required
                   value={editClaimData.issue_description}
-                  onChange={(e) => setEditClaimData({...editClaimData, issue_description: e.target.value})}
+                  onChange={(e) => setEditClaimData({ ...editClaimData, issue_description: e.target.value })}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Repair Action</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Notes</label>
                 <Input 
-                  placeholder="e.g. Reconnected LCD flexible connector"
-                  value={editClaimData.repair_action}
-                  onChange={(e) => setEditClaimData({...editClaimData, repair_action: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Notes (Technician)</label>
-                <Input 
-                  placeholder="e.g. Audio checked, no parts replaced"
                   value={editClaimData.notes}
-                  onChange={(e) => setEditClaimData({...editClaimData, notes: e.target.value})}
+                  onChange={(e) => setEditClaimData({ ...editClaimData, notes: e.target.value })}
                 />
               </div>
             </div>

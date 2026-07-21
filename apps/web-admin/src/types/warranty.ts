@@ -1,5 +1,3 @@
-import type { TicketStatus } from './ticket'
-
 export type WarrantyStatus = 'ACTIVE' | 'VOID' | 'EXPIRED'
 
 export type ClaimEvaluationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'VOID'
@@ -17,10 +15,9 @@ export interface WarrantyClaim {
   claim_id: string
   claim_number: string
   warranty_id: string
-  status: TicketStatus
+  warranty_ticket_ref_id?: string | null
   evaluation_status: ClaimEvaluationStatus
   issue_description: string
-  repair_action: string | null
   notes: string | null
   evaluation_notes: string | null
   created_at: string
