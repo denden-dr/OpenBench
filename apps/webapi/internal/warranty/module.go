@@ -1,23 +1,15 @@
 package warranty
 
-import (
-	"github.com/denden-dr/OpenBench/internal/database"
-	"github.com/jmoiron/sqlx"
-)
-
 // Module encapsulates the external-facing handlers and services of the warranty package.
 type Module struct {
-	Handler    *Handler
-	Service    Service
+	Handler *Handler
+	Service Service
 }
 
-// NewModule initializes the entire warranty domain layer.
-func NewModule(db *sqlx.DB, txManager database.TxManager) Module {
-	qr := NewQueryRepository(db)
-	cr := NewCommandRepository(db)
-	svc := NewService(qr, cr, txManager)
+// NewModule initializes the warranty module with a ready service.
+func NewModule(svc Service) Module {
 	return Module{
-		Handler:    NewHandler(svc),
-		Service:    svc,
+		Handler: NewHandler(svc),
+		Service: svc,
 	}
 }
