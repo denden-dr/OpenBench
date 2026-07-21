@@ -2,10 +2,8 @@ package ticket
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/denden-dr/OpenBench/internal/database"
 	"github.com/denden-dr/OpenBench/internal/events"
@@ -61,7 +59,7 @@ func NewService(
 }
 
 func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (TicketResponse, error) {
-	ticketNum, err := s.generateTicketNumber()
+	ticketNum, err := GenerateTicketNumber()
 	if err != nil {
 		return TicketResponse{}, err
 	}
@@ -381,18 +379,7 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 	return res, nil
 }
 
-func (s *service) generateTicketNumber() (string, error) {
-	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, 4)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	for i := range b {
-		b[i] = charset[int(b[i])%len(charset)]
-	}
-	dateStr := time.Now().Format("20060102")
-	return fmt.Sprintf("TKT-%s-%s", dateStr, string(b)), nil
-}
+
 
 func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.ServiceTicket) error {
 	if ticket.WarrantyDays > 0 {
