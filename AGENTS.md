@@ -1,12 +1,13 @@
 # OpenBench — Agent Guide
 
-Monorepo with 3 apps under `apps/`:
+Monorepo with 4 apps under `apps/`:
 
 | app | stack | entrypoint |
 |-----|-------|------------|
 | `webapi` | Go 1.26, Fiber v3, sqlx+pgx, golang-migrate | `cmd/server/main.go` |
 | `web-user` | React 19, Vite, Tailwind v4, oxlint | `src/main.tsx` |
 | `web-admin` | React 19, Vite, Tailwind v4, shadcn/ui (base-nova), zustand, react-router, oxlint | `src/main.tsx` |
+| `e2e-testing` | Playwright, standalone (no framework) | `tests/*.spec.ts` |
 
 ## Commands
 
@@ -20,6 +21,7 @@ All via `make` from repo root:
 | `make test-api` | `go test -v ./...` (unit only) |
 | `make test-integration` | `go test -v -tags=integration ./...` (needs Docker/Podman, uses testcontainers) |
 | `make test-admin` | `pnpm test` (vitest, `apps/web-admin`) |
+| `make test-e2e` | Runs full E2E suite via `scripts/test-e2e.sh` (spins up containerized stack, runs Playwright, tears down) |
 | `make build-all` | Go binary + both Vite builds |
 | `make lint-api` | `golangci-lint run` |
 | `make lint-user` / `make lint-admin` | `oxlint` |
@@ -53,7 +55,7 @@ Cross-cutting:
 - `internal/apierrors` — RFC 7807 Problem Details error format
 - `internal/auth` — JWT (access + refresh) via cookie `access_token` + `Authorization: Bearer` header; rate limiter on login (5/min per IP)
 
-### API routes (`cmd/server/routes_api.go`)
+### API routes (`cmd/server/routes.go`)
 
 | prefix | auth | notes |
 |--------|------|-------|
@@ -73,6 +75,17 @@ Routes under `admin`: `/services`, `/warranties`, `/claims`, `/products`, `/pos`
 - VSCode `gopls` already configured with `-tags=integration` in `.vscode/settings.json`
 - Integration test files: `*_integration_test.go` (in `auth/`, `ticket/`)
 
+## E2E Testing
+
+- Standalone Playwright app at `apps/e2e-testing/`
+- Dedicated test stack defined in `docker-compose.test.yml` at repo root
+- Orchestration logic lives in `scripts/test-e2e.sh` (not in the Makefile)
+- Stack boots in order: `postgres-test` → migrate → seed → `webapi-test` → `web-admin-test` / `web-user-test`
+- Database is ephemeral — no volume, all data is lost on teardown
+- `APP_ENV=testing` in the test stack; the auth rate-limiter is raised to 1000 req/min
+- Default seeded admin: `admin@openbench.com` / `secretpassword123`
+- Run with: `make test-e2e`
+
 ## Frontend
 
 - `@/` path alias → `src/` in web-admin (both vite and vitest config)
@@ -90,6 +103,7 @@ Routes under `admin`: `/services`, `/warranties`, `/claims`, `/products`, `/pos`
 - `.env.example` has the canonical list of required env vars
 - No root `package.json` or workspace — each frontend is standalone
 - Integration tests need Docker/Podman running
+- E2E orchestration scripts live in `scripts/` — keep Makefile targets thin (one-liners only)
 
 ## graphify
 

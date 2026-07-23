@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: docker.io/library/postgres:16-alpine
+    container_name: openbench-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: openbench_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d openbench_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  migrate-test:
+    image: docker.io/migrate/migrate:v4.18.2
+    container_name: openbench-migrate-test
+    volumes:
+      - ./apps/webapi/migrations:/migrations:Z
+    command:
+      - -path=/migrations
+      - -database
+      - postgres://postgres:postgres@postgres-test:5432/openbench_test?sslmode=disable
+      - up
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+  seed-test:
+    build:
+      context: ./apps/webapi
+      dockerfile: Dockerfile
+    image: localhost/openbench_webapi-test:latest
+    container_name: openbench-seed-test
+    command: ./seed
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: openbench_test
+      DB_SSLMODE: disable
+      APP_ENCRYPTION_KEY: "12345678901234567890123456789012"
+      JWT_ACCESS_SECRET: "test-access-secret-key-1234567890"
+      JWT_REFRESH_SECRET: "test-refresh-secret-key-1234567890"
+      APP_ENV: testing
+      TEST_NO_ENV_FILE: "true"
+    depends_on:
+      migrate-test:
+        condition: service_completed_successfully
+
+  webapi-test:
+    build:
+      context: ./apps/webapi
+      dockerfile: Dockerfile
+    container_name: openbench-webapi-test
+    command: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: openbench_test
+      DB_SSLMODE: disable
+      APP_PORT: 3000
+      APP_ENV: testing
+      APP_ENCRYPTION_KEY: "12345678901234567890123456789012"
+      JWT_ACCESS_SECRET: "test-access-secret-key-1234567890"
+      JWT_REFRESH_SECRET: "test-refresh-secret-key-1234567890"
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
+      TEST_NO_ENV_FILE: "true"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  web-admin-test:
+    build:
+      context: ./apps/web-admin
+      dockerfile: Dockerfile.test
+    container_name: openbench-web-admin-test
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://webapi-test:3000
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+  web-user-test:
+    build:
+      context: ./apps/web-user
+      dockerfile: Dockerfile.test
+    container_name: openbench-web-user-test
+    ports:
+      - "5174:5174"
+    environment:
+      VITE_API_TARGET: http://webapi-test:3000
+    depends_on:
+      postgres-test:
+        condition: service_healthy

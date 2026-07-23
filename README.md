@@ -24,6 +24,7 @@ OpenBench dibangun di atas fondasi teknologi *Micro Frontends* dan *Web API* mod
 - **UI Design System**: Menggunakan [Tailwind CSS v4](https://tailwindcss.com/) dengan palet estetika *Glassmorphism*, font kustom mandiri (*self-hosted*), dan standar ikon Lucide.
 - **Database**: [PostgreSQL 16](https://www.postgresql.org/) dengan akses melalui `sqlx` dan `pgx/v5` (mendukung *atomic transactions*).
 - **Infrastruktur**: Database dikelola menggunakan Podman/Docker Compose, dan *Integration Test* didukung oleh ekosistem *Testcontainers*.
+- **E2E Testing**: Aplikasi standalone `apps/e2e-testing` berbasis [Playwright](https://playwright.dev/), dijalankan terhadap stack terisolasi menggunakan `docker-compose.test.yml` khusus pengujian.
 
 ---
 
@@ -77,10 +78,23 @@ OpenBench dibangun di atas fondasi teknologi *Micro Frontends* dan *Web API* mod
      ```
 
 5. **Menjalankan Build & Pengujian**
-   Untuk melakukan proses pengujian (unit testing) pada backend:
+
+   Untuk melakukan proses pengujian *unit* pada backend:
    ```bash
    make test-api
    ```
+
+   Untuk pengujian *unit* pada frontend admin (Vitest):
+   ```bash
+   make test-admin
+   ```
+
+   Untuk menjalankan **E2E Test** secara lengkap (otomatis spin up stack, jalankan Playwright, lalu teardown):
+   ```bash
+   make test-e2e
+   ```
+   *(Membutuhkan Podman berjalan. Stack pengujian `docker-compose.test.yml` dikelola sepenuhnya oleh `scripts/test-e2e.sh`.)*
+
    Untuk mem-*build* file binary Go dan proses kompilasi Vite untuk kedua frontend:
    ```bash
    make build-all
