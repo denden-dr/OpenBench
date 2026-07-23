@@ -41,5 +41,18 @@ export const ticketService = {
   async updateTicketDetails(id: string, data: UpdateTicketDetailsRequest): Promise<TicketDetail> {
     const response = await api.put<TicketDetailResponse>(`/admin/services/${id}`, data)
     return response.data.data
+  },
+
+  async searchTickets(data: {
+    search?: string
+    start_date?: string
+    end_date?: string
+    exact_date?: string
+    is_active?: boolean
+    limit?: number
+    cursor?: string
+  }): Promise<TicketListResponse> {
+    const response = await api.post<TicketListResponse>('/admin/services/search', data)
+    return response.data
   }
 }
