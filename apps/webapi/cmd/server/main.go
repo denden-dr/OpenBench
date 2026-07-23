@@ -6,6 +6,7 @@ import (
 
 	"github.com/denden-dr/OpenBench/config"
 	"github.com/denden-dr/OpenBench/internal/auth"
+	"github.com/denden-dr/OpenBench/internal/dashboard"
 	"github.com/denden-dr/OpenBench/internal/database"
 	"github.com/denden-dr/OpenBench/internal/events"
 	"github.com/denden-dr/OpenBench/internal/inventory"
@@ -85,9 +86,10 @@ func main() {
 	ticketMod := ticket.NewModule(ticketSvc)
 	inventoryMod := inventory.NewModule(invSvc, invQR, invCR)
 	posMod := pos.NewModule(posSvc)
+	dashboardMod := dashboard.NewModule(db)
 
 	app := newFiberApp(cfg)
 
-	registerRoutes(app, cfg, db, authMod, warrantyMod, ticketMod, inventoryMod, posMod)
+	registerRoutes(app, cfg, db, authMod, warrantyMod, ticketMod, inventoryMod, posMod, dashboardMod)
 	listenAndServe(app, cfg.App.Port)
 }

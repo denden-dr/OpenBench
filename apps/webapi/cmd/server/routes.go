@@ -5,6 +5,7 @@ import (
 
 	"github.com/denden-dr/OpenBench/config"
 	"github.com/denden-dr/OpenBench/internal/auth"
+	"github.com/denden-dr/OpenBench/internal/dashboard"
 	"github.com/denden-dr/OpenBench/internal/health"
 	"github.com/denden-dr/OpenBench/internal/inventory"
 	"github.com/denden-dr/OpenBench/internal/pos"
@@ -25,6 +26,7 @@ func registerRoutes(
 	ticketMod ticket.Module,
 	inventoryMod inventory.Module,
 	posMod pos.Module,
+	dashboardMod dashboard.Module,
 ) {
 	healthHandler := health.NewHealthHandler(db)
 
@@ -104,4 +106,8 @@ func registerRoutes(
 	posGroup.Post("/checkout", posMod.Handler.Checkout)
 	posGroup.Get("/transactions", posMod.Handler.GetTransactions)
 	posGroup.Get("/transactions/:id", posMod.Handler.GetTransactionByID)
+
+	// Dashboard Routes
+	dbGroup := adminGroup.Group("/dashboard")
+	dbGroup.Get("/", dashboardMod.Handler.GetDashboard)
 }

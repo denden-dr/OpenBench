@@ -621,3 +621,41 @@ Mendapatkan profil pengguna yang sedang login berdasarkan cookie authentication 
 }
 ```
 
+---
+
+## 6. Dashboard Metrics & Insights
+
+### A. Mendapatkan Data Dashboard & Metrik Real-time
+Endpoint ini digunakan untuk memuat ringkasan statistik harian bengkel serta daftar tiket terbaru untuk ditampilkan pada dashboard utama admin.
+
+* **URL**: `/api/v1/admin/dashboard`
+* **Method**: `GET`
+* **Request Headers**: *Browser otomatis mengirim cookie `access_token`*
+
+* **Response (200 OK)**:
+```json
+{
+  "data": {
+    "metrics": {
+      "active_tickets": 14,
+      "pending_diagnoses": 5,
+      "sales_today": 849000,
+      "active_warranties": 142
+    },
+    "recent_tickets": [
+      {
+        "ticket_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "ticket_number": "TKT-20260707-1234",
+        "status": "RECEIVED",
+        "customer_name": "Budi Santoso",
+        "device_brand": "Samsung",
+        "device_model": "Galaxy S23",
+        "cost": 1500000,
+        "created_at": "2026-07-07T12:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+
