@@ -38,3 +38,48 @@ export interface POSCheckoutRequest {
   payment_method: PaymentMethod
   items: POSCheckoutRequestItem[]
 }
+
+// --- API Response wrapper types ---
+
+export interface ProductResponse {
+  data: Product
+}
+
+export interface ProductListResponse {
+  data: Product[]
+  meta: PaginationMeta
+}
+
+export interface TransactionResponse {
+  data: POSTransaction
+}
+
+export interface TransactionListResponse {
+  data: POSTransaction[]
+  meta: PaginationMeta
+}
+
+// --- Request types matching backend contract ---
+
+export interface CreateProductRequest {
+  name: string
+  price: number
+  stock: number
+}
+
+export interface UpdateProductRequest {
+  name: string
+  price: number
+  stock: number
+}
+
+export interface AdjustStockRequest {
+  quantity_change: number
+}
+
+// --- Pagination (shared) ---
+
+export interface PaginationMeta {
+  limit: number
+  next_cursor?: string
+}

@@ -31,8 +31,13 @@ func registerRoutes(
 	// Global Public Health Route
 	app.Get("/health", healthHandler.HealthCheckPublic)
 
+	maxRequests := 5
+	if cfg.App.Env == "testing" {
+		maxRequests = 1000
+	}
+
 	authLimiter := limiter.New(limiter.Config{
-		Max:        5,
+		Max:        maxRequests,
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c fiber.Ctx) string {
 			return c.IP()
@@ -74,6 +79,7 @@ func registerRoutes(
 	// Warranty Routes
 	warrGroup := adminGroup.Group("/warranties")
 	warrGroup.Get("/by-ticket/:ticket_id", warrantyMod.Handler.GetWarrantyByTicketID)
+	warrGroup.Get("/by-ticket-number/:ticket_number", warrantyMod.Handler.GetWarrantyByTicketNumber)
 	warrGroup.Patch("/:warranty_id/status", warrantyMod.Handler.UpdateWarrantyStatus)
 
 	// Claim Routes

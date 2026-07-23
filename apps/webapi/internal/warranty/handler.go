@@ -134,6 +134,22 @@ func (h *Handler) EvaluateClaim(c fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) GetWarrantyByTicketNumber(c fiber.Ctx) error {
+	ticketNumber, err := getTicketNumber(c)
+	if err != nil {
+		return err
+	}
+
+	w, err := h.service.GetWarrantyByTicketNumber(c.Context(), ticketNumber)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data": MapToWarrantyResponse(w),
+	})
+}
+
 func (h *Handler) UpdateWarrantyStatus(c fiber.Ctx) error {
 	warrantyID, err := getWarrantyID(c)
 	if err != nil {
@@ -173,6 +189,14 @@ func getClaimID(c fiber.Ctx) (string, error) {
 		return "", fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
 	}
 	return claimID, nil
+}
+
+func getTicketNumber(c fiber.Ctx) (string, error) {
+	ticketNumber := c.Params("ticket_number")
+	if ticketNumber == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Ticket number is required.")
+	}
+	return ticketNumber, nil
 }
 
 func getWarrantyID(c fiber.Ctx) (string, error) {
