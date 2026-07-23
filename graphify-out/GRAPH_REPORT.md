@@ -1,16 +1,16 @@
 # Graph Report - OpenBench  (2026-07-23)
 
 ## Corpus Check
-- 200 files · ~69,691 words
+- 208 files · ~102,396 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2932 nodes · 5839 edges · 206 communities (133 shown, 73 thin omitted)
+- 2948 nodes · 5853 edges · 208 communities (134 shown, 74 thin omitted)
 - Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 524 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fc207b74`
+- Built from commit: `3d4894d9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -152,6 +152,7 @@
 - [[_COMMUNITY_Community 146|Community 146]]
 - [[_COMMUNITY_Community 147|Community 147]]
 - [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
 - [[_COMMUNITY_Community 150|Community 150]]
 - [[_COMMUNITY_Community 151|Community 151]]
 - [[_COMMUNITY_Community 152|Community 152]]
@@ -169,7 +170,6 @@
 - [[_COMMUNITY_Community 164|Community 164]]
 - [[_COMMUNITY_Community 165|Community 165]]
 - [[_COMMUNITY_Community 166|Community 166]]
-- [[_COMMUNITY_Community 167|Community 167]]
 - [[_COMMUNITY_Community 168|Community 168]]
 - [[_COMMUNITY_Community 169|Community 169]]
 - [[_COMMUNITY_Community 170|Community 170]]
@@ -195,7 +195,10 @@
 - [[_COMMUNITY_Community 190|Community 190]]
 - [[_COMMUNITY_Community 191|Community 191]]
 - [[_COMMUNITY_Community 192|Community 192]]
+- [[_COMMUNITY_Community 193|Community 193]]
+- [[_COMMUNITY_Community 194|Community 194]]
 - [[_COMMUNITY_Community 195|Community 195]]
+- [[_COMMUNITY_Community 196|Community 196]]
 - [[_COMMUNITY_Community 197|Community 197]]
 - [[_COMMUNITY_Community 198|Community 198]]
 - [[_COMMUNITY_Community 199|Community 199]]
@@ -204,7 +207,6 @@
 - [[_COMMUNITY_Community 203|Community 203]]
 - [[_COMMUNITY_Community 207|Community 207]]
 - [[_COMMUNITY_Community 209|Community 209]]
-- [[_COMMUNITY_Community 210|Community 210]]
 - [[_COMMUNITY_Community 212|Community 212]]
 - [[_COMMUNITY_Community 214|Community 214]]
 
@@ -284,7 +286,7 @@
 - **Frontend Authentication Tests** — webadmin_loginpage_test, webadmin_protectedroute_test, concept_frontend_auth [EXTRACTED 1.00]
 - **PRD to API Contract Design Flow** — docs_prd, docs_api_contract, concept_service_ticket_domain, concept_warranty_domain, concept_pos_domain, concept_auth_domain [INFERRED 0.85]
 
-## Communities (206 total, 73 thin omitted)
+## Communities (208 total, 74 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.08
@@ -315,8 +317,8 @@ Cohesion: 0.16
 Nodes (9): NewMiddleware(), BenchmarkNewMiddleware(), TestNewMiddleware(), TestNewMiddleware_ExistingRequestID(), main(), listenAndServe(), newFiberApp(), Generator (+1 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.18
-Nodes (6): sqlCommandRepository, sqlQueryRepository, sqlCommandRepository, GetQuerier(), sqlCommandRepository, sqlCommandRepository
+Cohesion: 0.15
+Nodes (7): sqlCommandRepository, sqlQueryRepository, sqlCommandRepository, GetQuerier(), sqlCommandRepository, sqlCommandRepository, sqlCommandRepository
 
 ### Community 9 - "Community 9"
 Cohesion: 0.20
@@ -367,7 +369,7 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+11 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (8): applyCursorPagination(), buildNextCursor(), DecodeCursor(), EncodeCursor(), BenchmarkDecodeCursor(), BenchmarkEncodeCursor(), TestCursorEncodingDecoding(), TestCursorInvalidDecoding()
 
 ### Community 22 - "Community 22"
@@ -419,8 +421,8 @@ Cohesion: 0.15
 Nodes (12): devDependencies, @playwright/test, @types/node, typescript, name, private, scripts, test (+4 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.12
-Nodes (21): al(), cs(), ct, fr, gr(), Ho(), Ja(), jb() (+13 more)
+Cohesion: 0.16
+Nodes (12): g_(), gT(), kT(), kv(), mv(), pt(), Qo, Tc() (+4 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.22
@@ -436,7 +438,7 @@ Nodes (7): LoginResponse, RefreshResponse, UserProfileResponse, CommandRepositor
 
 ### Community 38 - "Community 38"
 Cohesion: 0.02
-Nodes (117): _0, a2(), aA, ab, aE(), b0, bb, bc() (+109 more)
+Nodes (91): aA, ab, av(), b0, bb, Bh(), bn, bx() (+83 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.33
@@ -479,8 +481,8 @@ Cohesion: 0.50
 Nodes (4): TypeScript App Config, TypeScript Node Config, TypeScript Root Config, Vite Build Configuration
 
 ### Community 54 - "Community 54"
-Cohesion: 0.11
-Nodes (14): CreateTicketParams, NewServiceTicket, ServiceTicket, ServiceTicketStatus, CleanTable, SetupTestDatabase, CommandRepository, CreateTicketRequest (+6 more)
+Cohesion: 0.13
+Nodes (13): CreateTicketParams, NewServiceTicket, ServiceTicket, ServiceTicketStatus, CleanTable, SetupTestDatabase, CommandRepository, CreateTicketRequest (+5 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.67
@@ -491,24 +493,24 @@ Cohesion: 0.67
 Nodes (3): Event, TicketCompletedEvent, TicketCompletedType
 
 ### Community 65 - "Community 65"
-Cohesion: 0.06
-Nodes (21): aT(), b_(), bv(), e_(), Er(), f_, Gx(), I0() (+13 more)
+Cohesion: 0.08
+Nodes (15): aT(), b_(), bv(), e_(), Er(), I0(), i2(), os() (+7 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.18
-Nodes (13): ed(), jx(), kx(), Lx(), Mx(), Nx(), Ox(), Sx() (+5 more)
+Cohesion: 0.09
+Nodes (20): ed(), Gx(), iE(), jx(), kx(), Lx(), Mx(), Nx() (+12 more)
 
 ### Community 102 - "Community 102"
 Cohesion: 0.08
 Nodes (35): Docker Compose PostgreSQL, Arsitektur Teknis, code:bash (cp apps/webapi/.env.example apps/webapi/.env), code:bash (make build-all), code:bash (make down), code:bash (curl http://localhost:3000/health), code:json ({), code:bash (make install-api) (+27 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.10
-Nodes (10): d_(), dt(), j2(), r_, sl(), _t, z0, c (+2 more)
+Cohesion: 0.13
+Nodes (8): d_(), j2(), r_, sl(), z0, c, N, o
 
 ### Community 104 - "Community 104"
 Cohesion: 0.14
-Nodes (14): 1. Service Tickets (Pencatatan Servis), A. Membuat Tiket Servis Baru, B. Mendapatkan Daftar Tiket Servis, C. Mendapatkan Detail Tiket Servis, code:json ({), code:json ({), code:json ({), code:json ({) (+6 more)
+Nodes (14): 1. Service Tickets (Pencatatan Servis), A. Membuat Tiket Servis Baru, B2. Pencarian Lanjutan Tiket Servis (Advanced Search), B. Mendapatkan Daftar Tiket Servis, C. Mendapatkan Detail Tiket Servis, code:json ({), code:json ({), code:json ({) (+6 more)
 
 ### Community 105 - "Community 105"
 Cohesion: 0.14
@@ -531,16 +533,16 @@ Cohesion: 0.28
 Nodes (6): AppConfig, findProjectRoot(), Load(), TestLoad(), TestLoad_Validation(), Config
 
 ### Community 110 - "Community 110"
-Cohesion: 0.12
-Nodes (21): Ah(), bS, cc(), Et, gC, hs, iC(), kc() (+13 more)
+Cohesion: 0.08
+Nodes (38): ac(), Ah(), bS, cc(), Ec(), Et, fc(), gC (+30 more)
 
 ### Community 111 - "Community 111"
 Cohesion: 0.22
 Nodes (7): ContextHandler, contextKey, InitLogger, InitLogger(), middleware_test, NewMiddleware, RequestIDKey
 
 ### Community 112 - "Community 112"
-Cohesion: 0.08
-Nodes (24): bT(), dc(), Dh(), fT(), gh, gn(), hv(), kb() (+16 more)
+Cohesion: 0.05
+Nodes (42): br(), bT(), dc(), Dh(), dv(), fE(), fl(), fv() (+34 more)
 
 ### Community 113 - "Community 113"
 Cohesion: 0.15
@@ -572,7 +574,7 @@ Nodes (25): ClaimsQueueTableProps, CreateClaimDialogProps, EditClaimDialogProps,
 
 ### Community 122 - "Community 122"
 Cohesion: 0.08
-Nodes (5): close(), Mh, moveTo(), show(), zb()
+Nodes (6): close(), Mh, moveTo(), show(), zb(), Zy()
 
 ### Community 123 - "Community 123"
 Cohesion: 0.38
@@ -584,39 +586,39 @@ Nodes (7): cs(), ki, li, ls(), qe(), Vi(), yi
 
 ### Community 125 - "Community 125"
 Cohesion: 0.14
-Nodes (11): __, ac(), Ix(), q0(), s_, Sc(), vc(), w_ (+3 more)
+Nodes (9): __, Ix(), q0(), s_, Sc(), vc(), w_, We() (+1 more)
 
 ### Community 126 - "Community 126"
-Cohesion: 0.10
-Nodes (10): Eo(), Fn(), go(), lt(), Mt(), _r, $s(), tr (+2 more)
+Cohesion: 0.08
+Nodes (13): dr, Eo(), Fn(), go(), lt(), Mt(), _r, read_buf() (+5 more)
 
 ### Community 127 - "Community 127"
-Cohesion: 0.08
-Nodes (20): i_, k_(), l_, ls, nw(), q2(), A, Ce (+12 more)
+Cohesion: 0.05
+Nodes (46): Ax(), c2(), ct, dl(), Do(), dt(), f_, hl() (+38 more)
 
 ### Community 132 - "Community 132"
 Cohesion: 0.09
 Nodes (3): pr, X2, y2()
 
 ### Community 133 - "Community 133"
-Cohesion: 0.10
-Nodes (22): ao(), B(), ba(), be(), co(), De(), fi(), fo() (+14 more)
+Cohesion: 0.09
+Nodes (25): u_(), ao(), B(), ba(), be(), co(), De(), fi() (+17 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.32
-Nodes (3): InventoryStockWriter, Service, validateCheckoutRequest()
+Cohesion: 0.31
+Nodes (4): InventoryStockWriter, Service, validateCheckoutRequest(), service impl (pos)
 
 ### Community 135 - "Community 135"
 Cohesion: 0.05
 Nodes (36): 1. Ringkasan Arsitektur Testing, 2.1 Go Unit Test (`make test-api`), 2.2 Go Integration Test (`make test-integration`), 2.3 Frontend Unit Test (`cd apps/web-admin && pnpm test`), 2.4 E2E Test (`make test-e2e`), 2. Cara Kerja Masing-masing Lapisan, 3.1 Linting, 3.2 CI/CD (+28 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.08
-Nodes (13): bs(), dr, dt(), fa, gs(), ha, pa(), read_buf() (+5 more)
+Cohesion: 0.09
+Nodes (9): bs(), dt(), fa, gs(), ha, pa(), Ts, ua (+1 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.09
-Nodes (42): af(), ef(), ff(), hf, Ja(), lf(), mt(), nf() (+34 more)
+Cohesion: 0.12
+Nodes (34): af(), ef(), ff(), hf, Ja(), lf(), mt(), nf() (+26 more)
 
 ### Community 139 - "Community 139"
 Cohesion: 0.17
@@ -635,7 +637,7 @@ Cohesion: 0.26
 Nodes (3): f0, gs(), xn()
 
 ### Community 144 - "Community 144"
-Cohesion: 0.15
+Cohesion: 0.20
 Nodes (3): ge(), me(), mt
 
 ### Community 145 - "Community 145"
@@ -646,45 +648,57 @@ Nodes (5): Module, NewModule(), Repository, NewRepository(), sqlRepository
 Cohesion: 0.07
 Nodes (35): AdjustStockModalProps, EditProductModalProps, InventoryTableProps, ProductGridProps, TransactionDetailsModalProps, TransactionsTableProps, GetProductsParams, GetTransactionsParams (+27 more)
 
+### Community 147 - "Community 147"
+Cohesion: 0.06
+Nodes (7): Bo(), fr, hb(), ii(), jb(), Qv, searchWarranty()
+
 ### Community 148 - "Community 148"
-Cohesion: 0.12
-Nodes (9): bo(), Js(), mo, pr, so, wr(), Wt(), xo() (+1 more)
+Cohesion: 0.13
+Nodes (8): bo(), Js(), mo, pr, wr(), Wt(), xo(), zs()
+
+### Community 149 - "Community 149"
+Cohesion: 0.25
+Nodes (7): code:block1 (Error: expect(locator).toBeVisible() failed), code:yaml (- banner:), code:ts (1  | import { test, expect } from '@playwright/test';), Error details, Instructions, Test info, Test source
 
 ### Community 150 - "Community 150"
+Cohesion: 0.23
+Nodes (5): el(), Qa(), Tr(), wA(), _a
+
+### Community 151 - "Community 151"
 Cohesion: 0.25
-Nodes (4): el(), Qa(), tl(), Tr()
+Nodes (7): code:block1 (Error: expect(locator).toBeVisible() failed), code:yaml (- banner:), code:ts (1  | import { test, expect } from '@playwright/test';), Error details, Instructions, Test info, Test source
 
 ### Community 152 - "Community 152"
 Cohesion: 0.12
 Nodes (5): dE, gE, mE, pE, xb()
 
 ### Community 155 - "Community 155"
-Cohesion: 0.09
-Nodes (28): as(), bd(), Dr(), fl(), fv(), g_(), gb(), h_() (+20 more)
+Cohesion: 0.10
+Nodes (26): al(), as(), bd(), Dr(), Hi(), Ib(), It(), Ja() (+18 more)
 
 ### Community 157 - "Community 157"
 Cohesion: 0.24
 Nodes (5): LoginRequest, MessageResponse, SuccessResponse[T], Handler, NewHandler()
 
+### Community 158 - "Community 158"
+Cohesion: 0.25
+Nodes (3): D0, h0, ld
+
 ### Community 160 - "Community 160"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (3): nA, pS(), uc
 
 ### Community 161 - "Community 161"
-Cohesion: 0.16
-Nodes (3): Ba, isShowing(), yh()
+Cohesion: 0.14
+Nodes (4): Ba, isShowing(), tl(), yh()
 
 ### Community 163 - "Community 163"
 Cohesion: 0.21
-Nodes (6): CommandRepository, Module, QueryRepository, service impl (pos), sqlCommandRepository, sqlQueryRepository
+Nodes (5): CommandRepository, Module, QueryRepository, sqlCommandRepository, sqlQueryRepository
 
 ### Community 164 - "Community 164"
 Cohesion: 0.50
 Nodes (3): DashboardMetrics, DashboardResponse, RecentTicket
-
-### Community 167 - "Community 167"
-Cohesion: 0.67
-Nodes (3): B2. Pencarian Lanjutan Tiket Servis (Advanced Search), code:json ({), code:json ({)
 
 ### Community 168 - "Community 168"
 Cohesion: 0.22
@@ -695,20 +709,16 @@ Cohesion: 0.23
 Nodes (4): CreateProductRequest, Service, validateProductInput(), UpdateProductRequest
 
 ### Community 171 - "Community 171"
-Cohesion: 0.18
+Cohesion: 0.15
 Nodes (4): CommandRepository, QueryRepository, prefixColumns(), sqlQueryRepository
 
 ### Community 172 - "Community 172"
 Cohesion: 0.12
 Nodes (15): API routes (`cmd/server/routes.go`), Backend Architecture, Commands, Config, E2E Testing, Frontend, Go Testing, graphify (+7 more)
 
-### Community 175 - "Community 175"
-Cohesion: 0.17
-Nodes (4): e, rr(), _e(), _t
-
 ### Community 176 - "Community 176"
-Cohesion: 0.08
-Nodes (20): $2(), Ax(), B2(), bE(), Ch(), e2, eE(), hd() (+12 more)
+Cohesion: 0.06
+Nodes (23): $2(), B2(), bE(), Ch(), Cx(), e2, eE(), f2() (+15 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.19
@@ -734,10 +744,6 @@ Nodes (3): GlobalErrorHandler(), init(), TranslateValidationErrors()
 Cohesion: 0.24
 Nodes (5): gv(), Nb(), sd, tt, yv()
 
-### Community 186 - "Community 186"
-Cohesion: 0.33
-Nodes (5): n(), s(), a, o, at()
-
 ### Community 187 - "Community 187"
 Cohesion: 0.60
 Nodes (3): test-e2e.sh script, wait_for_postgres(), wait_for_webapi()
@@ -754,33 +760,33 @@ Nodes (3): code:json ({), code:json ({), E. Memperbarui Detail Tiket Servis
 Cohesion: 0.40
 Nodes (4): addDialog, adjustDialog, editDialog, row
 
-### Community 195 - "Community 195"
-Cohesion: 0.11
-Nodes (13): D0, eA, En(), gl(), h0, k2(), Kd(), ld (+5 more)
+### Community 194 - "Community 194"
+Cohesion: 0.67
+Nodes (3): code:json ({), code:json ({), F. Emergency Edit Tiket Servis
 
-### Community 200 - "Community 200"
-Cohesion: 0.06
-Nodes (33): Ar, av(), Bh(), br(), cv, dv(), Ec(), ev() (+25 more)
+### Community 195 - "Community 195"
+Cohesion: 0.08
+Nodes (25): a2(), aE(), bc(), c_(), cE(), eA, En(), gl() (+17 more)
 
 ## Knowledge Gaps
-- **580 isolated node(s):** `env`, `name`, `port`, `allowed_origins`, `max_conns` (+575 more)
+- **590 isolated node(s):** `env`, `name`, `port`, `allowed_origins`, `max_conns` (+585 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **73 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **74 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `New()` connect `Community 24` to `Community 1`, `Community 134`, `Community 7`, `Community 9`, `Community 10`, `Community 11`, `Community 141`, `Community 16`, `Community 19`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 37`, `Community 39`, `Community 170`, `Community 177`, `Community 183`, `Community 109`, `Community 111`?**
   _High betweenness centrality (0.035) - this node is a cross-community bridge._
-- **Why does `G()` connect `Community 138` to `Community 65`, `Community 133`, `Community 38`, `Community 136`, `Community 200`, `Community 110`, `Community 48`, `Community 81`, `Community 112`, `Community 156`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `Qv` connect `Community 147` to `Community 160`, `Community 34`, `Community 38`, `Community 200`, `Community 137`, `Community 108`, `Community 142`, `Community 149`, `Community 118`, `Community 151`, `Community 122`, `Community 155`, `Community 156`, `Community 158`?**
+- **Why does `G()` connect `Community 138` to `Community 65`, `Community 133`, `Community 38`, `Community 136`, `Community 110`, `Community 48`, `Community 81`, `Community 112`, `Community 156`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `jx()` connect `Community 81` to `Community 34`, `Community 195`, `Community 133`, `Community 38`, `Community 136`, `Community 138`, `Community 110`, `Community 112`, `Community 176`, `Community 147`, `Community 122`, `Community 124`, `Community 127`?**
   _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **Are the 54 inferred relationships involving `New()` (e.g. with `SeedDefaultAdmin()` and `SeedDefaultProducts()`) actually correct?**
   _`New()` has 54 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 12 inferred relationships involving `mt()` (e.g. with `e` and `r`) actually correct?**
+- **Are the 12 inferred relationships involving `mt()` (e.g. with `P` and `e`) actually correct?**
   _`mt()` has 12 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `env`, `name`, `port` to the rest of the system?**
-  _581 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _591 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.07948717948717948 - nodes in this community are weakly interconnected._

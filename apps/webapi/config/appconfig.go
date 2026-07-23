@@ -93,6 +93,9 @@ func Load() (*Config, error) {
 		"db.user":             "DB_USER",
 		"db.name":             "DB_NAME",
 		"db.sslmode":          "DB_SSLMODE",
+		"db.sslrootcert":      "DB_SSLROOTCERT",
+		"db.sslcert":          "DB_SSLCERT",
+		"db.sslkey":           "DB_SSLKEY",
 		"db.password":         "DB_PASSWORD",
 		"auth.access_secret":  "JWT_ACCESS_SECRET",
 		"auth.refresh_secret": "JWT_REFRESH_SECRET",
@@ -114,6 +117,11 @@ func Load() (*Config, error) {
 	validate := validator.New()
 	if err := validate.Struct(&cfg); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
+	}
+
+	// Database SSL enforcement in production
+	if cfg.App.Env == "production" && (cfg.DB.SSLMode == "disable" || cfg.DB.SSLMode == "") {
+		return nil, errors.New("database SSL mode cannot be disabled in production environment")
 	}
 
 	return &cfg, nil
