@@ -146,51 +146,51 @@ func (s *service) Refresh(ctx context.Context, refreshToken string) (RefreshResp
 }
 
 func (s *service) Logout(ctx context.Context, accessToken, refreshToken string) error {
-	blacklistToken := func(tokenString string, secret string) {
-		if tokenString == "" {
-			return
-		}
-
-		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			return []byte(secret), nil
-		})
-
-		// We still process the claims even if it's expired
-		if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
-			return
-		}
-
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			return
-		}
-
-		jti, ok := claims["jti"].(string)
-		if !ok || jti == "" {
-			return
-		}
-
-		expFloat, ok := claims["exp"].(float64)
-		if !ok {
-			return
-		}
-
-		expiresAt := time.Unix(int64(expFloat), 0)
-
-		// If it's already expired, no need to blacklist
-		if time.Now().After(expiresAt) {
-			return
-		}
-
-		_ = s.commandRepo.BlacklistToken(ctx, jti, expiresAt)
-	}
-
-	blacklistToken(accessToken, s.cfg.Auth.AccessSecret)
-	blacklistToken(refreshToken, s.cfg.Auth.RefreshSecret)
+	s.blacklistTokenString(ctx, accessToken, s.cfg.Auth.AccessSecret)
+	s.blacklistTokenString(ctx, refreshToken, s.cfg.Auth.RefreshSecret)
 
 	slog.InfoContext(ctx, "User logged out successfully")
 
 	return nil
+}
+
+func (s *service) blacklistTokenString(ctx context.Context, tokenString string, secret string) {
+	if tokenString == "" {
+		return
+	}
+
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+
+	// We still process the claims even if it's expired
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return
+	}
+
+	jti, ok := claims["jti"].(string)
+	if !ok || jti == "" {
+		return
+	}
+
+	expFloat, ok := claims["exp"].(float64)
+	if !ok {
+		return
+	}
+
+	expiresAt := time.Unix(int64(expFloat), 0)
+
+	// If it's already expired, no need to blacklist
+	if time.Now().After(expiresAt) {
+		return
+	}
+
+	_ = s.commandRepo.BlacklistToken(ctx, jti, expiresAt)
 }
 
 func (s *service) Me(ctx context.Context, userID string) (UserProfileResponse, error) {

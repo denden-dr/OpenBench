@@ -14,9 +14,9 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) GetWarrantyByTicketID(c fiber.Ctx) error {
-	ticketID := c.Params("ticket_id")
-	if ticketID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	ticketID, err := getTicketID(c)
+	if err != nil {
+		return err
 	}
 
 	w, err := h.service.GetWarrantyByTicketID(c.Context(), ticketID)
@@ -69,9 +69,9 @@ func (h *Handler) GetClaims(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetClaimByID(c fiber.Ctx) error {
-	claimID := c.Params("claim_id")
-	if claimID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
+	claimID, err := getClaimID(c)
+	if err != nil {
+		return err
 	}
 
 	claim, err := h.service.GetClaimByID(c.Context(), claimID)
@@ -85,9 +85,9 @@ func (h *Handler) GetClaimByID(c fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateClaim(c fiber.Ctx) error {
-	claimID := c.Params("claim_id")
-	if claimID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
+	claimID, err := getClaimID(c)
+	if err != nil {
+		return err
 	}
 
 	var req UpdateClaimRequest
@@ -110,9 +110,9 @@ func (h *Handler) UpdateClaim(c fiber.Ctx) error {
 }
 
 func (h *Handler) EvaluateClaim(c fiber.Ctx) error {
-	claimID := c.Params("claim_id")
-	if claimID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
+	claimID, err := getClaimID(c)
+	if err != nil {
+		return err
 	}
 
 	var req EvaluateClaimRequest
@@ -135,9 +135,9 @@ func (h *Handler) EvaluateClaim(c fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateWarrantyStatus(c fiber.Ctx) error {
-	warrantyID := c.Params("warranty_id")
-	if warrantyID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Warranty ID is required.")
+	warrantyID, err := getWarrantyID(c)
+	if err != nil {
+		return err
 	}
 
 	var req UpdateWarrantyStatusRequest
@@ -157,4 +157,28 @@ func (h *Handler) UpdateWarrantyStatus(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": MapToWarrantyResponse(w),
 	})
+}
+
+func getTicketID(c fiber.Ctx) (string, error) {
+	ticketID := c.Params("ticket_id")
+	if ticketID == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	}
+	return ticketID, nil
+}
+
+func getClaimID(c fiber.Ctx) (string, error) {
+	claimID := c.Params("claim_id")
+	if claimID == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Claim ID is required.")
+	}
+	return claimID, nil
+}
+
+func getWarrantyID(c fiber.Ctx) (string, error) {
+	warrantyID := c.Params("warranty_id")
+	if warrantyID == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Warranty ID is required.")
+	}
+	return warrantyID, nil
 }

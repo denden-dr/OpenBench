@@ -14,6 +14,14 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
+func (h *Handler) getTransactionID(c fiber.Ctx) (string, error) {
+	id := c.Params("id")
+	if id == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Transaction ID is required.")
+	}
+	return id, nil
+}
+
 func (h *Handler) Checkout(c fiber.Ctx) error {
 	var req models.CheckoutRequest
 	if err := c.Bind().JSON(&req); err != nil {
@@ -35,9 +43,9 @@ func (h *Handler) Checkout(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetTransactionByID(c fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Transaction ID is required.")
+	id, err := h.getTransactionID(c)
+	if err != nil {
+		return err
 	}
 
 	tx, err := h.service.GetTransactionByID(c.Context(), id)

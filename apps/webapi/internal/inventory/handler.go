@@ -25,6 +25,13 @@ type ProductResponse struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
+func (h *Handler) getProductID(c fiber.Ctx) (string, error) {
+	id := c.Params("id")
+	if id == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
+	}
+	return id, nil
+}
 
 func (h *Handler) CreateProduct(c fiber.Ctx) error {
 	var req CreateProductRequest
@@ -47,9 +54,9 @@ func (h *Handler) CreateProduct(c fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateProduct(c fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
+	id, err := h.getProductID(c)
+	if err != nil {
+		return err
 	}
 
 	var req UpdateProductRequest
@@ -72,9 +79,9 @@ func (h *Handler) UpdateProduct(c fiber.Ctx) error {
 }
 
 func (h *Handler) AdjustStock(c fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
+	id, err := h.getProductID(c)
+	if err != nil {
+		return err
 	}
 
 	var req AdjustStockRequest
@@ -86,7 +93,7 @@ func (h *Handler) AdjustStock(c fiber.Ctx) error {
 		return err
 	}
 
-	err := h.service.AdjustStock(c.Context(), id, req.QuantityChange)
+	err = h.service.AdjustStock(c.Context(), id, req.QuantityChange)
 	if err != nil {
 		return err
 	}
@@ -102,9 +109,9 @@ func (h *Handler) AdjustStock(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetProductByID(c fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
+	id, err := h.getProductID(c)
+	if err != nil {
+		return err
 	}
 
 	p, err := h.service.GetProductByID(c.Context(), id)
@@ -131,12 +138,12 @@ func (h *Handler) GetProducts(c fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteProduct(c fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Product ID is required.")
+	id, err := h.getProductID(c)
+	if err != nil {
+		return err
 	}
 
-	err := h.service.DeleteProduct(c.Context(), id)
+	err = h.service.DeleteProduct(c.Context(), id)
 	if err != nil {
 		return err
 	}

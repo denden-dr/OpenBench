@@ -53,10 +53,10 @@ func NewCommandRepository(db *sqlx.DB, cache *hot.HotCache[string, bool]) Comman
 	}
 }
 
-func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (r *sqlQueryRepository) getUser(ctx context.Context, cond squirrel.Eq) (*models.User, error) {
 	query, args, err := r.psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
 		From("users").
-		Where(squirrel.Eq{"email": email, "deleted_at": nil}).
+		Where(cond).
 		Limit(1).
 		ToSql()
 	if err != nil {
@@ -74,25 +74,12 @@ func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (
 	return &user, nil
 }
 
-func (r *sqlQueryRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
-	query, args, err := r.psql.Select("id", "email", "password_hash", "full_name", "role", "created_at", "updated_at", "deleted_at").
-		From("users").
-		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
-		Limit(1).
-		ToSql()
-	if err != nil {
-		return nil, err
-	}
+func (r *sqlQueryRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return r.getUser(ctx, squirrel.Eq{"email": email, "deleted_at": nil})
+}
 
-	var user models.User
-	err = r.db.GetContext(ctx, &user, query, args...)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
+func (r *sqlQueryRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	return r.getUser(ctx, squirrel.Eq{"id": id, "deleted_at": nil})
 }
 
 func (r *sqlCommandRepository) CreateUser(ctx context.Context, user *models.User) error {

@@ -31,6 +31,12 @@ type sqlCommandRepository struct {
 	psql squirrel.StatementBuilderType
 }
 
+var (
+	txColumns           = []string{"id", "payment_method", "total_amount", "created_at"}
+	txItemColumns       = []string{"pti.id", "pti.transaction_id", "pti.product_id", "pti.quantity", "pti.price", "COALESCE(p.name, 'Deleted Product') as product_name"}
+	txItemInsertColumns = []string{"id", "transaction_id", "product_id", "quantity", "price"}
+)
+
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
 	return &sqlQueryRepository{
 		db:   db,
@@ -46,7 +52,7 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.PosTransaction, error) {
-	queryTx, argsTx, err := r.psql.Select("id", "payment_method", "total_amount", "created_at").
+	queryTx, argsTx, err := r.psql.Select(txColumns...).
 		From("pos_transactions").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -64,10 +70,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 		return nil, err
 	}
 
-	queryItems, argsItems, err := r.psql.Select(
-		"pti.id", "pti.transaction_id", "pti.product_id", "pti.quantity", "pti.price",
-		"COALESCE(p.name, 'Deleted Product') as product_name",
-	).
+	queryItems, argsItems, err := r.psql.Select(txItemColumns...).
 		From("pos_transaction_items pti").
 		LeftJoin("products p ON pti.product_id = p.id").
 		Where(squirrel.Eq{"pti.transaction_id": id}).
@@ -85,7 +88,7 @@ func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.P
 }
 
 func (r *sqlQueryRepository) FindAll(ctx context.Context, limit int, cursor string) ([]models.PosTransaction, string, error) {
-	queryBuilder := r.psql.Select("id", "payment_method", "total_amount", "created_at").
+	queryBuilder := r.psql.Select(txColumns...).
 		From("pos_transactions")
 
 	if cursor != "" {
@@ -119,7 +122,7 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, limit int, cursor stri
 
 func (r *sqlCommandRepository) Create(ctx context.Context, t *models.PosTransaction) error {
 	queryTx, argsTx, err := r.psql.Insert("pos_transactions").
-		Columns("id", "payment_method", "total_amount", "created_at").
+		Columns(txColumns...).
 		Values(t.ID, t.PaymentMethod, t.TotalAmount, squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at").
 		ToSql()
@@ -135,7 +138,7 @@ func (r *sqlCommandRepository) Create(ctx context.Context, t *models.PosTransact
 
 	if len(t.Items) > 0 {
 		insertBuilder := r.psql.Insert("pos_transaction_items").
-			Columns("id", "transaction_id", "product_id", "quantity", "price")
+			Columns(txItemInsertColumns...)
 
 		for i := range t.Items {
 			item := &t.Items[i]
