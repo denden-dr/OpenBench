@@ -51,9 +51,9 @@ function TicketsPage() {
 
   const filteredTickets = tickets.filter(t => {
     if (activeFilterTab === 'active') {
-      return ['RECEIVED', 'REPAIRING', 'PENDING_CONFIRMATION', 'FIXED'].includes(t.status)
+      return ['RECEIVED', 'REPAIRING', 'PENDING_CONFIRMATION', 'FIXED', 'CANCELLED'].includes(t.status)
     } else if (activeFilterTab === 'closed') {
-      return ['COMPLETED', 'CANCELLED', 'RETURNED'].includes(t.status)
+      return ['COMPLETED', 'RETURNED'].includes(t.status)
     }
     return true
   })
