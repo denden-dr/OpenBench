@@ -82,6 +82,7 @@ func TestLoad_Validation(t *testing.T) {
 		os.Unsetenv("JWT_REFRESH_SECRET")
 		os.Unsetenv("APP_ENCRYPTION_KEY")
 		os.Unsetenv("TEST_NO_ENV_FILE")
+		os.Unsetenv("PORT")
 	}
 
 	t.Run("valid config", func(t *testing.T) {
@@ -145,16 +146,39 @@ func TestLoad_Validation(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Port")
 	})
+
+	t.Run("production environment with disabled SSL mode", func(t *testing.T) {
+		setValidEnv()
+		defer clearEnv()
+		os.Setenv("APP_ENV", "production")
+		os.Setenv("DB_SSLMODE", "disable")
+		_, err := Load()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "database SSL mode cannot be disabled in production")
+	})
+
+	t.Run("production environment with enabled SSL mode", func(t *testing.T) {
+		setValidEnv()
+		defer clearEnv()
+		os.Setenv("APP_ENV", "production")
+		os.Setenv("DB_SSLMODE", "require")
+		cfg, err := Load()
+		require.NoError(t, err)
+		assert.Equal(t, "require", cfg.DB.SSLMode)
+	})
 }
 
 func TestDBConfig_DSN(t *testing.T) {
 	db := DBConfig{
-		Host:     "localhost",
-		Port:     "5432",
-		User:     "myuser@admin",
-		Password: "p@ss:word#123",
-		Name:     "mydb",
-		SSLMode:  "verify-full",
+		Host:        "localhost",
+		Port:        "5432",
+		User:        "myuser@admin",
+		Password:    "p@ss:word#123",
+		Name:        "mydb",
+		SSLMode:     "verify-full",
+		SSLRootCert: "/path/to/ca.pem",
+		SSLCert:     "/path/to/cert.pem",
+		SSLKey:      "/path/to/key.pem",
 	}
 
 	dsn := db.DSN()
@@ -164,4 +188,7 @@ func TestDBConfig_DSN(t *testing.T) {
 	assert.Contains(t, dsn, "myuser%40admin")
 	assert.Contains(t, dsn, "p%40ss%3Aword%23123")
 	assert.Contains(t, dsn, "sslmode=verify-full")
+	assert.Contains(t, dsn, "sslrootcert=%2Fpath%2Fto%2Fca.pem")
+	assert.Contains(t, dsn, "sslcert=%2Fpath%2Fto%2Fcert.pem")
+	assert.Contains(t, dsn, "sslkey=%2Fpath%2Fto%2Fkey.pem")
 }
