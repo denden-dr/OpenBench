@@ -1,16 +1,16 @@
-# Graph Report - OpenBench  (2026-07-21)
+# Graph Report - OpenBench  (2026-07-23)
 
 ## Corpus Check
-- 155 files · ~51,327 words
+- 200 files · ~91,763 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1242 nodes · 1758 edges · 125 communities (78 shown, 47 thin omitted)
-- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 257 edges (avg confidence: 0.82)
+- 2899 nodes · 5801 edges · 207 communities (135 shown, 72 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 522 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `717fddd8`
+- Built from commit: `f6a91b92`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -131,30 +131,104 @@
 - [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
 - [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
+- [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 147|Community 147]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
+- [[_COMMUNITY_Community 150|Community 150]]
+- [[_COMMUNITY_Community 151|Community 151]]
+- [[_COMMUNITY_Community 152|Community 152]]
+- [[_COMMUNITY_Community 153|Community 153]]
+- [[_COMMUNITY_Community 154|Community 154]]
+- [[_COMMUNITY_Community 155|Community 155]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
+- [[_COMMUNITY_Community 158|Community 158]]
+- [[_COMMUNITY_Community 159|Community 159]]
+- [[_COMMUNITY_Community 160|Community 160]]
+- [[_COMMUNITY_Community 161|Community 161]]
+- [[_COMMUNITY_Community 163|Community 163]]
+- [[_COMMUNITY_Community 164|Community 164]]
+- [[_COMMUNITY_Community 165|Community 165]]
+- [[_COMMUNITY_Community 166|Community 166]]
+- [[_COMMUNITY_Community 167|Community 167]]
+- [[_COMMUNITY_Community 168|Community 168]]
+- [[_COMMUNITY_Community 169|Community 169]]
+- [[_COMMUNITY_Community 170|Community 170]]
+- [[_COMMUNITY_Community 171|Community 171]]
+- [[_COMMUNITY_Community 172|Community 172]]
+- [[_COMMUNITY_Community 173|Community 173]]
+- [[_COMMUNITY_Community 174|Community 174]]
+- [[_COMMUNITY_Community 175|Community 175]]
+- [[_COMMUNITY_Community 176|Community 176]]
+- [[_COMMUNITY_Community 177|Community 177]]
+- [[_COMMUNITY_Community 178|Community 178]]
+- [[_COMMUNITY_Community 179|Community 179]]
+- [[_COMMUNITY_Community 180|Community 180]]
+- [[_COMMUNITY_Community 181|Community 181]]
+- [[_COMMUNITY_Community 182|Community 182]]
+- [[_COMMUNITY_Community 183|Community 183]]
+- [[_COMMUNITY_Community 184|Community 184]]
+- [[_COMMUNITY_Community 185|Community 185]]
+- [[_COMMUNITY_Community 186|Community 186]]
+- [[_COMMUNITY_Community 187|Community 187]]
+- [[_COMMUNITY_Community 188|Community 188]]
+- [[_COMMUNITY_Community 189|Community 189]]
+- [[_COMMUNITY_Community 190|Community 190]]
+- [[_COMMUNITY_Community 191|Community 191]]
+- [[_COMMUNITY_Community 192|Community 192]]
+- [[_COMMUNITY_Community 197|Community 197]]
+- [[_COMMUNITY_Community 198|Community 198]]
+- [[_COMMUNITY_Community 199|Community 199]]
+- [[_COMMUNITY_Community 200|Community 200]]
+- [[_COMMUNITY_Community 201|Community 201]]
+- [[_COMMUNITY_Community 203|Community 203]]
+- [[_COMMUNITY_Community 205|Community 205]]
+- [[_COMMUNITY_Community 207|Community 207]]
+- [[_COMMUNITY_Community 208|Community 208]]
+- [[_COMMUNITY_Community 209|Community 209]]
+- [[_COMMUNITY_Community 210|Community 210]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `New()` - 55 edges
-2. `cn()` - 53 edges
-3. `Service` - 28 edges
-4. `GetQuerier()` - 19 edges
-5. `compilerOptions` - 19 edges
-6. `ValidateStruct()` - 18 edges
-7. `compilerOptions` - 18 edges
-8. `Web-Admin (Admin Dashboard)` - 18 edges
-9. `Handler` - 16 edges
-10. `compilerOptions` - 15 edges
+1. `Qv` - 75 edges
+2. `New()` - 56 edges
+3. `cn()` - 53 edges
+4. `mt()` - 47 edges
+5. `gs()` - 41 edges
+6. `Ba` - 34 edges
+7. `Mh` - 31 edges
+8. `Ia` - 31 edges
+9. `br()` - 30 edges
+10. `Service` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Web-Admin (Admin Dashboard)` --references--> `shadcn/ui (base-nova)`  [EXTRACTED]
-  AGENTS.md → apps/web-admin/components.json
-- `Web-Admin (Admin Dashboard)` --references--> `Tailwind CSS v4`  [EXTRACTED]
-  AGENTS.md → apps/web-admin/package.json
-- `Web-Admin (Admin Dashboard)` --references--> `React 19`  [EXTRACTED]
-  AGENTS.md → apps/web-admin/package.json
-- `Web-Admin (Admin Dashboard)` --references--> `TypeScript`  [EXTRACTED]
-  AGENTS.md → apps/web-admin/package.json
-- `Web-Admin (Admin Dashboard)` --references--> `Vite`  [EXTRACTED]
-  AGENTS.md → apps/web-admin/package.json
+- `golangci-lint Configuration` --conceptually_related_to--> `RFC 7807 Global Error Handler`  [INFERRED]
+  apps/webapi/.golangci.yml → apps/webapi/internal/apierrors/errors.go
+- `TestAuthService_Login()` --calls--> `New()`  [INFERRED]
+  apps/webapi/internal/auth/service_test.go → apps/webapi/internal/apierrors/stack.go
+- `TestAuthService_Refresh()` --calls--> `New()`  [INFERRED]
+  apps/webapi/internal/auth/service_test.go → apps/webapi/internal/apierrors/stack.go
+- `TestService_CreateProduct()` --calls--> `New()`  [INFERRED]
+  apps/webapi/internal/inventory/service_test.go → apps/webapi/internal/apierrors/stack.go
+- `TestService_AdjustStock()` --calls--> `New()`  [INFERRED]
+  apps/webapi/internal/inventory/service_test.go → apps/webapi/internal/apierrors/stack.go
 
 ## Hyperedges (group relationships)
 - **Three Monorepo Applications** — webapi, web_user, web_admin [EXTRACTED 1.00]
@@ -208,23 +282,23 @@
 - **Frontend Authentication Tests** — webadmin_loginpage_test, webadmin_protectedroute_test, concept_frontend_auth [EXTRACTED 1.00]
 - **PRD to API Contract Design Flow** — docs_prd, docs_api_contract, concept_service_ticket_domain, concept_warranty_domain, concept_pos_domain, concept_auth_domain [INFERRED 0.85]
 
-## Communities (125 total, 47 thin omitted)
+## Communities (207 total, 72 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.06
-Nodes (69): cn(), initialProducts, initialProducts, initialTransactions, mockTickets, initialClaims, initialWarranties, CartItem (+61 more)
+Cohesion: 0.09
+Nodes (21): cn(), CardAction(), CardFooter(), DialogOverlay(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel() (+13 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.16
-Nodes (10): TxManager, Module Pattern (NewModule→Repo→Service→Handler), Migration: warranties+claims tables, Migration: evaluation columns, Warranty Claim Lifecycle Workflow, Module, Warranty CommandRepository, Claim Summary Join Pattern (+2 more)
+Cohesion: 0.09
+Nodes (18): TxManager, Module Pattern (NewModule→Repo→Service→Handler), Migration: warranties+claims tables, Migration: evaluation columns, Ticket→Warranty Cross-Domain Flow, Warranty Claim Lifecycle Workflow, ErrWarrantyNotFound ErrClaimNotFound ErrWarrantyNotActive ErrInvalidInput, Module (+10 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (23): CommandRepository, CreateProductRequest, QueryRepository, Service, service impl (inventory), sqlQueryRepository, UpdateProductRequest, CheckoutItemRequest (+15 more)
+Cohesion: 0.15
+Nodes (10): CommandRepository, QueryRepository, service impl (inventory), sqlQueryRepository, Product, InventoryProductReader, InventoryStockWriter, Service (+2 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.08
-Nodes (29): App(), ProtectedRoute(), ProtectedRouteProps, ThemeProvider(), ThemeProviderProps, ThemeToggle(), ThemeToggleProps, AdminLayout() (+21 more)
+Cohesion: 0.09
+Nodes (28): App(), LoginForm(), LoginFormProps, ProtectedRoute(), ProtectedRouteProps, ThemeProvider(), ThemeProviderProps, ThemeToggle() (+20 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.17
@@ -234,29 +308,25 @@ Nodes (11): ChangeClaimStatusRequest, ClaimListResponse, ClaimResponse, ClaimSta
 Cohesion: 0.05
 Nodes (41): dependencies, axios, @base-ui/react, class-variance-authority, clsx, @fontsource-variable/geist, lucide-react, react (+33 more)
 
-### Community 6 - "Community 6"
-Cohesion: 0.06
-Nodes (46): Docker Compose PostgreSQL, OpenBench, API routes (`cmd/server/routes_api.go`), Backend Architecture, Commands, Config, Frontend, Go Testing (+38 more)
-
 ### Community 7 - "Community 7"
-Cohesion: 0.20
-Nodes (7): main(), listenAndServe(), newFiberApp(), NewCreator(), Generator, NewGenerator(), TestWarrantyHandler_Integration()
+Cohesion: 0.16
+Nodes (9): NewMiddleware(), BenchmarkNewMiddleware(), TestNewMiddleware(), TestNewMiddleware_ExistingRequestID(), main(), listenAndServe(), newFiberApp(), Generator (+1 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.10
-Nodes (14): sqlCommandRepository, sqlQueryRepository, sqlCommandRepository, DBQuerier, sqlTxManager, ExtractTx(), GetQuerier(), InjectTx() (+6 more)
+Cohesion: 0.18
+Nodes (6): sqlCommandRepository, sqlQueryRepository, sqlCommandRepository, GetQuerier(), sqlCommandRepository, sqlCommandRepository
 
 ### Community 9 - "Community 9"
-Cohesion: 0.08
-Nodes (17): GlobalErrorHandler(), RequireRole, RequireAuth(), RequireRole(), middleware_test, generateTestToken(), TestRequireAuth(), TestRequireRole() (+9 more)
+Cohesion: 0.20
+Nodes (10): RequireRole, RequireAuth(), RequireRole(), middleware_test, generateTestToken(), TestRequireAuth(), TestRequireRole(), registerRoutes() (+2 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.10
-Nodes (16): NewServiceTicket(), TestNewServiceTicket_Invariants(), ErrTicketNotFound ErrInvalidInput, MapToTicketResponse(), MapToTicketSummaryResponse(), Service, Ticket→Warranty Cross-Domain Flow, WarrantyGenerator (+8 more)
+Cohesion: 0.15
+Nodes (13): NewServiceTicket(), TestNewServiceTicket_Invariants(), ErrTicketNotFound ErrInvalidInput, MapToTicketResponse(), Service, validateStatus(), WarrantyGenerator, Decrypt() (+5 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.17
-Nodes (9): TestAuthHandler_Integration(), TestAuthRepository_Integration(), TestInventoryHandler_Integration(), TestInventoryRepository_Integration(), TestPosRepository_Integration(), CleanTable(), SetupTestDatabase(), TestTicketRepository_Integration() (+1 more)
+Cohesion: 0.11
+Nodes (14): TestAuthHandler_Integration(), TestAuthRepository_Integration(), NewTxManager(), TestInventoryHandler_Integration(), TestInventoryRepository_Integration(), TestPosHandler_Integration(), TestPosRepository_Integration(), CleanTable() (+6 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.21
@@ -295,20 +365,20 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+11 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.15
-Nodes (8): sqlQueryRepository, DecodeCursor(), EncodeCursor(), BenchmarkDecodeCursor(), BenchmarkEncodeCursor(), TestCursorEncodingDecoding(), TestCursorInvalidDecoding(), sqlQueryRepository
+Cohesion: 0.30
+Nodes (6): DecodeCursor(), EncodeCursor(), BenchmarkDecodeCursor(), BenchmarkEncodeCursor(), TestCursorEncodingDecoding(), TestCursorInvalidDecoding()
 
 ### Community 22 - "Community 22"
-Cohesion: 0.14
-Nodes (6): mockInventoryQueryRepo, mockPosRepo, mockTxManager, TestService_Checkout_InsufficientStock(), TestService_Checkout_ProductNotFound(), TestService_Checkout_Success()
+Cohesion: 0.11
+Nodes (7): mockInventoryCommandRepo, mockInventoryQueryRepo, mockPosRepo, mockTxManager, TestService_Checkout_InsufficientStock(), TestService_Checkout_ProductNotFound(), TestService_Checkout_Success()
 
 ### Community 23 - "Community 23"
 Cohesion: 0.12
-Nodes (19): Domain Error to HTTP Status Mapping, Domain Error Handler Tests, RFC 7807 Global Error Handler, WithStack Error Wrapper, Stack Trace Formatter, Wrap/New Error Functions with Stack Capture, Database Seed CLI, Seed Default Admin Function (+11 more)
+Nodes (16): Domain Error to HTTP Status Mapping, Domain Error Handler Tests, RFC 7807 Global Error Handler, WithStack Error Wrapper, Stack Trace Formatter, Wrap/New Error Functions with Stack Capture, Dependency Injection Wiring, Error Handler Integration Tests (+8 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.15
-Nodes (14): TestGlobalErrorHandler_DomainErrors(), New(), TestGlobalErrorHandler(), TestRecoverMiddleware(), mockTxManager, mockWarrantyGenerator, TestService_CreateTicket(), TestService_CreateTicket_Encryption() (+6 more)
+Cohesion: 0.14
+Nodes (14): New(), TestGlobalErrorHandler(), TestRecoverMiddleware(), mockEventBus, mockTxManager, mockWarrantyGenerator, TestService_CreateTicket(), TestService_CreateTicket_Encryption() (+6 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.12
@@ -339,16 +409,16 @@ Cohesion: 0.22
 Nodes (8): CommandRepository, TestAuthHandler_Integration, Module, NewModule(), QueryRepository, NewCommandRepository(), NewQueryRepository(), NewService()
 
 ### Community 32 - "Community 32"
-Cohesion: 0.40
-Nodes (4): Handler (inventory), Module, Module (inventory), NewModule()
+Cohesion: 0.08
+Nodes (36): CreateTicketModal(), TicketDetailsModal(), TicketDetailsModalProps, TicketsTable(), TicketsTableProps, TransactionDetailsModal(), UpdateStatusModal(), UpdateStatusModalProps (+28 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.36
-Nodes (5): LoginRequest, LoginResponse, RefreshResponse, SuccessResponse[T], Service
+Cohesion: 0.15
+Nodes (12): devDependencies, @playwright/test, @types/node, typescript, name, private, scripts, test (+4 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.22
-Nodes (11): Handler (auth), Module (auth), CommandRepository, TestAuthRepository_Integration, QueryRepository, ErrInvalidCredentials, ErrInvalidToken, ErrUserNotFound (+3 more)
+Cohesion: 0.15
+Nodes (5): Ba, isShowing(), jv(), wA(), yh()
 
 ### Community 35 - "Community 35"
 Cohesion: 0.22
@@ -359,12 +429,12 @@ Cohesion: 0.29
 Nodes (6): LoginRequest, LoginResponse, MessageResponse, RefreshResponse, SuccessResponse, UserProfileResponse
 
 ### Community 37 - "Community 37"
-Cohesion: 0.38
-Nodes (3): CleanupWorker, CleanupWorker, NewCleanupWorker()
+Cohesion: 0.26
+Nodes (7): LoginResponse, RefreshResponse, UserProfileResponse, CommandRepository, TestAuthRepository_Integration, QueryRepository, Service
 
 ### Community 38 - "Community 38"
-Cohesion: 0.29
-Nodes (3): MessageResponse, Handler, NewHandler()
+Cohesion: 0.02
+Nodes (114): a2(), aA, ab, aE(), b0, bb, bc(), bn (+106 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.33
@@ -398,13 +468,17 @@ Nodes (5): web-user app entry point: index.html → main.tsx → App.tsx, SVG fa
 Cohesion: 0.40
 Nodes (5): AppConfig Struct, AuthConfig Struct, Config Struct (App+DB+Auth), DBConfig Struct, DSN URL Generator
 
+### Community 48 - "Community 48"
+Cohesion: 0.03
+Nodes (76): $, aa, Ai(), Ar, bi, _block(), calculate(), Ce (+68 more)
+
 ### Community 49 - "Community 49"
 Cohesion: 0.50
 Nodes (4): TypeScript App Config, TypeScript Node Config, TypeScript Root Config, Vite Build Configuration
 
 ### Community 54 - "Community 54"
-Cohesion: 0.12
-Nodes (13): CreateTicketParams, NewServiceTicket, ServiceTicket, ServiceTicketStatus, CleanTable, SetupTestDatabase, CommandRepository, CreateTicketRequest (+5 more)
+Cohesion: 0.14
+Nodes (10): NewServiceTicket, ServiceTicket, CommandRepository, MapToTicketSummaryResponse, Module, QueryRepository, applyCursorPagination(), buildNextCursor() (+2 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.67
@@ -414,13 +488,21 @@ Nodes (3): AsyncEventBus, EventBus, bus_test
 Cohesion: 0.67
 Nodes (3): Event, TicketCompletedEvent, TicketCompletedType
 
+### Community 65 - "Community 65"
+Cohesion: 0.06
+Nodes (19): aT(), b_(), d_(), e_(), Er(), I0(), j2(), os() (+11 more)
+
+### Community 81 - "Community 81"
+Cohesion: 0.09
+Nodes (5): cr(), fS, ms(), nn, nT
+
 ### Community 102 - "Community 102"
-Cohesion: 0.11
-Nodes (18): Arsitektur Teknis, code:bash (cp apps/webapi/.env.example apps/webapi/.env), code:bash (curl http://localhost:3000/health), code:json ({), code:bash (make install-api), code:bash (make up), code:bash (make dev-api), code:bash (make dev-user) (+10 more)
+Cohesion: 0.08
+Nodes (35): Docker Compose PostgreSQL, Arsitektur Teknis, code:bash (cp apps/webapi/.env.example apps/webapi/.env), code:bash (make build-all), code:bash (make down), code:bash (curl http://localhost:3000/health), code:json ({), code:bash (make install-api) (+27 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.13
-Nodes (8): ErrWarrantyNotFound ErrClaimNotFound ErrWarrantyNotActive ErrInvalidInput, Warranty DTOs, DTO Mapping Functions, MapToClaimResponse(), MapToWarrantyResponse(), Handler, Service, TicketCreator
+Cohesion: 0.18
+Nodes (9): Warranty DTOs, DTO Mapping Functions, MapToClaimResponse(), MapToWarrantyResponse(), Handler, getClaimID(), getTicketID(), getTicketNumber() (+1 more)
 
 ### Community 104 - "Community 104"
 Cohesion: 0.14
@@ -431,40 +513,40 @@ Cohesion: 0.14
 Nodes (14): 3. Garansi & Klaim (Warranty & Claims), A. Cek Status Garansi (Berdasarkan Ticket ID), B. Pembaruan Status Garansi Langsung, C. Membuat Klaim Garansi Baru, code:json ({), code:json ({), code:json ({), code:json ({) (+6 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.11
-Nodes (13): ChangeStatusRequest, EmergencyUpdateTicketRequest, Handler, MapToTicketResponse, TicketResponse, TicketSearchRequest, TicketStatusResponse, TicketSummaryResponse (+5 more)
+Cohesion: 0.27
+Nodes (3): AdjustStockRequest, Handler, ProductResponse
 
 ### Community 107 - "Community 107"
 Cohesion: 0.15
 Nodes (12): 1. Ringkasan Eksekutif (Executive Summary), 2. Tujuan & Sasaran (Objectives & Goals), 3. Target Pengguna (Target Audience), 4.1. Manajemen Tiket Servis (Service Ticketing), 4.2. Manajemen Profil & Perangkat, 4.3. Manajemen Garansi & Klaim (Warranty), 4.4. Manajemen Point of Sale (POS) & Inventori Aksesoris, 4. Ruang Lingkup MVP (In-Scope for v1) (+4 more)
 
 ### Community 108 - "Community 108"
-Cohesion: 0.28
-Nodes (6): NewPostgresDB(), slogAdapter, HealthCheckDetail, main(), run(), SeedDefaultAdmin()
+Cohesion: 0.05
+Nodes (13): A0, ad, Fa, Ha(), i2(), Jd, Ko(), L0 (+5 more)
 
 ### Community 109 - "Community 109"
 Cohesion: 0.28
 Nodes (6): AppConfig, findProjectRoot(), Load(), TestLoad(), TestLoad_Validation(), Config
 
 ### Community 110 - "Community 110"
-Cohesion: 0.22
-Nodes (3): AdjustStockRequest, Handler, ProductResponse
+Cohesion: 0.09
+Nodes (26): Ah(), bS, cc(), ct, Ec(), Et, gC, hs (+18 more)
 
 ### Community 111 - "Community 111"
 Cohesion: 0.22
 Nodes (7): ContextHandler, contextKey, InitLogger, InitLogger(), middleware_test, NewMiddleware, RequestIDKey
 
 ### Community 112 - "Community 112"
-Cohesion: 0.29
-Nodes (4): NewTxManager(), TestPosHandler_Integration(), fakeWarrantyGenerator, TestTicketHandler_Integration()
+Cohesion: 0.06
+Nodes (22): al(), br(), dc(), Dh(), fl(), fT(), h_(), Ja() (+14 more)
 
 ### Community 113 - "Community 113"
 Cohesion: 0.22
 Nodes (9): 5. Authentication (Auth), B. Refresh Token, C. Sign Out (Logout), code:json ({), code:http (Set-Cookie: access_token=eyJhb...; Path=/; HttpOnly; Secure;), code:json ({), code:http (Set-Cookie: access_token=; Path=/; HttpOnly; Secure; SameSit), code:json ({) (+1 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.47
-Nodes (4): NewMiddleware(), BenchmarkNewMiddleware(), TestNewMiddleware(), TestNewMiddleware_ExistingRequestID()
+Cohesion: 0.16
+Nodes (26): CartPanel(), CartPanelProps, InventoryTable(), ProductGrid(), TicketStatusBadge(), TransactionsTable(), ClaimEvalBadge(), WarrantyStatusBadge() (+18 more)
 
 ### Community 115 - "Community 115"
 Cohesion: 0.25
@@ -473,6 +555,10 @@ Nodes (8): 4. Point of Sale (POS) & Inventori Aksesoris, A. Inventori Aksesoris 
 ### Community 116 - "Community 116"
 Cohesion: 0.25
 Nodes (7): API Contract - OpenBench v1, Base URL, code:text (http://localhost:3000), code:json ({), code:json ({), Format Respon Umum (Standard Response), Keamanan & Otorisasi (Security)
+
+### Community 117 - "Community 117"
+Cohesion: 0.15
+Nodes (12): Handler (auth), Module (auth), ErrInvalidCredentials, ErrInvalidToken, ErrUserNotFound, service (auth impl), Service (auth), service_test (+4 more)
 
 ### Community 118 - "Community 118"
 Cohesion: 0.50
@@ -483,28 +569,212 @@ Cohesion: 0.67
 Nodes (3): A. Membuat Tiket Servis Baru, code:json ({), code:json ({)
 
 ### Community 120 - "Community 120"
+Cohesion: 0.11
+Nodes (25): ClaimsQueueTableProps, CreateClaimDialogProps, EditClaimDialogProps, EvaluateClaimDialogProps, VoidWarrantyDialogProps, WarrantyCheckerPanelProps, GetClaimsParams, warrantyService (+17 more)
+
+### Community 122 - "Community 122"
+Cohesion: 0.09
+Nodes (5): close(), Mh, show(), zb(), Zy()
+
+### Community 123 - "Community 123"
+Cohesion: 0.38
+Nodes (3): CleanupWorker, CleanupWorker, NewCleanupWorker()
+
+### Community 124 - "Community 124"
+Cohesion: 0.14
+Nodes (14): ed(), jx(), kx(), Lx(), Nx(), Sx(), n(), s() (+6 more)
+
+### Community 125 - "Community 125"
+Cohesion: 0.14
+Nodes (11): __, ac(), Ix(), q0(), s_, Sc(), vc(), w_ (+3 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.08
+Nodes (13): dr, Eo(), Fn(), go(), lt(), Mt(), _r, read_buf() (+5 more)
+
+### Community 127 - "Community 127"
+Cohesion: 0.08
+Nodes (23): f_, jE(), k_(), l_, ls, nw(), Q_(), q2() (+15 more)
+
+### Community 132 - "Community 132"
+Cohesion: 0.09
+Nodes (3): pr, X2, y2()
+
+### Community 133 - "Community 133"
+Cohesion: 0.09
+Nodes (35): tf(), bT(), fb(), qt(), ub(), vr(), w0(), Wn() (+27 more)
+
+### Community 135 - "Community 135"
+Cohesion: 0.05
+Nodes (36): 1. Ringkasan Arsitektur Testing, 2.1 Go Unit Test (`make test-api`), 2.2 Go Integration Test (`make test-integration`), 2.3 Frontend Unit Test (`cd apps/web-admin && pnpm test`), 2.4 E2E Test (`make test-e2e`), 2. Cara Kerja Masing-masing Lapisan, 3.1 Linting, 3.2 CI/CD (+28 more)
+
+### Community 136 - "Community 136"
+Cohesion: 0.07
+Nodes (14): bs(), dt(), es, fa, gs(), ha, Nn(), Nt() (+6 more)
+
+### Community 138 - "Community 138"
+Cohesion: 0.18
+Nodes (24): af(), ef(), ff(), hf, Ja(), lf(), mt(), nf() (+16 more)
+
+### Community 139 - "Community 139"
+Cohesion: 0.27
+Nodes (17): AddProductModal(), AddProductModalProps, AdjustStockModal(), CreateTicketModalProps, EditProductModal(), initialProducts, inventoryService, Button() (+9 more)
+
+### Community 141 - "Community 141"
+Cohesion: 0.27
+Nodes (7): NewPostgresDB(), slogAdapter, HealthCheckDetail, main(), run(), SeedDefaultAdmin(), SeedDefaultProducts()
+
+### Community 143 - "Community 143"
+Cohesion: 0.23
+Nodes (4): f0, gs(), Nh(), xn()
+
+### Community 145 - "Community 145"
+Cohesion: 0.09
+Nodes (15): D0, eA, En(), fr, gl(), h0, jb(), k2() (+7 more)
+
+### Community 146 - "Community 146"
+Cohesion: 0.06
+Nodes (38): AdjustStockModalProps, EditProductModalProps, InventoryTableProps, ProductGridProps, TransactionDetailsModalProps, TransactionsTableProps, api, failedQueue (+30 more)
+
+### Community 148 - "Community 148"
+Cohesion: 0.13
+Nodes (8): bo(), Js(), mo, pr, wr(), Wt(), xo(), zs()
+
+### Community 149 - "Community 149"
+Cohesion: 0.18
+Nodes (12): ClaimsQueueTable(), CreateClaimDialog(), EditClaimDialog(), EvaluateClaimDialog(), VoidWarrantyDialog(), initialClaims, initialWarranties, Tabs() (+4 more)
+
+### Community 152 - "Community 152"
+Cohesion: 0.12
+Nodes (5): dE, gE, mE, pE, xb()
+
+### Community 155 - "Community 155"
+Cohesion: 0.11
+Nodes (21): bv(), dv(), gh, gn(), gr(), hv(), jr(), kb() (+13 more)
+
+### Community 157 - "Community 157"
+Cohesion: 0.24
+Nodes (5): LoginRequest, MessageResponse, SuccessResponse[T], Handler, NewHandler()
+
+### Community 160 - "Community 160"
+Cohesion: 0.20
+Nodes (3): nA, pS(), uc
+
+### Community 161 - "Community 161"
+Cohesion: 0.23
+Nodes (4): el(), Qa(), tl(), Tr()
+
+### Community 163 - "Community 163"
+Cohesion: 0.15
+Nodes (10): CheckoutItemRequest, CheckoutRequest, PaymentMethod, PosTransaction, PosTransactionItem, CommandRepository, Module, QueryRepository (+2 more)
+
+### Community 167 - "Community 167"
+Cohesion: 0.11
+Nodes (25): as(), bd(), cs(), Dr(), fv(), g_(), hh(), Hi() (+17 more)
+
+### Community 168 - "Community 168"
+Cohesion: 0.11
+Nodes (9): as(), Bn, En(), is(), os(), po, St(), Ve (+1 more)
+
+### Community 170 - "Community 170"
+Cohesion: 0.23
+Nodes (4): CreateProductRequest, Service, validateProductInput(), UpdateProductRequest
+
+### Community 171 - "Community 171"
+Cohesion: 0.18
+Nodes (4): CommandRepository, QueryRepository, prefixColumns(), sqlQueryRepository
+
+### Community 172 - "Community 172"
+Cohesion: 0.12
+Nodes (15): API routes (`cmd/server/routes.go`), Backend Architecture, Commands, Config, E2E Testing, Frontend, Go Testing, graphify (+7 more)
+
+### Community 174 - "Community 174"
+Cohesion: 0.13
+Nodes (7): Ar, Io(), nS(), s2(), Xh(), yn(), zi
+
+### Community 176 - "Community 176"
+Cohesion: 0.06
+Nodes (28): $2(), Ax(), B2(), bE(), Ch(), e2, eE(), ev() (+20 more)
+
+### Community 177 - "Community 177"
+Cohesion: 0.09
+Nodes (20): TestGlobalErrorHandler_DomainErrors(), CreateTicketParams, ServiceTicketStatus, CleanTable, SetupTestDatabase, ChangeStatusRequest, CreateTicketRequest, EmergencyUpdateTicketRequest (+12 more)
+
+### Community 178 - "Community 178"
+Cohesion: 0.20
+Nodes (3): de, he, pe()
+
+### Community 180 - "Community 180"
+Cohesion: 0.36
+Nodes (6): DBQuerier, sqlTxManager, ExtractTx(), InjectTx(), sqlTxManager, txKey
+
+### Community 182 - "Community 182"
+Cohesion: 0.29
+Nodes (3): NewHealthHandler(), TestHealthCheckPublic(), HealthHandler
+
+### Community 183 - "Community 183"
+Cohesion: 0.40
+Nodes (3): GlobalErrorHandler(), init(), TranslateValidationErrors()
+
+### Community 184 - "Community 184"
+Cohesion: 0.24
+Nodes (5): gv(), Nb(), sd, tt, yv()
+
+### Community 185 - "Community 185"
+Cohesion: 0.33
+Nodes (5): cs(), ki, li, ls(), qe()
+
+### Community 186 - "Community 186"
+Cohesion: 0.20
+Nodes (4): a, e, o, rr()
+
+### Community 187 - "Community 187"
+Cohesion: 0.60
+Nodes (3): test-e2e.sh script, wait_for_postgres(), wait_for_webapi()
+
+### Community 188 - "Community 188"
+Cohesion: 0.20
+Nodes (3): be, Se(), tt
+
+### Community 189 - "Community 189"
+Cohesion: 0.40
+Nodes (3): MapToTicketSummaryResponse(), DefaultLimit MaxLimit, ParseCursorPagination
+
+### Community 192 - "Community 192"
+Cohesion: 0.40
+Nodes (4): addDialog, adjustDialog, editDialog, row
+
+### Community 200 - "Community 200"
+Cohesion: 0.09
+Nodes (27): av(), Bh(), cv, dt(), fc(), gT(), hc(), iS (+19 more)
+
+### Community 205 - "Community 205"
+Cohesion: 0.50
+Nodes (3): Creator, GenerateTicketNumber(), NewCreator()
+
+### Community 208 - "Community 208"
 Cohesion: 0.67
 Nodes (3): code:json ({), code:json ({), D. Mengubah Status Servis
 
 ## Knowledge Gaps
-- **415 isolated node(s):** `env`, `name`, `port`, `allowed_origins`, `max_conns` (+410 more)
+- **572 isolated node(s):** `Commands`, `Config`, `API routes (`cmd/server/routes.go`)`, `Go Testing`, `E2E Testing` (+567 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **72 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `New()` connect `Community 24` to `Community 1`, `Community 2`, `Community 7`, `Community 9`, `Community 10`, `Community 11`, `Community 16`, `Community 19`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 33`, `Community 39`, `Community 108`, `Community 109`, `Community 111`, `Community 112`, `Community 114`?**
-  _High betweenness centrality (0.136) - this node is a cross-community bridge._
-- **Why does `Service` connect `Community 103` to `Community 1`, `Community 10`, `Community 106`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
-- **Why does `ValidateStruct()` connect `Community 106` to `Community 33`, `Community 2`, `Community 103`, `Community 9`, `Community 110`, `Community 24`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Are the 53 inferred relationships involving `New()` (e.g. with `SeedDefaultAdmin()` and `TestGlobalErrorHandler()`) actually correct?**
-  _`New()` has 53 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 15 inferred relationships involving `GetQuerier()` (e.g. with `.CreateUser()` and `.BlacklistToken()`) actually correct?**
-  _`GetQuerier()` has 15 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `env`, `name`, `port` to the rest of the system?**
-  _418 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `New()` connect `Community 24` to `Community 1`, `Community 2`, `Community 7`, `Community 9`, `Community 10`, `Community 11`, `Community 141`, `Community 16`, `Community 19`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 37`, `Community 39`, `Community 170`, `Community 177`, `Community 183`, `Community 109`, `Community 111`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `G()` connect `Community 133` to `Community 65`, `Community 38`, `Community 136`, `Community 200`, `Community 138`, `Community 110`, `Community 48`, `Community 156`, `Community 155`, `Community 124`?**
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+- **Why does `_t` connect `Community 175` to `Community 186`, `Community 127`?**
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Are the 54 inferred relationships involving `New()` (e.g. with `SeedDefaultAdmin()` and `SeedDefaultProducts()`) actually correct?**
+  _`New()` has 54 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 12 inferred relationships involving `mt()` (e.g. with `e` and `r`) actually correct?**
+  _`mt()` has 12 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Commands`, `Config`, `API routes (`cmd/server/routes.go`)` to the rest of the system?**
+  _573 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.05713218820014936 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08912655971479501 - nodes in this community are weakly interconnected._

@@ -70,12 +70,35 @@ func (r *sqlCommandRepository) Create(ctx context.Context, t *models.ServiceTick
 	return err
 }
 
+var ticketColumns = []string{
+	"id", "ticket_number", "status", "customer_name", "customer_phone",
+	"device_brand", "device_model", "device_passcode", "issue_description",
+	"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
+}
+
+func applyCursorPagination(queryBuilder squirrel.SelectBuilder, limit int, cursor string) squirrel.SelectBuilder {
+	if cursor != "" {
+		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
+		if err == nil {
+			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
+		}
+	}
+	return queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+}
+
+func buildNextCursor(tickets []models.ServiceTicket, limit int) ([]models.ServiceTicket, string) {
+	var nextCursor string
+	if len(tickets) > limit {
+		nextCursor = utils.EncodeCursor(tickets[limit].CreatedAt, tickets[limit].ID)
+		tickets = tickets[:limit]
+	}
+	return tickets, nextCursor
+}
+
 func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ServiceTicket, string, error) {
-	queryBuilder := r.psql.Select(
-		"id", "ticket_number", "status", "customer_name", "customer_phone",
-		"device_brand", "device_model", "device_passcode", "issue_description",
-		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
-	).From("service_tickets").Where(squirrel.Eq{"deleted_at": nil})
+	queryBuilder := r.psql.Select(ticketColumns...).
+		From("service_tickets").
+		Where(squirrel.Eq{"deleted_at": nil})
 
 	if status != "" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"status": status})
@@ -90,14 +113,7 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search 
 		})
 	}
 
-	if cursor != "" {
-		cursorTime, cursorID, err := utils.DecodeCursor(cursor)
-		if err == nil {
-			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
-		}
-	}
-
-	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+	queryBuilder = applyCursorPagination(queryBuilder, limit, cursor)
 
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
@@ -110,21 +126,12 @@ func (r *sqlQueryRepository) FindAll(ctx context.Context, status string, search 
 		return nil, "", err
 	}
 
-	var nextCursor string
-	if len(tickets) > limit {
-		nextCursor = utils.EncodeCursor(tickets[limit].CreatedAt, tickets[limit].ID)
-		tickets = tickets[:limit]
-	}
-
+	tickets, nextCursor := buildNextCursor(tickets, limit)
 	return tickets, nextCursor, nil
 }
 
 func (r *sqlQueryRepository) FindByID(ctx context.Context, id string) (*models.ServiceTicket, error) {
-	query, args, err := r.psql.Select(
-		"id", "ticket_number", "status", "customer_name", "customer_phone",
-		"device_brand", "device_model", "device_passcode", "issue_description",
-		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
-	).
+	query, args, err := r.psql.Select(ticketColumns...).
 		From("service_tickets").
 		Where(squirrel.Eq{"id": id, "deleted_at": nil}).
 		Limit(1).
@@ -181,11 +188,9 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		limit = utils.MaxLimit
 	}
 
-	queryBuilder := r.psql.Select(
-		"id", "ticket_number", "status", "customer_name", "customer_phone",
-		"device_brand", "device_model", "device_passcode", "issue_description",
-		"repair_action", "cost", "warranty_days", "notes", "created_at", "updated_at",
-	).From("service_tickets").Where(squirrel.Eq{"deleted_at": nil})
+	queryBuilder := r.psql.Select(ticketColumns...).
+		From("service_tickets").
+		Where(squirrel.Eq{"deleted_at": nil})
 
 	if req.Search != "" {
 		searchPattern := "%" + req.Search + "%"
@@ -217,14 +222,7 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		}
 	}
 
-	if req.Cursor != "" {
-		cursorTime, cursorID, err := utils.DecodeCursor(req.Cursor)
-		if err == nil {
-			queryBuilder = queryBuilder.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
-		}
-	}
-
-	queryBuilder = queryBuilder.OrderBy("created_at DESC", "id DESC").Limit(uint64(limit + 1))
+	queryBuilder = applyCursorPagination(queryBuilder, limit, req.Cursor)
 
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
@@ -237,11 +235,6 @@ func (r *sqlQueryRepository) Search(ctx context.Context, req TicketSearchRequest
 		return nil, "", err
 	}
 
-	var nextCursor string
-	if len(tickets) > limit {
-		nextCursor = utils.EncodeCursor(tickets[limit].CreatedAt, tickets[limit].ID)
-		tickets = tickets[:limit]
-	}
-
+	tickets, nextCursor := buildNextCursor(tickets, limit)
 	return tickets, nextCursor, nil
 }

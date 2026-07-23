@@ -69,9 +69,9 @@ func (h *Handler) SearchTicketSummaries(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetTicketByID(c fiber.Ctx) error {
-	ticketID := c.Params("ticket_id")
-	if ticketID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	ticketID, err := h.getTicketID(c)
+	if err != nil {
+		return err
 	}
 
 	res, err := h.service.GetTicketByID(c.Context(), ticketID)
@@ -85,9 +85,9 @@ func (h *Handler) GetTicketByID(c fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
-	ticketID := c.Params("ticket_id")
-	if ticketID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	ticketID, err := h.getTicketID(c)
+	if err != nil {
+		return err
 	}
 
 	var req ChangeStatusRequest
@@ -110,9 +110,9 @@ func (h *Handler) UpdateTicketStatus(c fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
-	ticketID := c.Params("ticket_id")
-	if ticketID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	ticketID, err := h.getTicketID(c)
+	if err != nil {
+		return err
 	}
 
 	var req UpdateTicketRequest
@@ -135,9 +135,9 @@ func (h *Handler) UpdateTicketDetails(c fiber.Ctx) error {
 }
 
 func (h *Handler) EmergencyUpdateTicket(c fiber.Ctx) error {
-	ticketID := c.Params("ticket_id")
-	if ticketID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	ticketID, err := h.getTicketID(c)
+	if err != nil {
+		return err
 	}
 
 	var req EmergencyUpdateTicketRequest
@@ -157,4 +157,12 @@ func (h *Handler) EmergencyUpdateTicket(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": res,
 	})
+}
+
+func (h *Handler) getTicketID(c fiber.Ctx) (string, error) {
+	ticketID := c.Params("ticket_id")
+	if ticketID == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "Ticket ID is required.")
+	}
+	return ticketID, nil
 }

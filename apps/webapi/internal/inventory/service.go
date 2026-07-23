@@ -50,16 +50,35 @@ func NewService(queryRepo QueryRepository, commandRepo CommandRepository) Servic
 	}
 }
 
+func validateProductInput(name string, price int64, stock int) (string, error) {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		return "", fmt.Errorf("%w: name is required", ErrInvalidInput)
+	}
+	if price < 0 {
+		return "", fmt.Errorf("%w: price cannot be negative", ErrInvalidInput)
+	}
+	if stock < 0 {
+		return "", fmt.Errorf("%w: stock cannot be negative", ErrInvalidInput)
+	}
+	return trimmedName, nil
+}
+
+func (s *service) getProductOrError(ctx context.Context, id string) (*models.Product, error) {
+	p, err := s.queryRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if p == nil {
+		return nil, ErrProductNotFound
+	}
+	return p, nil
+}
+
 func (s *service) CreateProduct(ctx context.Context, req CreateProductRequest) (*models.Product, error) {
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		return nil, fmt.Errorf("%w: name is required", ErrInvalidInput)
-	}
-	if req.Price < 0 {
-		return nil, fmt.Errorf("%w: price cannot be negative", ErrInvalidInput)
-	}
-	if req.Stock < 0 {
-		return nil, fmt.Errorf("%w: stock cannot be negative", ErrInvalidInput)
+	name, err := validateProductInput(req.Name, req.Price, req.Stock)
+	if err != nil {
+		return nil, err
 	}
 
 	p := &models.Product{
@@ -84,23 +103,14 @@ func (s *service) CreateProduct(ctx context.Context, req CreateProductRequest) (
 }
 
 func (s *service) UpdateProduct(ctx context.Context, id string, req UpdateProductRequest) (*models.Product, error) {
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		return nil, fmt.Errorf("%w: name is required", ErrInvalidInput)
-	}
-	if req.Price < 0 {
-		return nil, fmt.Errorf("%w: price cannot be negative", ErrInvalidInput)
-	}
-	if req.Stock < 0 {
-		return nil, fmt.Errorf("%w: stock cannot be negative", ErrInvalidInput)
-	}
-
-	p, err := s.queryRepo.FindByID(ctx, id)
+	name, err := validateProductInput(req.Name, req.Price, req.Stock)
 	if err != nil {
 		return nil, err
 	}
-	if p == nil {
-		return nil, ErrProductNotFound
+
+	p, err := s.getProductOrError(ctx, id)
+	if err != nil {
+		return nil, err
 	}
 
 	p.Name = name
@@ -122,12 +132,9 @@ func (s *service) UpdateProduct(ctx context.Context, id string, req UpdateProduc
 }
 
 func (s *service) AdjustStock(ctx context.Context, id string, quantityChange int) error {
-	p, err := s.queryRepo.FindByID(ctx, id)
+	p, err := s.getProductOrError(ctx, id)
 	if err != nil {
 		return err
-	}
-	if p == nil {
-		return ErrProductNotFound
 	}
 
 	// Prevent negative stock
@@ -151,14 +158,7 @@ func (s *service) AdjustStock(ctx context.Context, id string, quantityChange int
 }
 
 func (s *service) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
-	p, err := s.queryRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if p == nil {
-		return nil, ErrProductNotFound
-	}
-	return p, nil
+	return s.getProductOrError(ctx, id)
 }
 
 func (s *service) GetProducts(ctx context.Context, search string, limit int, cursor string) ([]models.Product, string, error) {
@@ -172,12 +172,9 @@ func (s *service) GetProducts(ctx context.Context, search string, limit int, cur
 }
 
 func (s *service) DeleteProduct(ctx context.Context, id string) error {
-	p, err := s.queryRepo.FindByID(ctx, id)
+	p, err := s.getProductOrError(ctx, id)
 	if err != nil {
 		return err
-	}
-	if p == nil {
-		return ErrProductNotFound
 	}
 	if err := s.commandRepo.Delete(ctx, id); err != nil {
 		return err

@@ -23,3 +23,45 @@ export interface WarrantyClaim {
   created_at: string
   updated_at: string
 }
+
+// --- API Response wrapper types ---
+
+export interface PaginationMeta {
+  limit: number
+  next_cursor?: string
+}
+
+export interface WarrantyResponse {
+  data: Warranty
+}
+
+export interface ClaimResponse {
+  data: WarrantyClaim
+}
+
+export interface ClaimsListResponse {
+  data: WarrantyClaim[]
+  meta: PaginationMeta
+}
+
+// --- Request types matching backend contract ---
+
+export interface CreateClaimRequest {
+  ticket_number: string
+  issue_description: string
+}
+
+export interface UpdateClaimRequest {
+  issue_description: string
+  notes?: string
+}
+
+export interface EvaluateClaimRequest {
+  status: ClaimEvaluationStatus
+  notes?: string
+}
+
+export interface UpdateWarrantyStatusRequest {
+  status: WarrantyStatus
+  notes?: string
+}

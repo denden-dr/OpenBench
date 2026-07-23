@@ -40,6 +40,39 @@ type sqlCommandRepository struct {
 	psql squirrel.StatementBuilderType
 }
 
+var (
+	warrantyColumns = []string{
+		"id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at",
+	}
+	claimColumns = []string{
+		"id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status",
+		"issue_description", "notes", "evaluation_notes", "created_at", "updated_at",
+	}
+	claimSummaryColumns = []string{
+		"c.id as claim_id",
+		"c.claim_number",
+		"c.warranty_ticket_ref_id",
+		"w.id as warranty_id",
+		"w.status as warranty_status",
+		"st.id as ticket_id",
+		"st.ticket_number",
+		"st.customer_name",
+		"st.device_brand",
+		"st.device_model",
+		"c.evaluation_status",
+		"c.issue_description",
+		"c.created_at",
+	}
+)
+
+func prefixColumns(prefix string, cols []string) []string {
+	prefixed := make([]string, len(cols))
+	for i, col := range cols {
+		prefixed[i] = prefix + "." + col
+	}
+	return prefixed
+}
+
 func NewQueryRepository(db *sqlx.DB) QueryRepository {
 	return &sqlQueryRepository{
 		db:   db,
@@ -56,7 +89,7 @@ func NewCommandRepository(db *sqlx.DB) CommandRepository {
 
 func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.Warranty) error {
 	query, args, err := r.psql.Insert("warranties").
-		Columns("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+		Columns(warrantyColumns...).
 		Values(w.ID, w.TicketID, w.StartDate, w.EndDate, w.Status, w.Notes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
 		ToSql()
@@ -69,7 +102,7 @@ func (r *sqlCommandRepository) CreateWarranty(ctx context.Context, w *models.War
 }
 
 func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*models.Warranty, error) {
-	query, args, err := r.psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select(warrantyColumns...).
 		From("warranties").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -90,7 +123,7 @@ func (r *sqlQueryRepository) FindWarrantyByID(ctx context.Context, id string) (*
 }
 
 func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketID string) (*models.Warranty, error) {
-	query, args, err := r.psql.Select("id", "ticket_id", "start_date", "end_date", "status", "notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select(warrantyColumns...).
 		From("warranties").
 		Where(squirrel.Eq{"ticket_id": ticketID}).
 		Limit(1).
@@ -111,7 +144,7 @@ func (r *sqlQueryRepository) FindWarrantyByTicketID(ctx context.Context, ticketI
 }
 
 func (r *sqlQueryRepository) FindWarrantyByTicketNumber(ctx context.Context, ticketNumber string) (*models.Warranty, error) {
-	query, args, err := r.psql.Select("w.id", "w.ticket_id", "w.start_date", "w.end_date", "w.status", "w.notes", "w.created_at", "w.updated_at").
+	query, args, err := r.psql.Select(prefixColumns("w", warrantyColumns)...).
 		From("warranties w").
 		Join("service_tickets st ON w.ticket_id = st.id").
 		Where(squirrel.Eq{"st.ticket_number": ticketNumber}).
@@ -150,7 +183,7 @@ func (r *sqlCommandRepository) UpdateWarrantyStatus(ctx context.Context, id stri
 
 func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
 	query, args, err := r.psql.Insert("claims").
-		Columns("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
+		Columns(claimColumns...).
 		Values(c.ID, c.ClaimNumber, c.WarrantyID, c.WarrantyTicketRefID, c.EvaluationStatus, c.IssueDescription, c.Notes, c.EvaluationNotes, squirrel.Expr("NOW()"), squirrel.Expr("NOW()")).
 		Suffix("RETURNING created_at, updated_at").
 		ToSql()
@@ -163,7 +196,7 @@ func (r *sqlCommandRepository) CreateClaim(ctx context.Context, c *models.Claim)
 }
 
 func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*models.Claim, error) {
-	query, args, err := r.psql.Select("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
+	query, args, err := r.psql.Select(claimColumns...).
 		From("claims").
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
@@ -184,7 +217,7 @@ func (r *sqlQueryRepository) FindClaimByID(ctx context.Context, id string) (*mod
 }
 
 func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, search string, limit int, cursor string) ([]models.Claim, string, error) {
-	queryBuilder := r.psql.Select("id", "claim_number", "warranty_id", "warranty_ticket_ref_id", "evaluation_status", "issue_description", "notes", "evaluation_notes", "created_at", "updated_at").
+	queryBuilder := r.psql.Select(claimColumns...).
 		From("claims")
 
 	if status != "" {
@@ -229,21 +262,7 @@ func (r *sqlQueryRepository) FindAllClaims(ctx context.Context, status string, s
 }
 
 func (r *sqlQueryRepository) FindClaimSummaryByID(ctx context.Context, id string) (*models.ClaimSummary, error) {
-	query, args, err := r.psql.Select(
-		"c.id as claim_id",
-		"c.claim_number",
-		"c.warranty_ticket_ref_id",
-		"w.id as warranty_id",
-		"w.status as warranty_status",
-		"st.id as ticket_id",
-		"st.ticket_number",
-		"st.customer_name",
-		"st.device_brand",
-		"st.device_model",
-		"c.evaluation_status",
-		"c.issue_description",
-		"c.created_at",
-	).
+	query, args, err := r.psql.Select(claimSummaryColumns...).
 		From("claims c").
 		Join("warranties w ON c.warranty_id = w.id").
 		Join("service_tickets st ON w.ticket_id = st.id").
@@ -266,21 +285,7 @@ func (r *sqlQueryRepository) FindClaimSummaryByID(ctx context.Context, id string
 }
 
 func (r *sqlQueryRepository) FindAllClaimSummaries(ctx context.Context, status string, search string, limit int, cursor string) ([]models.ClaimSummary, string, error) {
-	queryBuilder := r.psql.Select(
-		"c.id as claim_id",
-		"c.claim_number",
-		"c.warranty_ticket_ref_id",
-		"w.id as warranty_id",
-		"w.status as warranty_status",
-		"st.id as ticket_id",
-		"st.ticket_number",
-		"st.customer_name",
-		"st.device_brand",
-		"st.device_model",
-		"c.evaluation_status",
-		"c.issue_description",
-		"c.created_at",
-	).
+	queryBuilder := r.psql.Select(claimSummaryColumns...).
 		From("claims c").
 		Join("warranties w ON c.warranty_id = w.id").
 		Join("service_tickets st ON w.ticket_id = st.id")

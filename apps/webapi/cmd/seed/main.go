@@ -9,9 +9,11 @@ import (
 	"github.com/denden-dr/OpenBench/config"
 	"github.com/denden-dr/OpenBench/internal/auth"
 	"github.com/denden-dr/OpenBench/internal/database"
+	"github.com/denden-dr/OpenBench/internal/inventory"
 	"github.com/denden-dr/OpenBench/internal/logger"
 	"github.com/denden-dr/OpenBench/internal/models"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/samber/hot"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -49,6 +51,10 @@ func run(cfg *config.Config) error {
 
 	slog.Info("Running database seeder...")
 	if err := SeedDefaultAdmin(ctx, authQueryRepo, authCommandRepo, cfg); err != nil {
+		return err
+	}
+
+	if err := SeedDefaultProducts(ctx, db, cfg); err != nil {
 		return err
 	}
 
@@ -94,5 +100,47 @@ func SeedDefaultAdmin(ctx context.Context, queryRepo auth.QueryRepository, comma
 	}
 
 	slog.InfoContext(ctx, "Successfully seeded default admin", slog.String("email", email))
+	return nil
+}
+
+func SeedDefaultProducts(ctx context.Context, db *sqlx.DB, cfg *config.Config) error {
+	slog.Debug("SeedDefaultProducts: starting", slog.String("env", cfg.App.Env))
+
+	if cfg.App.Env != "development" && cfg.App.Env != "testing" {
+		slog.Debug("SeedDefaultProducts: skipped (env not dev/test)")
+		return nil
+	}
+
+	commandRepo := inventory.NewCommandRepository(db)
+
+	products := []struct {
+		Name  string
+		Price int64
+		Stock int
+	}{
+		{Name: "Tempered Glass iPhone 15 Pro Max", Price: 75000, Stock: 18},
+		{Name: "Silicon Case iPhone 15", Price: 120000, Stock: 4},
+		{Name: "USB-C Charger Adapter 20W", Price: 299000, Stock: 2},
+		{Name: "MicroUSB Cable 1m", Price: 35000, Stock: 25},
+		{Name: "Lightning to USB-C Cable 2m", Price: 150000, Stock: 0},
+	}
+
+	slog.Debug("SeedDefaultProducts: products to seed", slog.Int("count", len(products)))
+
+	for _, p := range products {
+		product := &models.Product{
+			ID:    uuid.New().String(),
+			Name:  p.Name,
+			Price: p.Price,
+			Stock: p.Stock,
+		}
+		if err := commandRepo.Create(ctx, product); err != nil {
+			slog.Error("SeedDefaultProducts: create failed", slog.String("name", p.Name), slog.Any("error", err))
+			return err
+		}
+		slog.InfoContext(ctx, "Seeded product", slog.String("name", p.Name))
+	}
+
+	slog.Debug("SeedDefaultProducts: completed successfully")
 	return nil
 }

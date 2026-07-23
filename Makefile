@@ -1,14 +1,20 @@
 -include apps/webapi/.env
 export
 
-.PHONY: up down install-api install-user install-admin dev-api dev-user dev-admin build-all build-api build-user build-admin test-api test-integration migrate-up migrate-down seed
+.PHONY: up down install-api install-user install-admin dev-api dev-user dev-admin build-all build-api build-user build-admin test-api test-integration test-e2e migrate-up migrate-down seed
 
 # --- Database / Infrastructure ---
 up:
 	podman compose up -d
 
+test-up:
+	podman compose -f docker-compose.test.yml up -d
+
 down:
 	podman compose down
+
+test-down:
+	podman compose -f docker-compose.test.yml down -v
 
 migrate-up:
 	cd apps/webapi && migrate -path migrations -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}" up
@@ -45,6 +51,10 @@ test-api:
 
 test-integration:
 	cd apps/webapi && go test -v -tags=integration ./...
+
+test-e2e:
+	bash scripts/test-e2e.sh
+
 
 build-api:
 	cd apps/webapi && go build -o bin/server ./cmd/server

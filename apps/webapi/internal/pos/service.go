@@ -57,26 +57,33 @@ func NewService(
 	}
 }
 
-func (s *service) Checkout(ctx context.Context, req models.CheckoutRequest) (*models.PosTransaction, error) {
+func validateCheckoutRequest(req models.CheckoutRequest) error {
 	if req.PaymentMethod != models.PaymentMethodCash && req.PaymentMethod != models.PaymentMethodQRIS {
-		return nil, fmt.Errorf("%w: invalid payment method", ErrInvalidInput)
+		return fmt.Errorf("%w: invalid payment method", ErrInvalidInput)
 	}
 	if len(req.Items) == 0 {
-		return nil, fmt.Errorf("%w: cart cannot be empty", ErrInvalidInput)
+		return fmt.Errorf("%w: cart cannot be empty", ErrInvalidInput)
 	}
 
 	seen := make(map[string]bool)
 	for _, item := range req.Items {
 		if item.ProductID == "" {
-			return nil, fmt.Errorf("%w: product_id is required", ErrInvalidInput)
+			return fmt.Errorf("%w: product_id is required", ErrInvalidInput)
 		}
 		if item.Quantity <= 0 {
-			return nil, fmt.Errorf("%w: quantity must be greater than 0", ErrInvalidInput)
+			return fmt.Errorf("%w: quantity must be greater than 0", ErrInvalidInput)
 		}
 		if seen[item.ProductID] {
-			return nil, fmt.Errorf("%w: duplicate product in cart: %s", ErrInvalidInput, item.ProductID)
+			return fmt.Errorf("%w: duplicate product in cart: %s", ErrInvalidInput, item.ProductID)
 		}
 		seen[item.ProductID] = true
+	}
+	return nil
+}
+
+func (s *service) Checkout(ctx context.Context, req models.CheckoutRequest) (*models.PosTransaction, error) {
+	if err := validateCheckoutRequest(req); err != nil {
+		return nil, err
 	}
 
 	txID := uuid.New().String()

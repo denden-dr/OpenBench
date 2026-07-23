@@ -33,27 +33,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		return err
 	}
 
-	// Set Access Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    result.AccessToken,
-		Path:     "/",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   int(h.cfg.Auth.AccessExpiry.Seconds()),
-	})
-
-	// Set Refresh Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    result.RefreshToken,
-		Path:     "/api/v1/auth/refresh",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
-	})
+	h.setAuthCookies(c, result.AccessToken, result.RefreshToken)
 
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse[LoginResponse]{
 		Data: result,
@@ -71,27 +51,7 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 		return err
 	}
 
-	// Set new Access Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    result.AccessToken,
-		Path:     "/",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   int(h.cfg.Auth.AccessExpiry.Seconds()),
-	})
-
-	// Set new Refresh Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    result.RefreshToken,
-		Path:     "/api/v1/auth/refresh",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
-	})
+	h.setAuthCookies(c, result.AccessToken, result.RefreshToken)
 
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse[RefreshResponse]{
 		Data: result,
@@ -104,27 +64,7 @@ func (h *Handler) Logout(c fiber.Ctx) error {
 
 	_ = h.service.Logout(c.Context(), accessToken, refreshToken)
 
-	// Clear Access Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		Path:     "/",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   -1,
-	})
-
-	// Clear Refresh Token Cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		Path:     "/api/v1/auth/refresh",
-		HTTPOnly: true,
-		Secure:   h.cfg.App.Env == "production",
-		SameSite: "Strict",
-		MaxAge:   -1,
-	})
+	h.clearAuthCookies(c)
 
 	if c.Get("HX-Request") == "true" {
 		c.Set("HX-Redirect", "/login")
@@ -148,5 +88,49 @@ func (h *Handler) Me(c fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse[UserProfileResponse]{
 		Data: result,
+	})
+}
+
+func (h *Handler) setAuthCookies(c fiber.Ctx, accessToken, refreshToken string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		HTTPOnly: true,
+		Secure:   h.cfg.App.Env == "production",
+		SameSite: "Strict",
+		MaxAge:   int(h.cfg.Auth.AccessExpiry.Seconds()),
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/api/v1/auth/refresh",
+		HTTPOnly: true,
+		Secure:   h.cfg.App.Env == "production",
+		SameSite: "Strict",
+		MaxAge:   int(h.cfg.Auth.RefreshExpiry.Seconds()),
+	})
+}
+
+func (h *Handler) clearAuthCookies(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		HTTPOnly: true,
+		Secure:   h.cfg.App.Env == "production",
+		SameSite: "Strict",
+		MaxAge:   -1,
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/api/v1/auth/refresh",
+		HTTPOnly: true,
+		Secure:   h.cfg.App.Env == "production",
+		SameSite: "Strict",
+		MaxAge:   -1,
 	})
 }

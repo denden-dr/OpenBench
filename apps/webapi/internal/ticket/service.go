@@ -64,13 +64,9 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (Ti
 		return TicketResponse{}, err
 	}
 
-	encryptedPasscode := ""
-	if req.DevicePasscode != "" {
-		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
-		if err != nil {
-			return TicketResponse{}, fmt.Errorf("failed to encrypt passcode: %w", err)
-		}
-		encryptedPasscode = enc
+	encryptedPasscode, err := s.encryptPasscode(req.DevicePasscode)
+	if err != nil {
+		return TicketResponse{}, err
 	}
 
 	var repairAction *string
@@ -105,13 +101,7 @@ func (s *service) CreateTicket(ctx context.Context, req CreateTicketRequest) (Ti
 		slog.String("model", ticket.DeviceModel),
 	)
 
-	// Decrypt for client response
-	if ticket.DevicePasscode != "" {
-		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
-		if err == nil {
-			ticket.DevicePasscode = dec
-		}
-	}
+	ticket.DevicePasscode = s.decryptPasscode(ctx, ticket.DevicePasscode)
 
 	res := MapToTicketResponse(ticket)
 	return res, nil
@@ -168,14 +158,7 @@ func (s *service) GetTicketByID(ctx context.Context, id string) (TicketResponse,
 		return TicketResponse{}, ErrTicketNotFound
 	}
 
-	if ticket.DevicePasscode != "" {
-		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
-		if err == nil {
-			ticket.DevicePasscode = dec
-		} else {
-			slog.ErrorContext(ctx, "Failed to decrypt device passcode", slog.String("error", err.Error()))
-		}
-	}
+	ticket.DevicePasscode = s.decryptPasscode(ctx, ticket.DevicePasscode)
 
 	res := MapToTicketResponse(ticket)
 	return res, nil
@@ -186,13 +169,8 @@ func (s *service) UpdateTicketStatus(ctx context.Context, id string, req ChangeS
 		return TicketStatusResponse{}, fmt.Errorf("%w: status is required", ErrInvalidInput)
 	}
 
-	// Validate status enum
-	switch req.Status {
-	case models.StatusReceived, models.StatusRepairing, models.StatusPendingConfirmation,
-		models.StatusFixed, models.StatusCompleted, models.StatusCancelled, models.StatusReturned:
-		// Valid
-	default:
-		return TicketStatusResponse{}, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
+	if err := validateStatus(req.Status); err != nil {
+		return TicketStatusResponse{}, err
 	}
 
 	ticket, err := s.queryRepo.FindByID(ctx, id)
@@ -280,12 +258,7 @@ func (s *service) UpdateTicketDetails(ctx context.Context, id string, req Update
 		slog.String("ticket_number", ticket.TicketNumber),
 	)
 
-	if ticket.DevicePasscode != "" {
-		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
-		if err == nil {
-			ticket.DevicePasscode = dec
-		}
-	}
+	ticket.DevicePasscode = s.decryptPasscode(ctx, ticket.DevicePasscode)
 
 	res := MapToTicketResponse(ticket)
 	return res, nil
@@ -296,13 +269,8 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		return TicketResponse{}, fmt.Errorf("%w: customer name, phone, device brand, model, issue description, and status are required", ErrInvalidInput)
 	}
 
-	// Validate status enum
-	switch req.Status {
-	case models.StatusReceived, models.StatusRepairing, models.StatusPendingConfirmation,
-		models.StatusFixed, models.StatusCompleted, models.StatusCancelled, models.StatusReturned:
-		// Valid
-	default:
-		return TicketResponse{}, fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
+	if err := validateStatus(req.Status); err != nil {
+		return TicketResponse{}, err
 	}
 
 	ticket, err := s.queryRepo.FindByID(ctx, id)
@@ -313,13 +281,9 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		return TicketResponse{}, ErrTicketNotFound
 	}
 
-	encryptedPasscode := ""
-	if req.DevicePasscode != "" {
-		enc, err := utils.Encrypt(req.DevicePasscode, s.encryptionKey)
-		if err != nil {
-			return TicketResponse{}, fmt.Errorf("failed to encrypt passcode: %w", err)
-		}
-		encryptedPasscode = enc
+	encryptedPasscode, err := s.encryptPasscode(req.DevicePasscode)
+	if err != nil {
+		return TicketResponse{}, err
 	}
 
 	ticket.CustomerName = req.CustomerName
@@ -368,18 +332,11 @@ func (s *service) EmergencyUpdateTicket(ctx context.Context, id string, req Emer
 		slog.String("status", string(ticket.Status)),
 	)
 
-	if ticket.DevicePasscode != "" {
-		dec, err := utils.Decrypt(ticket.DevicePasscode, s.encryptionKey)
-		if err == nil {
-			ticket.DevicePasscode = dec
-		}
-	}
+	ticket.DevicePasscode = s.decryptPasscode(ctx, ticket.DevicePasscode)
 
 	res := MapToTicketResponse(ticket)
 	return res, nil
 }
-
-
 
 func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.ServiceTicket) error {
 	if ticket.WarrantyDays > 0 {
@@ -389,4 +346,37 @@ func (s *service) handleTicketCompletion(ctx context.Context, ticket *models.Ser
 		}
 	}
 	return nil
+}
+
+func (s *service) encryptPasscode(passcode string) (string, error) {
+	if passcode == "" {
+		return "", nil
+	}
+	enc, err := utils.Encrypt(passcode, s.encryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt passcode: %w", err)
+	}
+	return enc, nil
+}
+
+func (s *service) decryptPasscode(ctx context.Context, passcode string) string {
+	if passcode == "" {
+		return ""
+	}
+	dec, err := utils.Decrypt(passcode, s.encryptionKey)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to decrypt device passcode", slog.String("error", err.Error()))
+		return passcode
+	}
+	return dec
+}
+
+func validateStatus(status models.ServiceTicketStatus) error {
+	switch status {
+	case models.StatusReceived, models.StatusRepairing, models.StatusPendingConfirmation,
+		models.StatusFixed, models.StatusCompleted, models.StatusCancelled, models.StatusReturned:
+		return nil
+	default:
+		return fmt.Errorf("%w: invalid ticket status", ErrInvalidInput)
+	}
 }
